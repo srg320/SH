@@ -7,6 +7,8 @@ hc_output
 scaler
 hps_isw_handoff
 vip
+verilog_libs
+work
 *_sim
 .qsys_edit
 PLLJ_PLLSPE_INFO.txt
