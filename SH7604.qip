@@ -14,4 +14,5 @@ set_global_assignment -name SYSTEMVERILOG_FILE [file join $::quartus(qip_path) F
 set_global_assignment -name SYSTEMVERILOG_FILE [file join $::quartus(qip_path) WDT.sv ]
 set_global_assignment -name SYSTEMVERILOG_FILE [file join $::quartus(qip_path) SCI.sv ]
 set_global_assignment -name SYSTEMVERILOG_FILE [file join $::quartus(qip_path) DIVU.sv ]
+set_global_assignment -name SYSTEMVERILOG_FILE [file join $::quartus(qip_path) MULT.sv ]
 set_global_assignment -name SYSTEMVERILOG_FILE [file join $::quartus(qip_path) SH7604.sv ]

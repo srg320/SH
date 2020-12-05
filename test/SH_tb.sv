@@ -12,6 +12,7 @@ module SH2_tb;
 	bit [31:0] CPU_DI;
 	bit  [3:0] CPU_WE_N;
 	bit        CPU_REQ, CPU_WAIT;
+	bit        CPU_DREQ0;
 	
 	bit [31:0] RAM_DO, RAM_DI;
 	bit RAM_WE;
@@ -27,9 +28,16 @@ module SH2_tb;
 	
 	initial begin
 	  RES = 0;
+	  CPU_DREQ0 = 1;
 	  
 	  #100 RES = 1;
 	  #20 RES = 0;
+	  
+//	  #1000 CPU_DREQ0 = 0;
+//	  #600 CPU_DREQ0 = 1;
+//	  
+//	  #400 CPU_DREQ0 = 0;
+//	  #100 CPU_DREQ0 = 1;
 	end
 	
 	always @(posedge CLK) begin
@@ -47,7 +55,7 @@ module SH2_tb;
 		.CE_F(CE_F),
 		
 		.RES_N(~RES),
-		.NMI_N(1'b0),
+		.NMI_N(1'b1),
 		
 		.IRL_N(4'hF),
 		
@@ -69,10 +77,10 @@ module SH2_tb;
 		.BGR_N(),
 		.IVECF_N(),
 		
-		.DREQ0_N(1'b1),
-		.DACK0_N(),
-		.DREQ1_N(1'b1),
-		.DACK1_N(),
+		.DREQ0(CPU_DREQ0),
+		.DACK0(),
+		.DREQ1(1'b1),
+		.DACK1(),
 		
 		.MD({1'b0,CS0_SZ,3'b000})
 		

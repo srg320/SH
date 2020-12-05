@@ -389,6 +389,7 @@ module CACHE (
 						IBBA <= CBUS_BA;
 						IBWE <= 1;
 						IBREQ <= 1;
+						IBLOCK <= 0;
 						IBUS_WRITE <= 1;
 						WRITE_BUSY <= 1;
 					end
@@ -423,6 +424,7 @@ module CACHE (
 							IBBA <= CBUS_BA;
 							IBWE <= 0;
 							IBREQ <= 1;
+							IBLOCK <= 0;
 							IBUS_READ <= 1;
 //						end	
 						READ_BUSY <= 1;
@@ -440,7 +442,7 @@ module CACHE (
 							READ_BUSY <= 1;
 //							if (!IBUS_WRITE_PEND) begin
 								IBADDR <= {CBUS_A[31:4],CBUS_A[3:2] + 2'd1,2'b00};
-								IBBA <= CBUS_BA;
+								IBBA <= 4'b1111;
 								IBWE <= 0;
 								IBREQ <= 1;
 								IBLOCK <= 1;
@@ -511,7 +513,7 @@ module CACHE (
 		if (!RST_N) begin
 			CCR <= CCR_INIT;
 			// synopsys translate_off
-			CCR <= 8'h00;
+			CCR <= 8'h01;
 			// synopsys translate_on
 		end
 		else if (CE_R) begin

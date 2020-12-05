@@ -22,6 +22,7 @@ module SH7604 (
 	output            OE_N,		//CAS_N
 	output      [3:0] WE_N,		//CASxx_N/DQMxx
 	output            RD_N,
+	output            IVECF_N,
 	
 	input      [26:0] EA,
 	output     [31:0] EDI,
@@ -36,16 +37,16 @@ module SH7604 (
 	input             EOE_N,		//CAS_N
 	input       [3:0] EWE_N,		//CASxx_N/DQMxx
 	input             ERD_N,
+	input             EIVECF_N,
 	
 	input             WAIT_N,
 	input             BRLS_N,	//BACK_N
 	output            BGR_N,	//BREQ_N
-	output            IVECF_N,
 	
-	input             DREQ0_N,
-	output            DACK0_N,
-	input             DREQ1_N,
-	output            DACK1_N,
+	input             DREQ0,
+	output            DACK0,
+	input             DREQ1,
+	output            DACK1,
 	
 	output            FTOA,
 	output            FTOB,
@@ -88,10 +89,12 @@ module SH7604 (
 	//BSC
 	bit [31:0] BSC_DO;
 	bit        BSC_BUSY;
+	bit        BSC_ACK;
 	
 	//DMAC
 	bit [31:0] DMAC_DO;
 	bit        DMAC_ACT;
+	bit        DMAC_BUSY;
 	bit        DMAC0_IRQ;
 	bit  [7:0] DMAC0_VEC;
 	bit        DMAC1_IRQ;
@@ -104,9 +107,10 @@ module SH7604 (
 	IntAck_t   CPU_INTO;
 	
 	//MULT
-	bit [31:0] MACL, MACH;
 	bit  [1:0] MAC_SEL;
+	bit  [3:0] MAC_OP;
 	bit        MAC_WE;
+	bit [31:0] MULT_DO;
 	
 	//SCI
 	bit [31:0] SCI_DO;
@@ -170,15 +174,37 @@ module SH7604 (
 		.BUS_WAIT(CACHE_BUSY),
 		
 		.MAC_SEL(MAC_SEL),
+		.MAC_OP(MAC_OP),
 		.MAC_WE(MAC_WE),
 		
 		.INTI(INTC_INTO),
 		.INTO(CPU_INTO)
 	);
 	
-	assign CBUS_DI = CBUS_REQ ? CACHE_DO : 
-									  MAC_SEL[0] ? MACL :
-														MAC_SEL[1] ? MACH : '0;
+	assign CBUS_DI = MAC_SEL ? MULT_DO : CACHE_DO;
+	
+	wire [31:0] MULT_DI = MAC_OP[3:2] == 2'b10 ? CACHE_DO : CBUS_DO;
+	MULT mult
+	(
+		.CLK(CLK),
+		.RST_N(RST_N),
+		.CE_R(CE_R),
+		.CE_F(CE_F),
+		
+		.RES_N(RES_N),
+		
+		.CBUS_A(CBUS_A),
+		.CBUS_DI(MULT_DI),
+		.CBUS_DO(MULT_DO),
+		.CBUS_WR(CBUS_WR),
+		.CBUS_BA(CBUS_BA),
+		.CBUS_REQ(CBUS_REQ),
+		.CBUS_BUSY(),
+		
+		.MAC_SEL(MAC_SEL),
+		.MAC_OP(MAC_OP),
+		.MAC_WE(MAC_WE)
+	);
 	
 	CACHE cache
 	(
@@ -214,25 +240,61 @@ module SH7604 (
 						  DIVU_ACT ? DIVU_DO : 
 						  DMAC_ACT ? DMAC_DO : 
 						  BSC_DO;
-	assign IBUS_WAIT = BSC_BUSY;
+	assign IBUS_WAIT = DMAC_BUSY;
+
 	
-	
-	always @(posedge CLK or negedge RST_N) begin
-		if (!RST_N) begin
-			MACL <= '0;	
-			MACH <= '0;	
-		end
-		else if (CE_R) begin	
-			if (MAC_WE) begin
-				case (MAC_SEL)
-					2'b01: MACL = CBUS_DO;
-					2'b10: MACH = CBUS_DO;
-					2'b11: {MACH,MACL} = {{16{CBUS_DO[31]}},CBUS_DO[31:16],{16{CBUS_DO[15]}},CBUS_DO[15:0]};
-					default:;
-				endcase
-			end
-		end
-	end
+	bit  [31:0] DBUS_A;
+	bit  [31:0] DBUS_DI;
+	bit  [31:0] DBUS_DO;
+	bit   [3:0] DBUS_BA;
+	bit         DBUS_WE;
+	bit         DBUS_REQ;
+	bit         DBUS_WAIT;
+	bit         DBUS_LOCK;
+	DMAC dmac
+	(
+		.CLK(CLK),
+		.RST_N(RST_N),
+		.CE_R(CE_R),
+		.CE_F(CE_F),
+		
+		.RES_N(RES_N),
+		.NMI_N(NMI_N),
+		
+		.DREQ0(DREQ0),
+		.DACK0(DACK0),
+		.DREQ1(DREQ1),
+		.DACK1(DACK1),
+		
+		.RXI_IRQ(1'b0),
+		.TXI_IRQ(1'b0),
+		
+		.IBUS_A(IBUS_A),
+		.IBUS_DI(IBUS_DO),
+		.IBUS_DO(DMAC_DO),
+		.IBUS_BA(IBUS_BA),
+		.IBUS_WE(IBUS_WE),
+		.IBUS_REQ(IBUS_REQ),
+		.IBUS_BUSY(DMAC_BUSY),
+		.IBUS_LOCK(IBUS_LOCK),
+		.IBUS_ACT(DMAC_ACT),
+		
+		.DBUS_A(DBUS_A),
+		.DBUS_DI(BSC_DO),
+		.DBUS_DO(DBUS_DO),
+		.DBUS_BA(DBUS_BA),
+		.DBUS_WE(DBUS_WE),
+		.DBUS_REQ(DBUS_REQ),
+		.DBUS_WAIT(BSC_BUSY),
+		.DBUS_LOCK(DBUS_LOCK),
+		
+		.BSC_ACK(BSC_ACK),
+		
+		.DMAC0_IRQ(DMAC0_IRQ),
+		.DMAC0_VEC(DMAC0_VEC),
+		.DMAC1_IRQ(DMAC1_IRQ),
+		.DMAC1_VEC(DMAC1_VEC)
+	);
 	
 	bit  [26:0] IA;
 	bit  [31:0] IDI;
@@ -247,6 +309,8 @@ module SH7604 (
 	bit         IOE_N;
 	bit   [3:0] IWE_N;
 	bit         IRD_N;
+	bit         IIVECF_N;
+	bit         BUS_RLS;
 	BSC bsc
 	(
 		.CLK(CLK),
@@ -269,62 +333,34 @@ module SH7604 (
 		.OE_N(IOE_N),
 		.WE_N(IWE_N),
 		.RD_N(IRD_N),
+		.IVECF_N(IIVECF_N),
 		.WAIT_N(WAIT_N),
 		.BRLS_N(BRLS_N),
 		.BGR_N(BGR_N),
-		.IVECF_N(IVECF_N),
-		
-		.DREQ0_N(DREQ0_N),
-		.DACK0_N(DACK0_N),
-		.DREQ1_N(DREQ1_N),
-		.DACK1_N(DACK1_N),
-		
 		.MD(MD),
 		
-		.IBUS_A(IBUS_A),
-		.IBUS_DI(IBUS_DO),
+		.IBUS_A(DBUS_A),
+		.IBUS_DI(DBUS_DO),
 		.IBUS_DO(BSC_DO),
-		.IBUS_BA(IBUS_BA),
-		.IBUS_WE(IBUS_WE),
-		.IBUS_REQ(IBUS_REQ),
+		.IBUS_BA(DBUS_BA),
+		.IBUS_WE(DBUS_WE),
+		.IBUS_REQ(DBUS_REQ),
 		.IBUS_BUSY(BSC_BUSY),
-		.IBUS_LOCK(IBUS_LOCK),
+		.IBUS_LOCK(DBUS_LOCK),
 		.IBUS_ACT(),
 		
 		.IRQ(),
 		
+		.CACK(BSC_ACK),
 		.BUS_RLS(BUS_RLS)
 	);
 	
 	assign {A,DO}                         = !BUS_RLS ? {IA,IDO}                            : {EA,EDO};
 	assign IDI                            = !BUS_RLS ? DI                                  : EDO;
 	assign {BS_N,CS0_N,CS1_N,CS2_N,CS3_N} = !BUS_RLS ? {IBS_N,ICS0_N,ICS1_N,ICS2_N,ICS3_N} : {EBS_N,ECS0_N,ECS1_N,ECS2_N,ECS3_N};
-	assign {RD_WR_N,CE_N,OE_N,WE_N,RD_N}  = !BUS_RLS ? {IRD_WR_N,ICE_N,IOE_N,IWE_N,IRD_N}  : {ERD_WR_N,ECE_N,EOE_N,EWE_N,ERD_N};
+	assign {RD_WR_N,CE_N,OE_N,WE_N,RD_N,IVECF_N}  = !BUS_RLS ? {IRD_WR_N,ICE_N,IOE_N,IWE_N,IRD_N,IIVECF_N}  : {ERD_WR_N,ECE_N,EOE_N,EWE_N,ERD_N,EIVECF_N};
 	assign EDI = DI;
 	
-	DMAC dmac
-	(
-		.CLK(CLK),
-		.RST_N(RST_N),
-		.CE_R(CE_R),
-		.CE_F(CE_F),
-		
-		.RES_N(RES_N),
-		
-		.IBUS_A(IBUS_A),
-		.IBUS_DI(IBUS_DO),
-		.IBUS_DO(DMAC_DO),
-		.IBUS_BA(IBUS_BA),
-		.IBUS_WE(IBUS_WE),
-		.IBUS_REQ(IBUS_REQ),
-		.IBUS_BUSY(),
-		.IBUS_ACT(DMAC_ACT),
-		
-		.DMAC0_IRQ(DMAC0_IRQ),
-		.DMAC0_VEC(DMAC0_VEC),
-		.DMAC1_IRQ(DMAC1_IRQ),
-		.DMAC1_VEC(DMAC1_VEC)
-	);
 	
 	INTC intc
 	(

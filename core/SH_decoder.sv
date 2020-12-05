@@ -72,12 +72,12 @@ module SH_decoder (
 							3'd0: begin
 								DECI.RB = '{N:RBN,R:1,W:0};
 								DECI.MEM = '{ADDS:ALURES, WDS:ALUB, SZ:2'b10, R:0, W:0};
-								DECI.MAC = '{S:2'b01, R:0, W:1, OP:4'b0000};
+								DECI.MAC = '{S:2'b01, R:0, W:1, OP:4'b0001};
 							end
 							3'd1: begin
 								DECI.RA = '{N:RAN,R:1,W:0};
 								DECI.MEM = '{ADDS:ALURES, WDS:ALUA, SZ:2'b10, R:0, W:0};
-								DECI.MAC = '{S:2'b10, R:0, W:1, OP:4'b0000};
+								DECI.MAC = '{S:2'b10, R:0, W:1, OP:4'b0001};
 							end
 							default:;
 						endcase
@@ -212,7 +212,7 @@ module SH_decoder (
 								DECI.IMMT = ONE;
 								DECI.ALU = '{SA:1, SB:0, OP:ADD, CD:4'b0000, CMP:3'b000};
 								DECI.MEM = '{ADDS:ALUB, WDS:ALUB, SZ:2'b10, R:1, W:0};
-								DECI.MAC = '{S:2'b01, R:0, W:1, OP:4'b1000};
+								DECI.MAC = '{S:2'b01, R:0, W:1, OP:4'b1001};
 							end
 							3'd1: begin
 								DECI.RA = '{N:RAN,R:1,W:1};
@@ -220,7 +220,7 @@ module SH_decoder (
 								DECI.IMMT = ONE;
 								DECI.ALU = '{SA:0, SB:1, OP:ADD, CD:4'b0000, CMP:3'b000};
 								DECI.MEM = '{ADDS:ALUA, WDS:ALUA, SZ:2'b10, R:1, W:0};
-								DECI.MAC = '{S:2'b10, R:0, W:1, OP:4'b1000};
+								DECI.MAC = '{S:2'b10, R:0, W:1, OP:4'b1001};
 							end
 							default:;
 						endcase
@@ -330,12 +330,12 @@ module SH_decoder (
 							3'd0: begin
 								DECI.RB = '{N:RBN,R:1,W:0};
 								DECI.MEM = '{ADDS:ALURES, WDS:ALUB, SZ:2'b10, R:0, W:0};
-								DECI.MAC = '{S:2'b01, R:0, W:1, OP:{2'b00,IR[1:0]}};
+								DECI.MAC = '{S:2'b01, R:0, W:1, OP:{3'b001,IR[3]}};
 							end
 							3'd1: begin
 								DECI.RA = '{N:RAN,R:1,W:0};
 								DECI.MEM = '{ADDS:ALURES, WDS:ALUA, SZ:2'b10, R:0, W:0};
-								DECI.MAC = '{S:2'b10, R:0, W:1, OP:{2'b00,IR[1:0]}};
+								DECI.MAC = '{S:2'b10, R:0, W:1, OP:{3'b001,IR[3]}};
 							end
 							default:;
 						endcase
@@ -568,7 +568,7 @@ module SH_decoder (
 								DECI.IMMT = ONE;
 								DECI.ALU = '{SA:1, SB:0, OP:ADD, CD:4'b0000, CMP:3'b000};
 								DECI.MEM = '{ADDS:ALUB, WDS:ALUB, SZ:2'b01, R:1, W:0};
-								DECI.MAC = '{S:2'b01, R:0, W:1, OP:4'b1010};
+								DECI.MAC = '{S:2'b01, R:0, W:1, OP:4'b1011};
 							end
 							3'd1: begin
 								DECI.RA = '{N:RAN,R:1,W:1};
@@ -576,7 +576,7 @@ module SH_decoder (
 								DECI.IMMT = ONE;
 								DECI.ALU = '{SA:0, SB:1, OP:ADD, CD:4'b0000, CMP:3'b000};
 								DECI.MEM = '{ADDS:ALUA, WDS:ALUA, SZ:2'b01, R:1, W:0};
-								DECI.MAC = '{S:2'b10, R:0, W:1, OP:4'b1010};
+								DECI.MAC = '{S:2'b10, R:0, W:1, OP:4'b1011};
 							end
 							default:;
 						endcase

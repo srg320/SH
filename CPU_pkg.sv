@@ -312,6 +312,19 @@ package CPU_PKG;
 		return res;
 	endfunction
 	
+	function bit [1:0] BSC_GetAreaSZ(input bit [1:0] area, input BCR2_t bcr2, input bit [1:0] a0sz);
+		bit [1:0] res;
+	
+		case (area)
+			2'd0: res = a0sz;
+			2'd1: res = bcr2.A1SZ;
+			2'd2: res = bcr2.A2SZ;
+			2'd3: res = bcr2.A3SZ;
+		endcase
+	
+		return res;
+	endfunction
+	
 	//SCI
 	typedef struct packed		//R/W;FFFFFE00
 	{
@@ -542,7 +555,7 @@ package CPU_PKG;
 		bit         PR;			//R/W
 		bit         AE;			//R/W0
 		bit         NMIF;			//R/W0
-		bit         DMIE;			//R/W
+		bit         DME;			//R/W
 	} DMAOR_t;
 	const bit [31:0] DMAOR_WMASK = 32'h0000000F;
 	const bit [31:0] DMAOR_RMASK = 32'h0000000F;
@@ -557,6 +570,30 @@ package CPU_PKG;
 	const bit [7:0] DRCRx_RMASK = 8'h03;
 	const bit [7:0] DRCRx_INIT = 8'h00;
 	
+	function bit [3:0] DMAC_BAFromAddr(input bit [1:0] addr, input bit [1:0] sz);
+		bit [3:0] res;
 	
+		case (sz)
+			2'b00: res = {~addr[1]&~addr[0],~addr[1]&addr[0],addr[1]&~addr[0],addr[1]&addr[0]};
+			2'b01: res = {~addr[1]         ,~addr[1]        ,addr[1]                 ,addr[1]};
+			2'b10: res = 4'b1111;
+			2'b11: res = 4'b1111;
+		endcase
+	
+		return res;
+	endfunction
+	
+	function bit [31:0] DMAC_GetAddrInc(input bit [1:0] sz);
+		bit [31:0] res;
+	
+		case (sz)
+			2'b00: res = 32'd1;
+			2'b01: res = 32'd2;
+			2'b10: res = 32'd4;
+			2'b11: res = 32'd4;
+		endcase
+	
+		return res;
+	endfunction
 	
 endpackage

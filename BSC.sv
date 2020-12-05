@@ -25,12 +25,6 @@ module BSC (
 	input             BRLS_N,	//BACK_N
 	output            BGR_N,	//BREQ_N
 	output            IVECF_N,
-	
-	input             DREQ0_N,
-	output            DACK0_N,
-	input             DREQ1_N,
-	output            DACK1_N,
-	
 	input       [5:0] MD,
 	
 	input      [31:0] IBUS_A,
@@ -45,6 +39,7 @@ module BSC (
 	
 	output            IRQ,
 	
+	output reg        CACK,
 	output            BUS_RLS
 );
 
@@ -74,18 +69,19 @@ module BSC (
 	BusState_t BUS_STATE;
 	
 	
-	wire BUS_ACCESS_REQ = IBUS_A[31:27] ==? 5'b00?00 && IBUS_REQ;
+	wire BUS_ACCESS_REQ = IBUS_A[31:27] ==? 5'b00?00 && IBUS_REQ; 
 	
-	wire [1:0] CS0_SZ = MD[4:3]; 
-	
-	bit   [1:0] NB_READ;
 	bit  [31:0] DAT_BUF;
+	bit   [3:0] NEXT_BA;
 	always @(posedge CLK or negedge RST_N) begin
 		BusState_t STATE_NEXT;
-		bit    [2:0] WAIT_CNT;
-		bit          RD_LAST;
-		bit    [1:0] CS_LAST;
-//		bit          NO_IDLE;
+		bit  [2:0] WAIT_CNT;
+		bit [31:0] IBUS_DI_SAVE;
+		bit        IBUS_WE_SAVE;
+		bit  [1:0] AREA_SZ;
+//		bit        RD_LAST;
+//		bit  [1:0] CS_LAST;
+//		bit        NO_IDLE;
 		
 		if (!RST_N) begin
 			IBUS_BUSY <= 0;
@@ -97,13 +93,16 @@ module BSC (
 			RD_WR_N <= 1;
 			RD_N <= 1;
 			WE_N <= 4'b1111;
+			CACK <= 0;
 			BUS_STATE <= T0;
 			WAIT_CNT <= '0;
-			RD_LAST <= 0;
-			CS_LAST <= '0;
+			NEXT_BA <= '0;
+//			RD_LAST <= 0;
+//			CS_LAST <= '0;
 		end
 		else begin
 //			NO_IDLE = 0;
+			AREA_SZ = BSC_GetAreaSZ(A[26:25],BCR2,MD[4:3]);
 			STATE_NEXT = BUS_STATE;
 			case (BUS_STATE)
 				T0: begin
@@ -114,7 +113,7 @@ module BSC (
 						BS_N <= 1;
 						case (BSC_GetAreaW(A[26:25],WCR))
 							2'b00: begin
-								if (!NB_READ) begin
+								if (!NEXT_BA) begin
 									IBUS_BUSY <= 0;
 								end
 								STATE_NEXT = T2;
@@ -154,7 +153,7 @@ module BSC (
 				
 				T2: begin
 					if (CE_F) begin
-						case (CS0_SZ)
+						case (AREA_SZ)
 							2'b00: 
 								case (A[1:0])
 									2'b00: DAT_BUF[31:24] <= DI[7:0];
@@ -169,13 +168,14 @@ module BSC (
 								endcase
 							default: DAT_BUF <= DI;
 						endcase
-						RD_N <= 1;
 						WE_N <= 4'b1111;
+						RD_N <= 1;
+						CACK <= 0;
 //						RD_LAST <= ~RD_N;
 //						CS_LAST <= A[26:25];
 					end
 					else if (CE_R) begin
-						if (!NB_READ) begin
+						if (!NEXT_BA) begin
 							CS0_N <= 1;
 							CS1_N <= 1;
 							CS2_N <= 1;
@@ -225,38 +225,91 @@ module BSC (
 			if (CE_R) begin
 				if (BUS_STATE == T0 || BUS_STATE == T2 /*|| BUS_STATE == TI*/) begin
 					if (BUS_STATE == T2 && IBUS_BUSY) begin
-						case (CS0_SZ)
-//							2'b00: begin A[1:0] <= A[1:0] + 2'd1; 
-//								          DAT_BUF <= DAT_BUF << 8; 
-//										    NB_READ <= NB_READ + 2'd1; end
-							2'b01: begin A[1:0] <= A[1:0] + 2'd2; 
-											 DO <= {16'h0000,IBUS_DI[15: 0]};
-											 //DAT_BUF <= DAT_BUF << 16; 
-											 WE_N <= ~({2'b00,          IBUS_WE,IBUS_WE} & {2'b00,IBUS_BA[1:0]}); 
-											 NB_READ <= 2'b00; end
-							default:;
+						case (AREA_SZ)
+							2'b00: begin 
+								A[1:0] <= A[1:0] + 2'd1; 
+								case (A[1:0] + 2'd1)
+									2'b01: begin 
+										DO <= {24'h000000,IBUS_DI_SAVE[23:16]};
+										WE_N <= ~{3'b000,IBUS_WE_SAVE & NEXT_BA[2]};
+										NEXT_BA <= {2'b00,IBUS_BA[1:0]};
+									end
+									2'b10: begin 
+										DO <= {24'h000000,IBUS_DI_SAVE[15: 8]}; 
+										WE_N <= ~{3'b000,IBUS_WE_SAVE & NEXT_BA[1]};
+										NEXT_BA <= {3'b000,IBUS_BA[0]};
+									end
+									2'b11: begin 
+										DO <= {24'h000000,IBUS_DI_SAVE[ 7: 0]};
+										WE_N <= ~{3'b000,IBUS_WE_SAVE & NEXT_BA[0]}; 
+										NEXT_BA <= 4'b0000;
+									end
+									default: begin //shouldn't happen
+										WE_N <= 4'b1111;
+										NEXT_BA <= 4'b0000;
+									end
+								endcase
+							end
+							2'b01: begin 
+								A[1:0] <= A[1:0] + 2'd2; 
+								DO <= {16'h0000,IBUS_DI_SAVE[15: 0]};
+								WE_N <= ~({2'b00,IBUS_WE_SAVE,IBUS_WE_SAVE} & {2'b00,NEXT_BA[1:0]}); 
+								NEXT_BA <= 4'b0000;
+							end
+							default: NEXT_BA <= 4'b0000;
 						endcase
 						BS_N <= 0;
-						RD_N <= IBUS_WE;
+						RD_N <= IBUS_WE_SAVE;
+						CACK <= 1;
 						STATE_NEXT = T1;
 					end
 					else if (BUS_ACCESS_REQ && !BUS_RLS && !BGR && !IBUS_BUSY) begin
 						IBUS_BUSY <= 1;
 						
-						case (CS0_SZ)
-//							2'b00: 
-//								case (IBUS_A[1:0])
-//									2'b00: begin DO <= {24'h000000,IBUS_DI[31:24]}; NB_READ <= {|IBUS_BA[1:0],1'b0}; end
-//									2'b01: begin DO <= {24'h000000,IBUS_DI[23:16]}; 
-//									2'b10: begin DO <= {24'h000000,IBUS_DI[15: 8]}; 
-//									2'b11: begin DO <= {24'h000000,IBUS_DI[ 7: 0]}; 
-//								endcase
-							2'b01: 
-								case (IBUS_A[1])
-									1'b0: begin DO <= {16'h0000,IBUS_DI[31:16]}; NB_READ <= {|IBUS_BA[1:0],1'b0}; end
-									1'b1: begin DO <= {16'h0000,IBUS_DI[15: 0]}; NB_READ <= 2'b00; end
+						case (BSC_GetAreaSZ(IBUS_A[26:25],BCR2,MD[4:3]))
+							2'b00: begin 
+								case (IBUS_A[1:0])
+									2'b00: begin 
+										DO <= {24'h000000,IBUS_DI[31:24]}; 
+										WE_N <= ~{3'b000,IBUS_WE & IBUS_BA[3]};
+										NEXT_BA <= {1'b0,IBUS_BA[2:0]};
+									end
+									2'b01: begin 
+										DO <= {24'h000000,IBUS_DI[23:16]};
+										WE_N <= ~{3'b000,IBUS_WE & IBUS_BA[2]};
+										NEXT_BA <= {2'b00,IBUS_BA[1:0]};
+									end
+									2'b10: begin 
+										DO <= {24'h000000,IBUS_DI[15: 8]}; 
+										WE_N <= ~{3'b000,IBUS_WE & IBUS_BA[1]};
+										NEXT_BA <= {3'b000,IBUS_BA[0]};
+									end
+									2'b11: begin 
+										DO <= {24'h000000,IBUS_DI[ 7: 0]};
+										WE_N <= ~{3'b000,IBUS_WE & IBUS_BA[0]}; 
+										NEXT_BA <= 4'b0000;
+									end
 								endcase
-							default: begin DO <= IBUS_DI; NB_READ <= 2'b00; end
+							end
+							2'b01: begin 
+								case (IBUS_A[1])
+									1'b0: begin 
+										DO <= {16'h0000,IBUS_DI[31:16]}; 
+										WE_N <= ~{2'b00,{2{IBUS_WE}} & IBUS_BA[3:2]};
+										NEXT_BA <= {2'b00,IBUS_BA[1:0]};
+									end
+									1'b1: begin 
+										DO <= {16'h0000,IBUS_DI[15: 0]}; 
+										WE_N <= ~{2'b00,{2{IBUS_WE}} & IBUS_BA[1:0]};
+										NEXT_BA <= 4'b0000;
+									end
+								endcase
+							end
+							default: begin 
+								DO <= IBUS_DI; 
+								WE_N <= ~({IBUS_WE,IBUS_WE,IBUS_WE,IBUS_WE} & IBUS_BA);
+								NEXT_BA <= 4'b0000;
+							end
 						endcase
 						A <= IBUS_A[26:0];
 						CS0_N <= ~(IBUS_A[31:25] == 2'b00);
@@ -266,11 +319,10 @@ module BSC (
 						BS_N <= 0;
 						RD_WR_N <= ~IBUS_WE;
 						RD_N <= IBUS_WE;
-						case (CS0_SZ)
-//							2'b00:   WE_N <= ~({3'b000,                 IBUS_WE} & {3'b000,|IBUS_BA});
-							2'b01:   WE_N <= ~({2'b00,          IBUS_WE,IBUS_WE} & {2'b00,(IBUS_BA[3:2]&~IBUS_A[1])|(IBUS_BA[1:0]&IBUS_A[1])});
-							default: WE_N <= ~({IBUS_WE,IBUS_WE,IBUS_WE,IBUS_WE} & {IBUS_BA                                                 });
-						endcase
+						CACK <= 1;
+						
+						IBUS_WE_SAVE <= IBUS_WE;
+						IBUS_DI_SAVE <= IBUS_DI; 
 						
 						if (BUS_STATE == T0 || (BUS_STATE == T2 /*&& NO_IDLE*/) /*|| (BUS_STATE == TI && !WAIT_CNT)*/) begin
 							STATE_NEXT = T1;
@@ -281,7 +333,7 @@ module BSC (
 			BUS_STATE <= STATE_NEXT;
 		end
 	end
-	
+		
 	bit MST_BUS_RLS;
 	bit SLV_BUS_RLS;
 	always @(posedge CLK or negedge RST_N) begin
@@ -346,19 +398,7 @@ module BSC (
 			// synopsys translate_on
 		end
 		else if (CE_R) begin
-			if (!RES_N) begin
-				BCR1  <= BCR1_INIT;
-				BCR2  <= BCR2_INIT;
-				WCR   <= WCR_INIT;
-				MCR   <= MCR_INIT;
-				RTCSR <= RTCSR_INIT;
-				RTCNT <= RTCNT_INIT;
-				RTCOR <= RTCOR_INIT;
-				// synopsys translate_off
-				WCR <= 16'hAA00;
-				// synopsys translate_on
-			end
-			else if (REG_SEL && IBUS_DI[31:16] == 16'hA55A && IBUS_WE && IBUS_REQ) begin
+			if (REG_SEL && IBUS_DI[31:16] == 16'hA55A && IBUS_WE && IBUS_REQ) begin
 				case ({IBUS_A[4:2],2'b00})
 					5'h00: BCR1  <= IBUS_DI[15:0] & BCR1_WMASK;
 					5'h04: BCR2  <= IBUS_DI[15:0] & BCR2_WMASK;
@@ -401,8 +441,6 @@ module BSC (
 	assign OE_N = 1;
 	assign CE_N = 1;
 	assign IRQ = 0;
-	assign DACK0_N = 1;
-	assign DACK1_N = 1;
 	assign IVECF_N = 1;
 	
 
