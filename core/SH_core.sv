@@ -5,8 +5,8 @@ module SH_core (
 	input             RST_N,
 	input             CE,
 	
-	input             RES,
-	input             NMI,
+	input             RES_N,
+	input             NMI_N,
 	
 	output     [31:0] BUS_A,
 	input      [31:0] BUS_DI,
@@ -77,10 +77,13 @@ module SH_core (
 	//**********************************************************
 	//PC
 	//**********************************************************
-	wire PC_STALL = (MA_ACTIVE & BUS_WAIT) | (IF_ACTIVE & BUS_WAIT) | INST_SPLIT | IFID_STALL/*STATE != ID_DECI.LST*/;
+	wire PC_STALL = (MA_ACTIVE & BUS_WAIT) | (IF_ACTIVE & BUS_WAIT) | INST_SPLIT | IFID_STALL;
 	bit [31:0] NPC;
 	always @(posedge CLK or negedge RST_N) begin
 		if (!RST_N) begin
+			NPC <= '0;
+		end
+		else if (!RES_N) begin
 			NPC <= '0;
 		end
 		else if (CE) begin
@@ -98,6 +101,13 @@ module SH_core (
 	wire INST_ISSUE = ~PIPE.ID.PC[1] && (PIPE.EX.DI.MEM.R || PIPE.EX.DI.MEM.W || PIPE.EX.DI.MAC.R || PIPE.EX.DI.MAC.W);
 	always @(posedge CLK or negedge RST_N) begin
 		if (!RST_N) begin
+			MA_ACTIVE <= 0;
+			IF_ACTIVE <= 0;
+			INST_SPLIT <= 0;
+			LOAD_SPLIT <= 0;
+			MAWB_STALL <= 0;
+		end
+		else if (!RES_N) begin
 			MA_ACTIVE <= 0;
 			IF_ACTIVE <= 0;
 			INST_SPLIT <= 0;
@@ -157,6 +167,11 @@ module SH_core (
 			PIPE.ID.PC <= '0;
 			SAVE_IR <= '0;
 		end
+		else if (!RES_N) begin
+			PIPE.ID.IR <= {8'hF1,6'b000000,NMI_N,1'b0};
+			PIPE.ID.PC <= '0;
+			SAVE_IR <= '0;
+		end
 		else if (CE) begin
 			if (!PC[1] || NEED_FETCH) begin
 				NEW_IR = PC[1] ? BUS_DI[15:0] : BUS_DI[31:16];
@@ -198,7 +213,7 @@ module SH_core (
 	
 	assign BR_COND = ID_DECI.BR.BI & ((SR_T == ID_DECI.BR.BCV) | (ID_DECI.BR.BT == UCB));
 	
-	wire [15:0] DEC_IR = RES        ? {8'hF1,6'b000000,~NMI,1'b0} : 
+	wire [15:0] DEC_IR = //RES        ? {8'hF1,6'b000000,~NMI,1'b0} : 
 	                     INTI.REQ   ? {8'hF0,INTI.VEC} : 
 							   IFID_STALL ? PIPE.EX.IR : PIPE.ID.IR;
 	SH_decoder decoder (DEC_IR, STATE, BR_COND, ID_DECI);
@@ -227,6 +242,18 @@ module SH_core (
 			IFID_STALL <= 0;
 			STBY <= 1;
 		end
+		else if (!RES_N) begin
+			PIPE.EX.IR <= '0;
+			PIPE.EX.PC <= '0;
+			PIPE.EX.DI <= DECI_RESET;
+			PIPE.EX.RA <= '0;
+			PIPE.EX.RB <= '0;
+			PIPE.EX.R0 <= '0;
+			PIPE.EX.BC <= 0;
+			STATE <= '0;
+			IFID_STALL <= 0;
+			STBY <= 0;
+		end
 		else if (CE) begin
 			if (!ID_STALL) begin
 				PIPE.EX.IR <= DEC_IR;
@@ -239,7 +266,8 @@ module SH_core (
 				STATE <= NEXT_STATE;
 				IFID_STALL <= |NEXT_STATE;
 				
-				if (STBY && (INTI.REQ || RES)) STBY <= 0;
+				if (ID_DECI.SLP) STBY <= 1;
+				if (STBY && INTI.REQ) STBY <= 0;
 			end	
 			
 		end
@@ -366,7 +394,8 @@ module SH_core (
 		
 		case (PIPE.EX.DI.DP.RSB)
 			GRX: REG_B = BP_B;
-			PC_: REG_B = {PC[31:2],PC[1:0] & {2{~PIPE.EX.DI.DP.PCM}}};
+			BPC: REG_B = {PC[31:2],PC[1:0] & {2{~PIPE.EX.DI.DP.PCM}}};
+			IPC: REG_B = PIPE.EX.PC;
 			SCR: REG_B = SCR_VAL;
 			default: REG_B = 32'h0;
 		endcase
@@ -385,9 +414,8 @@ module SH_core (
 		end
 		
 		case (PIPE.EX.DI.DP.RSC)
-			GRX: REG_C = BP_C;
-			IMM: REG_C = IMM_VAL;
-			default: REG_C = 32'h0;
+			1'b0: REG_C = BP_C;
+			1'b1: REG_C = IMM_VAL;
 		endcase
 	end
 	
@@ -501,6 +529,14 @@ module SH_core (
 			PIPE.MA.WD <= '0;
 			NEED_FETCH <= 0;
 		end
+		else if (!RES_N) begin
+			PIPE.MA.IR <= '0;
+			PIPE.MA.DI <= DECI_RESET;
+			PIPE.MA.RES <= '0;
+			PIPE.MA.ADDR <= '0;
+			PIPE.MA.WD <= '0;
+			NEED_FETCH <= 0;
+		end
 		else if (CE) begin
 			if (!EX_STALL) begin
 				PIPE.MA.IR <= PIPE.EX.IR;
@@ -549,6 +585,11 @@ module SH_core (
 			GBR <= '0;
 			VBR <= '0;
 		end
+		else if (!RES_N) begin
+			SR <= '0;
+			GBR <= '0;
+			VBR <= '0;
+		end
 		else if (CE) begin
 			if (!EX_STALL) begin
 				if (PIPE.EX.DI.CTRL.W) begin
@@ -590,6 +631,12 @@ module SH_core (
 	wire MA_STALL = (MA_ACTIVE & BUS_WAIT) | (IF_ACTIVE & BUS_WAIT) | MAWB_STALL;
 	always @(posedge CLK or negedge RST_N) begin
 		if (!RST_N) begin
+			PIPE.WB.IR <= '0;
+			PIPE.WB.DI <= DECI_RESET;
+			PIPE.WB.RES <= '0;
+			PIPE.WB.RD <= '0;
+		end
+		else if (!RES_N) begin
 			PIPE.WB.IR <= '0;
 			PIPE.WB.DI <= DECI_RESET;
 			PIPE.WB.RES <= '0;
@@ -641,6 +688,12 @@ module SH_core (
 	wire WB_STALL = (MA_ACTIVE & BUS_WAIT) | (IF_ACTIVE & BUS_WAIT) | MAWB_STALL;
 	always @(posedge CLK or negedge RST_N) begin
 		if (!RST_N) begin
+			PIPE.WB2.IR <= '0;
+			PIPE.WB2.DI <= DECI_RESET;
+			PIPE.WB2.RESA <= '0;
+			PIPE.WB2.RESB <= '0;
+		end
+		else if (!RES_N) begin
 			PIPE.WB2.IR <= '0;
 			PIPE.WB2.DI <= DECI_RESET;
 			PIPE.WB2.RESA <= '0;

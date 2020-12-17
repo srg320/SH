@@ -1,31 +1,31 @@
 package SH2_PKG;
 
-	typedef enum {
-		GRX,  
-		IMM,
-		PC_,
-		SCR
+	typedef enum bit[1:0] {
+		GRX = 2'b00,  
+		BPC = 2'b01,
+		IPC = 2'b10,
+		SCR = 2'b11
 	} RegSource_t;
 	
-	typedef enum {
-		REGA, 
-		REGB,
-		REGC
+	typedef enum bit[1:0] {
+		REGA = 2'b00, 
+		REGB = 2'b01,
+		REGC = 2'b10
 	} ALUSource_t;
 	
-	typedef enum {
-		ZIMM4,
-		SIMM8,
-		ZIMM8,
-		SIMM12,
-		ZERO,
-		ONE
+	typedef enum bit[2:0] {
+		ZIMM4 = 3'b000,
+		SIMM8 = 3'b001,
+		ZIMM8 = 3'b010,
+		SIMM12 = 3'b011,
+		ZERO = 3'b100,
+		ONE = 3'b101
 	} IMMType_t;
 	
-	typedef enum {
-		ALUA,
-		ALUB,
-		ALURES
+	typedef enum bit[1:0] {
+		ALUA = 2'b00,
+		ALUB = 2'b01,
+		ALURES = 2'b10
 	} AddrSrc_t;
 	
 //	typedef enum {
@@ -34,53 +34,55 @@ package SH2_PKG;
 //		ALU_
 //	} WDSource_t;
 	
-	typedef enum {
-		ADD, 
-		LOG, 
-		EXT,
-		SHIFT,
-		MULT,
-		DIV,
-		NOP
+	typedef enum bit[2:0] {
+		ADD = 3'b000, 
+		LOG = 3'b001, 
+		EXT = 3'b010,
+		SHIFT = 3'b011,
+		DIV = 3'b100,
+		NOP = 3'b101
 	} ALUType_t;
 	
-	typedef enum {
-		BYTE,
-		WORD,
-		LONG
+	typedef enum bit[1:0] {
+		BYTE = 2'b00,
+		WORD = 2'b01,
+		LONG = 2'b10
 	} MemSize_t;
 
-	typedef enum {
-		SR_,
-		GBR_,
-		VBR_
+	typedef enum bit[1:0] {
+		SR_ = 2'b00,
+		GBR_ = 2'b01,
+		VBR_ = 2'b10
 	} CtrlReg_t;
 	
-	typedef enum {
-		LOAD,
-		ALU,
-		DIV0S,
-		DIV0U,
-		IMSK
+	typedef enum bit[2:0] {
+		LOAD = 3'b000,
+		ALU = 3'b001,
+		DIV0S = 3'b010,
+		DIV0U = 3'b011,
+		IMSK = 3'b100
 	} SRSet_t;
 	
-	typedef enum {
-		CB,
-		DCB,
-		UCB
+	typedef enum bit[1:0] {
+		CB = 2'b00,
+		DCB = 2'b01,
+		UCB = 2'b10
 	} BranchType_t;
 	
 	
 	typedef struct packed
 	{
-		RegSource_t  RSA;
-		RegSource_t  RSB;
-		RegSource_t  RSC;
+		RegSource_t  RSA;		//REGA source (0-R0, 1-IMM)
+		RegSource_t  RSB;		//REGB source (0-R0, 1-IMM)
+		bit          RSC;		//REGC source (0-R0, 1-IMM)
 		bit          PCM;		//PC masked
 		bit          BPWBA;	//Bypass register A from WB.RES
 		bit          BPLDA;	//Bypass register A from WB.RD
 		bit          BPMAB;	//Bypass register B from MA.RES
 	} Datapath_t;
+	
+	parameter bit RSC_REG = 1'b0;
+	parameter bit RSC_IMM = 1'b1;
 	
 	typedef struct packed
 	{
@@ -144,11 +146,12 @@ package SH2_PKG;
 		MAC_t        MAC;
 		Branch_t     BR;
 		bit          TAS;		//TAS instruction
+		bit          SLP;		//SLEEP instruction
 		bit [2:0]    LST;		//Last state
 		bit          IACK;	//Interrupt acknowledge
 	} DecInstr_t;
 
-	parameter DecInstr_t DECI_RESET = '{'{GRX, GRX, GRX, 0, 0, 0, 0},
+	parameter DecInstr_t DECI_RESET = '{'{GRX, GRX, 0, 0, 0, 0, 0},
 												 SIMM8,
 												 '{0, 0, NOP, 4'b0000, 3'b000},
 												 '{ALURES, ALUB, BYTE, 0, 0},
@@ -159,8 +162,9 @@ package SH2_PKG;
 												 '{0, SR_, LOAD},
 												 '{2'b00, 0, 0, 4'b0000},
 												 '{0, CB, 0, 0},
-												 3'b000,
 												 1'b0,
+												 1'b0,
+												 3'b000,
 												 1'b0};
 	
 	typedef struct

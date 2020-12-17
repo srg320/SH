@@ -46,7 +46,6 @@ module CACHE (
 	wire CACHE_DATA_AREA = (CBUS_A[31:29] == 3'b110);
 	wire IO_AREA         = (CBUS_A[31:29] == 3'b111);
 	
-	wire CCR_SEL = CBUS_A == 32'hFFFFFE92 && CBUS_BA[1];
 	
 	bit   [3:0] WAY_HIT;
 	bit   [3:0] WAY_TAG;
@@ -74,10 +73,10 @@ module CACHE (
 	reg [25:0] WAY2 [64];
 	reg [25:0] WAY3 [64];
 	
-	reg [7:0] DATA00 [64]; reg [7:0] DATA01 [64]; reg [7:0] DATA02 [64]; reg [7:0] DATA03 [64];
-	reg [7:0] DATA10 [64]; reg [7:0] DATA11 [64]; reg [7:0] DATA12 [64]; reg [7:0] DATA13 [64];
-	reg [7:0] DATA20 [64]; reg [7:0] DATA21 [64]; reg [7:0] DATA22 [64]; reg [7:0] DATA23 [64];
-	reg [7:0] DATA30 [64]; reg [7:0] DATA31 [64]; reg [7:0] DATA32 [64]; reg [7:0] DATA33 [64];
+	reg [7:0] DATA00 [256]; reg [7:0] DATA01 [256]; reg [7:0] DATA02 [256]; reg [7:0] DATA03 [256];
+	reg [7:0] DATA10 [256]; reg [7:0] DATA11 [256]; reg [7:0] DATA12 [256]; reg [7:0] DATA13 [256];
+	reg [7:0] DATA20 [256]; reg [7:0] DATA21 [256]; reg [7:0] DATA22 [256]; reg [7:0] DATA23 [256];
+	reg [7:0] DATA30 [256]; reg [7:0] DATA31 [256]; reg [7:0] DATA32 [256]; reg [7:0] DATA33 [256];
 	
 	reg [5:0]  LRU [64];
 	
@@ -121,10 +120,10 @@ module CACHE (
 	always @(posedge CLK or negedge RST_N) begin
 		if (!RST_N) begin
 			WAY0 <= '{64{'0}};   WAY1 <= '{64{'0}};   WAY2 <= '{64{'0}};	WAY3 <= '{64{'0}};
-			DATA00 <= '{64{'0}};	DATA01 <= '{64{'0}};	DATA02 <= '{64{'0}};	DATA03 <= '{64{'0}};
-			DATA10 <= '{64{'0}};	DATA11 <= '{64{'0}};	DATA12 <= '{64{'0}};	DATA13 <= '{64{'0}};
-			DATA20 <= '{64{'0}};	DATA21 <= '{64{'0}};	DATA22 <= '{64{'0}};	DATA23 <= '{64{'0}};
-			DATA30 <= '{64{'0}};	DATA31 <= '{64{'0}};	DATA32 <= '{64{'0}};	DATA33 <= '{64{'0}};
+			DATA00 <= '{256{'0}};	DATA01 <= '{256{'0}};	DATA02 <= '{256{'0}};	DATA03 <= '{256{'0}};
+			DATA10 <= '{256{'0}};	DATA11 <= '{256{'0}};	DATA12 <= '{256{'0}};	DATA13 <= '{256{'0}};
+			DATA20 <= '{256{'0}};	DATA21 <= '{256{'0}};	DATA22 <= '{256{'0}};	DATA23 <= '{256{'0}};
+			DATA30 <= '{256{'0}};	DATA31 <= '{256{'0}};	DATA32 <= '{256{'0}};	DATA33 <= '{256{'0}};
 			LRU <= '{64{'0}};
 		end
 		else if (CE_R) begin
@@ -284,24 +283,46 @@ module CACHE (
 	CACHE_TAG tag2(.clock(CLK), .wraddress(CACHE_WR_ADDR[9:4]), .data(CTAG_D), .wren(CTAG_WE[2] & CE_R), .rdaddress(CBUS_A[9:4]), .q(CTAG2_Q));
 	CACHE_TAG tag3(.clock(CLK), .wraddress(CACHE_WR_ADDR[9:4]), .data(CTAG_D), .wren(CTAG_WE[3] & CE_R), .rdaddress(CBUS_A[9:4]), .q(CTAG3_Q));
 	
+	reg [63:0] TAG_DIRTY[4];
+	always @(posedge CLK or negedge RST_N) begin
+		if (!RST_N) begin
+			TAG_DIRTY <= '{'1,'1,'1,'1};
+		end
+		else if (CE_R) begin
+			if (CTAG_WE[0]) TAG_DIRTY[0][CACHE_WR_ADDR[9:4]] <= 0;
+			if (CTAG_WE[1]) TAG_DIRTY[1][CACHE_WR_ADDR[9:4]] <= 0;
+			if (CTAG_WE[2]) TAG_DIRTY[2][CACHE_WR_ADDR[9:4]] <= 0;
+			if (CTAG_WE[3]) TAG_DIRTY[3][CACHE_WR_ADDR[9:4]] <= 0;
+		end
+		else if (CCR.CP) begin
+			TAG_DIRTY <= '{'1,'1,'1,'1};
+		end
+	end
+	
 	wire  [5:0] LRU_WRADDR = CACHE_WR_ADDR[9:4];
 	wire  [5:0] LRU_RDADDR = CACHE_UPDATE || CACHE_WRITE || CACHE_READ || CACHE_ADDR_WRITE ? CACHE_WR_ADDR[9:4] : CBUS_A[9:4];
-	wire  [5:0] LRU_D = CACHE_ADDR_WRITE ? CBUS_DI[9:4] : LRUSelect(CACHE_WR_WAY, LRU_Q);
+	wire  [5:0] LRU_D = CACHE_ADDR_WRITE ? CBUS_DI[9:4] : LRUSelect(CACHE_WR_WAY, LRU_DATA);
 	wire        LRU_WE = CACHE_UPDATE | CACHE_WRITE | CACHE_READ | CACHE_ADDR_WRITE;
 	
 	bit  [5:0] LRU_Q;
 	CACHE_LRU lru(.clock(CLK), .wraddress(LRU_WRADDR), .data(LRU_D), .wren(LRU_WE & CE_R), .rdaddress(LRU_RDADDR), .q(LRU_Q));
 	
-	always_comb begin		
+	bit [3:0] DIRTY;
+	always_comb begin	
+		DIRTY[0] = TAG_DIRTY[0][CBUS_A[9:4]];
+		DIRTY[1] = TAG_DIRTY[1][CBUS_A[9:4]];
+		DIRTY[2] = TAG_DIRTY[2][CBUS_A[9:4]];
+		DIRTY[3] = TAG_DIRTY[3][CBUS_A[9:4]];
+	
 		WAY_TAG[0] = CTAG0_Q[`TAG] == CBUS_A[28:10];
 		WAY_TAG[1] = CTAG1_Q[`TAG] == CBUS_A[28:10];
 		WAY_TAG[2] = CTAG2_Q[`TAG] == CBUS_A[28:10];
 		WAY_TAG[3] = CTAG3_Q[`TAG] == CBUS_A[28:10];
 		
-		WAY_HIT[0] = WAY_TAG[0] & CTAG0_Q[`VBIT];
-		WAY_HIT[1] = WAY_TAG[1] & CTAG1_Q[`VBIT];
-		WAY_HIT[2] = WAY_TAG[2] & CTAG2_Q[`VBIT];
-		WAY_HIT[3] = WAY_TAG[3] & CTAG3_Q[`VBIT];
+		WAY_HIT[0] = WAY_TAG[0] & CTAG0_Q[`VBIT] & ~DIRTY[0];
+		WAY_HIT[1] = WAY_TAG[1] & CTAG1_Q[`VBIT] & ~DIRTY[1];
+		WAY_HIT[2] = WAY_TAG[2] & CTAG2_Q[`VBIT] & ~DIRTY[2];
+		WAY_HIT[3] = WAY_TAG[3] & CTAG3_Q[`VBIT] & ~DIRTY[3];
 		
 		if (CACHE_ADDR_AREA) 
 			case (CCR.W)
@@ -313,7 +334,7 @@ module CACHE (
 		else
 			CACHE_DATA = CRAM_Q;
 			
-		LRU_DATA = LRU_Q;
+		LRU_DATA = LRU_Q & {6{~&DIRTY}};
 	end
 	
 //	always @(posedge CLK or negedge RST_N) begin
@@ -432,7 +453,7 @@ module CACHE (
 //					else if (CACHE_DATA_AREA) begin
 //						CACHE_DATA_READ <= 1;
 //					end
-					else if (CACHE_AREA && CCR.CE) begin
+					else if (CACHE_AREA && CCR.CE && !IBUS_READARRAY) begin
 						if (HIT) begin
 							CACHE_WR_ADDR <= CBUS_A[28:2];
 							CACHE_WR_WAY <= WAY_HIT;
@@ -489,10 +510,12 @@ module CACHE (
 					IBADDR <= {IBADDR[31:4],IBADDR[3:2] + 2'd1,2'b00};
 					if (IBADDR[3:2] == ARRAY_POS) begin
 						IBREQ <= 0;
-						IBLOCK <= 0;
 						READ_BUSY <= 0;
 						IBDATA_RDY <= 1;
 						IBUS_READARRAY <= 0;
+					end
+					if (IBADDR[3:2] == ARRAY_POS-2'd1) begin
+						IBLOCK <= 0;
 					end
 					CACHE_WR_ADDR <= IBADDR[28:2];
 					CACHE_WR_BA <= 4'b1111;
@@ -503,31 +526,45 @@ module CACHE (
 		end
 	end
 	
-	assign CBUS_DO = CCR_SEL    ? {4{CCR & CCR_RMASK}} : 
-	                 IBDATA_RDY ? IBUS_DI : 
-						  CACHE_DATA;
-	assign CBUS_BUSY = !CBUS_REQ || CCR_SEL ? 1'b0 : READ_BUSY | WRITE_BUSY;
+	assign CBUS_BUSY = !CBUS_REQ ? 1'b0 : READ_BUSY | WRITE_BUSY;
 	
 	
+	wire CCR_SEL = IBADDR == 32'hFFFFFE92 && IBBA[1];
 	always @(posedge CLK or negedge RST_N) begin
 		if (!RST_N) begin
-			CCR <= CCR_INIT;
+			CCR <= '0;
 			// synopsys translate_off
-			CCR <= 8'h01;
+			CCR <= 8'h00;
 			// synopsys translate_on
 		end
+		else if (!RES_N) begin
+			CCR <= CCR_INIT;
+		end
 		else if (CE_R) begin
-			if (!RES_N) begin
-				CCR <= CCR_INIT;
-			end
-			else if (CCR_SEL && CBUS_WR && CBUS_REQ) begin
-				CCR <= CBUS_DI[15:8] & CCR_WMASK;
+			if (CCR_SEL && IBWE && IBREQ) begin
+				CCR <= IBDATA[15:8] & CCR_WMASK;
 			end
 			
 			if (CCR.CP) CCR.CP <= 0;
 		end
 	end
 	
+	bit [31:0] REG_DO;
+	always @(posedge CLK or negedge RST_N) begin
+		if (!RST_N) begin
+			REG_DO <= '0;
+		end
+		else if (CE_F) begin
+			if (CCR_SEL && !IBWE && IBREQ) begin
+				REG_DO <= {4{CCR & CCR_RMASK}};
+			end
+		end
+	end
+	
+	assign CBUS_DO = CCR_SEL    ? REG_DO : 
+	                 IBDATA_RDY ? IBUS_DI : 
+						  CACHE_DATA;
+						  
 	assign IBUS_A = IBADDR;
 	assign IBUS_DO = IBDATA;
 	assign IBUS_BA = IBBA;

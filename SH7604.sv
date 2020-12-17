@@ -162,8 +162,8 @@ module SH7604 (
 		.RST_N(RST_N),
 		.CE(CE_R),
 		
-		.RES(~RES_N),
-		.NMI(~NMI_N),
+		.RES_N(RES_N),
+		.NMI_N(NMI_N),
 		
 		.BUS_A(CBUS_A),
 		.BUS_DI(CBUS_DI),
@@ -374,15 +374,6 @@ module SH7604 (
 		
 		.IRL_N(IRL_N),
 		
-		.IBUS_A(IBUS_A),
-		.IBUS_DI(IBUS_DO),
-		.IBUS_DO(INTC_DO),
-		.IBUS_BA(IBUS_BA),
-		.IBUS_WE(IBUS_WE),
-		.IBUS_REQ(IBUS_REQ),
-		.IBUS_BUSY(),
-		.IBUS_ACT(INTC_ACT),
-		
 		.UBC_IRQ(1'b0),
 		.DIVU_IRQ(DIVU_IRQ),
 		.DIVU_VEC(DIVU_VEC),
@@ -400,8 +391,39 @@ module SH7604 (
 		.FRT_OCI_IRQ(OCIA_IRQ | OCIB_IRQ),
 		.FRT_OVI_IRQ(OVI_IRQ),
 		
+		.IBUS_A(DBUS_A),
+		.IBUS_DI(DBUS_DO),
+		.IBUS_DO(INTC_DO),
+		.IBUS_BA(DBUS_BA),
+		.IBUS_WE(DBUS_WE),
+		.IBUS_REQ(DBUS_REQ),
+		.IBUS_BUSY(),
+		.IBUS_ACT(INTC_ACT),
+		
 		.INTI(CPU_INTO),
 		.INTO(INTC_INTO)
+	);
+	
+	DIVU divu
+	(
+		.CLK(CLK),
+		.RST_N(RST_N),
+		.CE_R(CE_R),
+		.CE_F(CE_F),
+		
+		.RES_N(RES_N),
+		
+		.IBUS_A(DBUS_A),
+		.IBUS_DI(DBUS_DO),
+		.IBUS_DO(DIVU_DO),
+		.IBUS_BA(DBUS_BA),
+		.IBUS_WE(DBUS_WE),
+		.IBUS_REQ(DBUS_REQ),
+		.IBUS_BUSY(),
+		.IBUS_ACT(DIVU_ACT),
+		
+		.IRQ(DIVU_IRQ),
+		.VEC(DIVU_VEC)
 	);
 	
 	//Clock divider
@@ -462,12 +484,12 @@ module SH7604 (
 		.CLK64_CE(CLK64_CE),
 		.CLK256_CE(CLK256_CE),
 		
-		.IBUS_A(IBUS_A),
-		.IBUS_DI(IBUS_DO),
+		.IBUS_A(DBUS_A),
+		.IBUS_DI(DBUS_DO),
 		.IBUS_DO(SCI_DO),
-		.IBUS_BA(IBUS_BA),
-		.IBUS_WE(IBUS_WE),
-		.IBUS_REQ(IBUS_REQ),
+		.IBUS_BA(DBUS_BA),
+		.IBUS_WE(DBUS_WE),
+		.IBUS_REQ(DBUS_REQ),
 		.IBUS_BUSY(),
 		.IBUS_ACT(SCI_ACT),
 		
@@ -495,12 +517,12 @@ module SH7604 (
 		.CLK32_CE(CLK32_CE),
 		.CLK128_CE(CLK128_CE),
 		
-		.IBUS_A(IBUS_A),
-		.IBUS_DI(IBUS_DO),
+		.IBUS_A(DBUS_A),
+		.IBUS_DI(DBUS_DO),
 		.IBUS_DO(FRT_DO),
-		.IBUS_BA(IBUS_BA),
-		.IBUS_WE(IBUS_WE),
-		.IBUS_REQ(IBUS_REQ),
+		.IBUS_BA(DBUS_BA),
+		.IBUS_WE(DBUS_WE),
+		.IBUS_REQ(DBUS_REQ),
 		.IBUS_BUSY(),
 		.IBUS_ACT(FRT_ACT),
 		
@@ -530,40 +552,18 @@ module SH7604 (
 		.CLK4096_CE(CLK4096_CE),
 		.CLK8192_CE(CLK8192_CE),
 		
-		.IBUS_A(IBUS_A),
-		.IBUS_DI(IBUS_DO),
+		.IBUS_A(DBUS_A),
+		.IBUS_DI(DBUS_DO),
 		.IBUS_DO(WDT_DO),
-		.IBUS_BA(IBUS_BA),
-		.IBUS_WE(IBUS_WE),
-		.IBUS_REQ(IBUS_REQ),
+		.IBUS_BA(DBUS_BA),
+		.IBUS_WE(DBUS_WE),
+		.IBUS_REQ(DBUS_REQ),
 		.IBUS_BUSY(),
 		.IBUS_ACT(WDT_ACT),
 		
 		.ITI_IRQ(ITI_IRQ),
 		.PRES(WDT_PRES),
 		.MRES(WDT_MRES)
-	);
-	
-	DIVU divu
-	(
-		.CLK(CLK),
-		.RST_N(RST_N),
-		.CE_R(CE_R),
-		.CE_F(CE_F),
-		
-		.RES_N(RES_N),
-		
-		.IBUS_A(IBUS_A),
-		.IBUS_DI(IBUS_DO),
-		.IBUS_DO(DIVU_DO),
-		.IBUS_BA(IBUS_BA),
-		.IBUS_WE(IBUS_WE),
-		.IBUS_REQ(IBUS_REQ),
-		.IBUS_BUSY(),
-		.IBUS_ACT(DIVU_ACT),
-		
-		.IRQ(DIVU_IRQ),
-		.VEC(DIVU_VEC)
 	);
 	
 //	always @(posedge CLK or negedge RST_N) begin

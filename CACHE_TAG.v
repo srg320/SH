@@ -75,7 +75,7 @@ module CACHE_TAG (
 				.outclocken (1'b1),
 				.rdaddressstall (1'b0),
 				.rden (1'b1),
-				.sclr (1'b0),
+				//.sclr (1'b0),
 				.wraddressstall (1'b0));
 	defparam
 		altdpram_component.indata_aclr = "OFF",
@@ -84,6 +84,7 @@ module CACHE_TAG (
 		altdpram_component.lpm_type = "altdpram",
 		altdpram_component.outdata_aclr = "OFF",
 		altdpram_component.outdata_reg = "UNREGISTERED",
+		altdpram_component.power_up_uninitialized = "TRUE",
 		altdpram_component.ram_block_type = "MLAB",
 		altdpram_component.rdaddress_aclr = "OFF",
 		altdpram_component.rdaddress_reg = "UNREGISTERED",

@@ -129,7 +129,7 @@ module DMAC (
 		else if (CE_R) begin
 			if (!DMA_REQ) begin
 				if ((CH_REQ[0] && CH_EN[0] && CH_AVAIL[0]) && 
-				    (CH_REQ[1] && CH_EN[1] && CH_AVAIL[0])) begin
+				    (CH_REQ[1] && CH_EN[1] && CH_AVAIL[1])) begin
 					DMA_REQ <= 1;
 					DMA_CH <= DMAOR.PR & RB_PRIO;
 				end
@@ -137,7 +137,7 @@ module DMAC (
 					DMA_REQ <= 1;
 					DMA_CH <= 0;
 				end
-				else if (CH_REQ[1] && CH_EN[1] && CH_AVAIL[0]) begin
+				else if (CH_REQ[1] && CH_EN[1] && CH_AVAIL[1]) begin
 					DMA_REQ <= 1;
 					DMA_CH <= 1;
 				end

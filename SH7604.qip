@@ -1,4 +1,5 @@
 set_global_assignment -name SYSTEMVERILOG_FILE [file join $::quartus(qip_path) core/SH_pkg.sv ]
+set_global_assignment -name VERILOG_FILE [file join $::quartus(qip_path) core/SH_regram.v ]
 set_global_assignment -name SYSTEMVERILOG_FILE [file join $::quartus(qip_path) core/SH_regfile.sv ]
 set_global_assignment -name SYSTEMVERILOG_FILE [file join $::quartus(qip_path) core/SH_decoder.sv ]
 set_global_assignment -name SYSTEMVERILOG_FILE [file join $::quartus(qip_path) core/SH_core.sv ]

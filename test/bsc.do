@@ -21,21 +21,21 @@ add wave -noupdate -group SBC /SH2_tb/cpu/bsc/BCR1
 add wave -noupdate -group SBC /SH2_tb/cpu/bsc/BCR2
 add wave -noupdate -group SBC /SH2_tb/cpu/bsc/WCR
 add wave -noupdate -group SBC /SH2_tb/cpu/bsc/MCR
-add wave -noupdate -expand -group Cache /SH2_tb/cpu/cache/IBUS_A
-add wave -noupdate -expand -group Cache /SH2_tb/cpu/cache/IBUS_DI
-add wave -noupdate -expand -group Cache /SH2_tb/cpu/cache/IBUS_DO
-add wave -noupdate -expand -group Cache /SH2_tb/cpu/cache/IBUS_WE
-add wave -noupdate -expand -group Cache /SH2_tb/cpu/cache/IBADDR
-add wave -noupdate -expand -group Cache /SH2_tb/cpu/cache/IBREQ
-add wave -noupdate -expand -group Cache /SH2_tb/cpu/cache/CACHE_UPDATE
-add wave -noupdate -expand -group Cache /SH2_tb/cpu/cache/CACHE_WRITE
-add wave -noupdate -expand -group Cache /SH2_tb/cpu/cache/READ_BUSY
-add wave -noupdate -expand -group Cache /SH2_tb/cpu/cache/WRITE_BUSY
-add wave -noupdate -expand -group Cache /SH2_tb/cpu/cache/IBUS_WRITE
-add wave -noupdate -expand -group Cache /SH2_tb/cpu/cache/IBUS_WRITE_PEND
-add wave -noupdate -expand -group Cache /SH2_tb/cpu/cache/IBUS_READ
-add wave -noupdate -expand -group Cache /SH2_tb/cpu/cache/IBUS_READARRAY
-add wave -noupdate -expand -group Cache /SH2_tb/cpu/cache/CBUS_DO
+add wave -noupdate -group Cache /SH2_tb/cpu/cache/IBUS_A
+add wave -noupdate -group Cache /SH2_tb/cpu/cache/IBUS_DI
+add wave -noupdate -group Cache /SH2_tb/cpu/cache/IBUS_DO
+add wave -noupdate -group Cache /SH2_tb/cpu/cache/IBUS_WE
+add wave -noupdate -group Cache /SH2_tb/cpu/cache/IBADDR
+add wave -noupdate -group Cache /SH2_tb/cpu/cache/IBREQ
+add wave -noupdate -group Cache /SH2_tb/cpu/cache/CACHE_UPDATE
+add wave -noupdate -group Cache /SH2_tb/cpu/cache/CACHE_WRITE
+add wave -noupdate -group Cache /SH2_tb/cpu/cache/READ_BUSY
+add wave -noupdate -group Cache /SH2_tb/cpu/cache/WRITE_BUSY
+add wave -noupdate -group Cache /SH2_tb/cpu/cache/IBUS_WRITE
+add wave -noupdate -group Cache /SH2_tb/cpu/cache/IBUS_WRITE_PEND
+add wave -noupdate -group Cache /SH2_tb/cpu/cache/IBUS_READ
+add wave -noupdate -group Cache /SH2_tb/cpu/cache/IBUS_READARRAY
+add wave -noupdate -group Cache /SH2_tb/cpu/cache/CBUS_DO
 add wave -noupdate -radix hexadecimal /SH2_tb/cpu/core/BUS_A
 add wave -noupdate -radix hexadecimal /SH2_tb/cpu/core/BUS_DI
 add wave -noupdate /SH2_tb/cpu/core/BUS_DO
@@ -64,7 +64,7 @@ add wave -noupdate -color Gold -itemcolor Gold /SH2_tb/cpu/core/BP_A_MALD
 add wave -noupdate -color Gold -itemcolor Gold /SH2_tb/cpu/core/BP_B_MALD
 add wave -noupdate -color Gold -itemcolor Gold /SH2_tb/cpu/core/BP_A_WBLD
 add wave -noupdate -color Gold -itemcolor Gold /SH2_tb/cpu/core/BP_B_WBLD
-add wave -noupdate -color Gold -itemcolor Gold /SH2_tb/cpu/core/PIPE.EX
+add wave -noupdate -color Gold -itemcolor Gold -expand -subitemconfig {/SH2_tb/cpu/core/PIPE.EX.IR {-color Gold -height 15 -itemcolor Gold} /SH2_tb/cpu/core/PIPE.EX.DI {-color Gold -height 15 -itemcolor Gold} /SH2_tb/cpu/core/PIPE.EX.PC {-color Gold -height 15 -itemcolor Gold} /SH2_tb/cpu/core/PIPE.EX.RA {-color Gold -height 15 -itemcolor Gold} /SH2_tb/cpu/core/PIPE.EX.RB {-color Gold -height 15 -itemcolor Gold} /SH2_tb/cpu/core/PIPE.EX.R0 {-color Gold -height 15 -itemcolor Gold} /SH2_tb/cpu/core/PIPE.EX.BC {-color Gold -height 15 -itemcolor Gold}} /SH2_tb/cpu/core/PIPE.EX
 add wave -noupdate -color Cyan -itemcolor Cyan /SH2_tb/cpu/core/MA_STALL
 add wave -noupdate -color Cyan -itemcolor Cyan /SH2_tb/cpu/core/PIPE.MA
 add wave -noupdate -color {Green Yellow} -itemcolor {Green Yellow} /SH2_tb/cpu/core/WB_STALL
@@ -93,13 +93,13 @@ add wave -noupdate -color Orange -itemcolor Orange {/SH2_tb/cpu/core/regfile/GR[
 add wave -noupdate -color Orange -itemcolor Orange {/SH2_tb/cpu/core/regfile/GR[13]}
 add wave -noupdate -color Orange -itemcolor Orange {/SH2_tb/cpu/core/regfile/GR[14]}
 add wave -noupdate -color Orange -itemcolor Orange {/SH2_tb/cpu/core/regfile/GR[15]}
-add wave -noupdate -expand -group MULT /SH2_tb/cpu/mult/MAC_SEL
-add wave -noupdate -expand -group MULT /SH2_tb/cpu/mult/MAC_OP
-add wave -noupdate -expand -group MULT /SH2_tb/cpu/mult/MAC_WE
-add wave -noupdate -expand -group MULT /SH2_tb/cpu/mult/MACL
-add wave -noupdate -expand -group MULT /SH2_tb/cpu/mult/MACH
-add wave -noupdate -expand -group MULT /SH2_tb/cpu/mult/MA
-add wave -noupdate -expand -group MULT /SH2_tb/cpu/mult/MB
+add wave -noupdate -group MULT /SH2_tb/cpu/mult/MAC_SEL
+add wave -noupdate -group MULT /SH2_tb/cpu/mult/MAC_OP
+add wave -noupdate -group MULT /SH2_tb/cpu/mult/MAC_WE
+add wave -noupdate -group MULT /SH2_tb/cpu/mult/MACL
+add wave -noupdate -group MULT /SH2_tb/cpu/mult/MACH
+add wave -noupdate -group MULT /SH2_tb/cpu/mult/MA
+add wave -noupdate -group MULT /SH2_tb/cpu/mult/MB
 add wave -noupdate /SH2_tb/cpu/core/REG_A
 add wave -noupdate /SH2_tb/cpu/core/REG_B
 add wave -noupdate /SH2_tb/cpu/core/REG_C
@@ -108,9 +108,8 @@ add wave -noupdate /SH2_tb/cpu/core/SR
 add wave -noupdate /SH2_tb/cpu/core/SR.T
 add wave -noupdate /SH2_tb/cpu/core/INTI
 add wave -noupdate /SH2_tb/cpu/core/BR_COND
-add wave -noupdate /SH2_tb/cpu/mult/CBUS_DI
 TreeUpdate [SetDefaultTree]
-WaveRestoreCursors {{Cursor 1} {2165 ns} 0}
+WaveRestoreCursors {{Cursor 1} {4875 ns} 0}
 quietly wave cursor active 1
 configure wave -namecolwidth 169
 configure wave -valuecolwidth 100
@@ -126,4 +125,4 @@ configure wave -griddelta 40
 configure wave -timeline 0
 configure wave -timelineunits us
 update
-WaveRestoreZoom {2049 ns} {2313 ns}
+WaveRestoreZoom {5357 ns} {5621 ns}

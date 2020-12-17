@@ -4,7 +4,7 @@
 // MODULE: altdpram 
 
 // ============================================================
-// File Name: CACHE_LRU.v
+// File Name: SH_regram.v
 // Megafunction Name(s):
 // 			altdpram
 //
@@ -36,7 +36,7 @@
 // synopsys translate_off
 `timescale 1 ps / 1 ps
 // synopsys translate_on
-module CACHE_LRU (
+module SH_regram (
 	clock,
 	data,
 	rdaddress,
@@ -45,11 +45,11 @@ module CACHE_LRU (
 	q);
 
 	input	  clock;
-	input	[5:0]  data;
-	input	[5:0]  rdaddress;
-	input	[5:0]  wraddress;
+	input	[31:0]  data;
+	input	[4:0]  rdaddress;
+	input	[4:0]  wraddress;
 	input	  wren;
-	output	[5:0]  q;
+	output	[31:0]  q;
 `ifndef ALTERA_RESERVED_QIS
 // synopsys translate_off
 `endif
@@ -58,8 +58,8 @@ module CACHE_LRU (
 // synopsys translate_on
 `endif
 
-	wire [5:0] sub_wire0;
-	wire [5:0] q = sub_wire0[5:0];
+	wire [31:0] sub_wire0;
+	wire [31:0] q = sub_wire0[31:0];
 
 	altdpram	altdpram_component (
 				.data (data),
@@ -75,7 +75,7 @@ module CACHE_LRU (
 				.outclocken (1'b1),
 				.rdaddressstall (1'b0),
 				.rden (1'b1),
-				//.sclr (1'b0),
+//				.sclr (1'b0),
 				.wraddressstall (1'b0));
 	defparam
 		altdpram_component.indata_aclr = "OFF",
@@ -84,15 +84,14 @@ module CACHE_LRU (
 		altdpram_component.lpm_type = "altdpram",
 		altdpram_component.outdata_aclr = "OFF",
 		altdpram_component.outdata_reg = "UNREGISTERED",
-		altdpram_component.power_up_uninitialized = "TRUE",
 		altdpram_component.ram_block_type = "MLAB",
 		altdpram_component.rdaddress_aclr = "OFF",
 		altdpram_component.rdaddress_reg = "UNREGISTERED",
 		altdpram_component.rdcontrol_aclr = "OFF",
 		altdpram_component.rdcontrol_reg = "UNREGISTERED",
 		altdpram_component.read_during_write_mode_mixed_ports = "CONSTRAINED_DONT_CARE",
-		altdpram_component.width = 6,
-		altdpram_component.widthad = 6,
+		altdpram_component.width = 32,
+		altdpram_component.widthad = 5,
 		altdpram_component.width_byteena = 1,
 		altdpram_component.wraddress_aclr = "OFF",
 		altdpram_component.wraddress_reg = "INCLOCK",
@@ -135,7 +134,7 @@ endmodule
 // Retrieval info: PRIVATE: JTAG_ENABLED NUMERIC "0"
 // Retrieval info: PRIVATE: JTAG_ID STRING "NONE"
 // Retrieval info: PRIVATE: MAXIMUM_DEPTH NUMERIC "0"
-// Retrieval info: PRIVATE: MEMSIZE NUMERIC "384"
+// Retrieval info: PRIVATE: MEMSIZE NUMERIC "544"
 // Retrieval info: PRIVATE: MEM_IN_BITS NUMERIC "0"
 // Retrieval info: PRIVATE: MIFfilename STRING ""
 // Retrieval info: PRIVATE: OPERATION_MODE NUMERIC "2"
@@ -155,10 +154,10 @@ endmodule
 // Retrieval info: PRIVATE: USE_DIFF_CLKEN NUMERIC "0"
 // Retrieval info: PRIVATE: UseDPRAM NUMERIC "1"
 // Retrieval info: PRIVATE: VarWidth NUMERIC "0"
-// Retrieval info: PRIVATE: WIDTH_READ_A NUMERIC "6"
-// Retrieval info: PRIVATE: WIDTH_READ_B NUMERIC "6"
-// Retrieval info: PRIVATE: WIDTH_WRITE_A NUMERIC "6"
-// Retrieval info: PRIVATE: WIDTH_WRITE_B NUMERIC "6"
+// Retrieval info: PRIVATE: WIDTH_READ_A NUMERIC "32"
+// Retrieval info: PRIVATE: WIDTH_READ_B NUMERIC "32"
+// Retrieval info: PRIVATE: WIDTH_WRITE_A NUMERIC "32"
+// Retrieval info: PRIVATE: WIDTH_WRITE_B NUMERIC "32"
 // Retrieval info: PRIVATE: WRADDR_ACLR_B NUMERIC "0"
 // Retrieval info: PRIVATE: WRADDR_REG_B NUMERIC "0"
 // Retrieval info: PRIVATE: WRCTRL_ACLR_B NUMERIC "0"
@@ -177,30 +176,30 @@ endmodule
 // Retrieval info: CONSTANT: RDCONTROL_ACLR STRING "OFF"
 // Retrieval info: CONSTANT: RDCONTROL_REG STRING "UNREGISTERED"
 // Retrieval info: CONSTANT: READ_DURING_WRITE_MODE_MIXED_PORTS STRING "CONSTRAINED_DONT_CARE"
-// Retrieval info: CONSTANT: WIDTH NUMERIC "6"
-// Retrieval info: CONSTANT: WIDTHAD NUMERIC "6"
+// Retrieval info: CONSTANT: WIDTH NUMERIC "32"
+// Retrieval info: CONSTANT: WIDTHAD NUMERIC "5"
 // Retrieval info: CONSTANT: WIDTH_BYTEENA NUMERIC "1"
 // Retrieval info: CONSTANT: WRADDRESS_ACLR STRING "OFF"
 // Retrieval info: CONSTANT: WRADDRESS_REG STRING "INCLOCK"
 // Retrieval info: CONSTANT: WRCONTROL_ACLR STRING "OFF"
 // Retrieval info: CONSTANT: WRCONTROL_REG STRING "INCLOCK"
 // Retrieval info: USED_PORT: clock 0 0 0 0 INPUT NODEFVAL "clock"
-// Retrieval info: USED_PORT: data 0 0 6 0 INPUT NODEFVAL "data[5..0]"
-// Retrieval info: USED_PORT: q 0 0 6 0 OUTPUT NODEFVAL "q[5..0]"
-// Retrieval info: USED_PORT: rdaddress 0 0 6 0 INPUT NODEFVAL "rdaddress[5..0]"
-// Retrieval info: USED_PORT: wraddress 0 0 6 0 INPUT NODEFVAL "wraddress[5..0]"
+// Retrieval info: USED_PORT: data 0 0 32 0 INPUT NODEFVAL "data[31..0]"
+// Retrieval info: USED_PORT: q 0 0 32 0 OUTPUT NODEFVAL "q[31..0]"
+// Retrieval info: USED_PORT: rdaddress 0 0 5 0 INPUT NODEFVAL "rdaddress[4..0]"
+// Retrieval info: USED_PORT: wraddress 0 0 5 0 INPUT NODEFVAL "wraddress[4..0]"
 // Retrieval info: USED_PORT: wren 0 0 0 0 INPUT GND "wren"
-// Retrieval info: CONNECT: @data 0 0 6 0 data 0 0 6 0
+// Retrieval info: CONNECT: @data 0 0 32 0 data 0 0 32 0
 // Retrieval info: CONNECT: @inclock 0 0 0 0 clock 0 0 0 0
 // Retrieval info: CONNECT: @outclock 0 0 0 0 clock 0 0 0 0
-// Retrieval info: CONNECT: @rdaddress 0 0 6 0 rdaddress 0 0 6 0
-// Retrieval info: CONNECT: @wraddress 0 0 6 0 wraddress 0 0 6 0
+// Retrieval info: CONNECT: @rdaddress 0 0 5 0 rdaddress 0 0 5 0
+// Retrieval info: CONNECT: @wraddress 0 0 5 0 wraddress 0 0 5 0
 // Retrieval info: CONNECT: @wren 0 0 0 0 wren 0 0 0 0
-// Retrieval info: CONNECT: q 0 0 6 0 @q 0 0 6 0
-// Retrieval info: GEN_FILE: TYPE_NORMAL CACHE_LRU.v TRUE
-// Retrieval info: GEN_FILE: TYPE_NORMAL CACHE_LRU.inc FALSE
-// Retrieval info: GEN_FILE: TYPE_NORMAL CACHE_LRU.cmp FALSE
-// Retrieval info: GEN_FILE: TYPE_NORMAL CACHE_LRU.bsf FALSE
-// Retrieval info: GEN_FILE: TYPE_NORMAL CACHE_LRU_inst.v FALSE
-// Retrieval info: GEN_FILE: TYPE_NORMAL CACHE_LRU_bb.v FALSE
+// Retrieval info: CONNECT: q 0 0 32 0 @q 0 0 32 0
+// Retrieval info: GEN_FILE: TYPE_NORMAL SH_regram.v TRUE
+// Retrieval info: GEN_FILE: TYPE_NORMAL SH_regram.inc FALSE
+// Retrieval info: GEN_FILE: TYPE_NORMAL SH_regram.cmp FALSE
+// Retrieval info: GEN_FILE: TYPE_NORMAL SH_regram.bsf FALSE
+// Retrieval info: GEN_FILE: TYPE_NORMAL SH_regram_inst.v FALSE
+// Retrieval info: GEN_FILE: TYPE_NORMAL SH_regram_bb.v FALSE
 // Retrieval info: LIB_FILE: altera_mf

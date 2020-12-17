@@ -16,6 +16,8 @@ module SH2_tb;
 	
 	bit [31:0] RAM_DO, RAM_DI;
 	bit RAM_WE;
+	
+	bit [15:0] COMM[8];
 	 
 	//clock generation
 	always #5 CLK = ~CLK;
@@ -40,6 +42,15 @@ module SH2_tb;
 //	  #100 CPU_DREQ0 = 1;
 	end
 	
+	bit [3:0] IRL_N;
+	initial begin
+	IRL_N = 4'hF;
+	#300 
+	IRL_N = 4'hE;
+	#1300 
+	IRL_N = 4'hF;
+	end
+	
 	always @(posedge CLK) begin
 		CE_R <= ~CE_R;
 	end
@@ -57,7 +68,7 @@ module SH2_tb;
 		.RES_N(~RES),
 		.NMI_N(1'b1),
 		
-		.IRL_N(4'hF),
+		.IRL_N(IRL_N),
 		
 		.A(CPU_A),
 		.DI(CPU_DI),
@@ -88,22 +99,36 @@ module SH2_tb;
 	
 	wire ROM_SEL = CPU_A[26:14] == 13'b0000000000000;//00000000-00003FFF
 	
-	RAM #(.bios_file("bios.txt"), .rom_file("rom.txt")) ram(CLK, RST_N, CS0_SZ, CPU_A, CPU_DO, ~CPU_WE_N, CPU_A, RAM_DO);
+	RAM #(.bios_file("test/bios.txt"), .rom_file("test/rom.txt")) ram(CLK, RST_N, CS0_SZ, CPU_A, CPU_DO, ~CPU_WE_N, CPU_A, RAM_DO);
 	
 	wire REG_SEL = CPU_A[26:14] == 13'b0000000000001;//00004000-00004100
 	always_comb begin
-		if (ROM_SEL)
+//		if (ROM_SEL)
+//			CPU_DI <= RAM_DO;
+//		else if (REG_SEL)
+//			case ({CPU_A[5:1],1'b0})
+//				6'h00: CPU_DI = {2{16'h0200}};
+//				6'h02: CPU_DI = {2{16'h0000}};
+//				
+//				6'h20: CPU_DI = {16'h0000,COMM[0]};
+//				6'h22: CPU_DI = {16'h0000,COMM[1]};
+//				6'h24: CPU_DI = {16'h0000,COMM[2]};
+//				6'h26: CPU_DI = {16'h0000,COMM[3]};
+//				6'h28: CPU_DI = {16'h0000,COMM[4]};
+//				6'h2A: CPU_DI = {16'h0000,COMM[5]};
+//				6'h2C: CPU_DI = {16'h0000,COMM[6]};
+//				6'h2E: CPU_DI = {16'h0000,COMM[7]};
+//				default: CPU_DI = {2{16'h0000}};
+//			endcase
+//		else
 			CPU_DI <= RAM_DO;
-		else if (REG_SEL)
-			case ({CPU_A[5:1],1'b0})
-				6'h00: CPU_DI = {2{16'h0200}};
-				6'h02: CPU_DI = {2{16'h0000}};
-				
-				6'h20: CPU_DI = {16'h0000,16'h0000};
-				default: CPU_DI = {2{16'h0000}};
-			endcase
-		else
-			CPU_DI <= RAM_DO;
+	end
+	
+	initial begin
+	  COMM = '{8{'0}};
+
+		#2730000
+		COMM[0] = 16'h534D;
 	end
 	
 //	bit BUS_ACTIVE;

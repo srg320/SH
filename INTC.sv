@@ -50,22 +50,13 @@ module INTC (
 	VCRC_t     VCRC;
 	VCRD_t     VCRD;
 	
-//	typedef enum {
-//		NONE,  
-//		NMI,
-//		BREAK,
-//		OPM,
-//		EXT
-//	} IntType_t;
-//	IntType_t INT_PEND;
-	
 	bit [ 3:0] LVL;
 	bit [ 7:0] VEC;
 	bit        NMI_REQ;
 	bit        IRL_REQ;
 	bit [ 3:0] IRL_LVL;
 	bit        NMI_PEND;
-	bit        IRL_PEND;
+//	bit        IRL_PEND;
 	
 	always @(posedge CLK or negedge RST_N) begin
 		bit NMI_N_OLD;
@@ -85,22 +76,21 @@ module INTC (
 	end
 	
 	always @(posedge CLK or negedge RST_N) begin
-		bit [3:0] IRL_OLD;
-		bit [4:0] IRL_CHK;
+		bit [3:0] IRL_OLD[4];
 		
 		if (!RST_N) begin
-			IRL_OLD <= '0;
-			IRL_CHK <= '0;
+			IRL_OLD <= '{4{'1}};
+			IRL_REQ <= 0;
 		end
 		else if (CE_R) begin	
-			IRL_OLD <= ~IRL_N;
-			IRL_CHK <= {IRL_CHK[3:0],IRL_OLD == ~IRL_N};
-			if (&IRL_CHK && !IRL_REQ) begin
-				IRL_REQ <= 1;
-				IRL_LVL <= IRL_OLD;
-			end
-			else if (INTI.ACK && IRL_PEND) begin
-				IRL_REQ <= 0;
+			IRL_OLD[0] <= ~IRL_N;
+			IRL_OLD[1] <= IRL_OLD[0];
+			IRL_OLD[2] <= IRL_OLD[1];
+			IRL_OLD[3] <= IRL_OLD[2];
+			IRL_REQ <= 0;
+			if (IRL_OLD[0] == ~IRL_N && IRL_OLD[1] == ~IRL_N && IRL_OLD[2] == ~IRL_N && IRL_OLD[3] == ~IRL_N) begin
+				IRL_REQ <= ~&IRL_N;
+				IRL_LVL <= ~IRL_N;
 			end
 		end
 	end
@@ -109,11 +99,13 @@ module INTC (
 	always @(posedge CLK or negedge RST_N) begin
 		if (!RST_N) begin
 			INTO <= INT_REQ_RESET;
+			NMI_PEND <= 0;
 		end
 		else if (CE_R) begin	
+			NMI_PEND <= 0;
 			if (NMI_REQ)                                    begin INTO <= '{4'hF,        8'd11,              0, 1}; NMI_PEND <= 1; end
 			else if (UBC_IRQ     && 4'hF        > INTI.LVL) begin INTO <= '{4'hF,        8'd12,              0, 1};                end
-			else if (IRL_REQ     && IRL_LVL     > INTI.LVL) begin INTO <= '{IRL_LVL,     IRL_VEC,            0, 1}; IRL_PEND <= 1; end
+			else if (IRL_REQ     && IRL_LVL     > INTI.LVL) begin INTO <= '{IRL_LVL,     IRL_VEC,            0, 1};                end
 			else if (DIVU_IRQ    && IPRA.DIVUIP > INTI.LVL) begin INTO <= '{IPRA.DIVUIP, DIVU_VEC,           0, 1};                end
 			else if (DMAC0_IRQ   && IPRA.DMACIP > INTI.LVL) begin INTO <= '{IPRA.DMACIP, DMAC0_VEC,          0, 1};                end
 			else if (DMAC1_IRQ   && IPRA.DMACIP > INTI.LVL) begin INTO <= '{IPRA.DMACIP, DMAC1_VEC,          0, 1};                end
@@ -130,25 +122,6 @@ module INTC (
 		end
 	end
 	
-//	always_comb begin	
-//		case (INT_PEND)
-//			NMI:   VEC = 8'd11;
-//			BREAK: VEC = 8'd12;
-//			OPM:   VEC = DIVU_IRQ.VEC;
-//			EXT:   VEC = {5'b01000,IRL_LVL[3:1]};
-//			default: VEC = 8'd0;
-//		endcase
-//		
-//		case (INT_PEND)
-//			NMI:   LVL = 4'hF;
-//			BREAK: LVL = 4'hF;
-//			OPM:   LVL = IPRA.DIVUIP;
-//			EXT:   LVL = IRL_LVL;
-//			default: LVL = 4'hF;
-//		endcase
-//	end
-//	
-//	assign INTO = '{LVL, VEC, 0, INT_PEND != NONE};
 	
 	//Registers
 	wire REG_SEL = (IBUS_A >= 32'hFFFFFE60 & IBUS_A <= 32'hFFFFFE69) | (IBUS_A >= 32'hFFFFFEE0 & IBUS_A <= 32'hFFFFFEE5);

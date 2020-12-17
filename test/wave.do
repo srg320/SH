@@ -10,33 +10,32 @@ add wave -noupdate /SH2_tb/cpu/BS_N
 add wave -noupdate /SH2_tb/cpu/WE_N
 add wave -noupdate /SH2_tb/cpu/RD_N
 add wave -noupdate /SH2_tb/cpu/CS0_N
-add wave -noupdate -expand -group SBC /SH2_tb/cpu/bsc/IBUS_A
-add wave -noupdate -expand -group SBC /SH2_tb/cpu/bsc/IBUS_DI
-add wave -noupdate -expand -group SBC /SH2_tb/cpu/bsc/IBUS_DO
-add wave -noupdate -expand -group SBC /SH2_tb/cpu/bsc/IBUS_WE
-add wave -noupdate -expand -group SBC /SH2_tb/cpu/bsc/IBUS_REQ
-add wave -noupdate -expand -group SBC /SH2_tb/cpu/bsc/IBUS_BUSY
-add wave -noupdate -expand -group SBC /SH2_tb/cpu/bsc/IBUS_ACT
-add wave -noupdate -expand -group SBC /SH2_tb/cpu/bsc/STATE
-add wave -noupdate -expand -group SBC /SH2_tb/cpu/bsc/BCR1
-add wave -noupdate -expand -group SBC /SH2_tb/cpu/bsc/BCR2
-add wave -noupdate -expand -group SBC /SH2_tb/cpu/bsc/WCR
-add wave -noupdate -expand -group SBC /SH2_tb/cpu/bsc/MCR
-add wave -noupdate -expand -group Cache /SH2_tb/cpu/cache/IBUS_A
-add wave -noupdate -expand -group Cache /SH2_tb/cpu/cache/IBUS_DI
-add wave -noupdate -expand -group Cache /SH2_tb/cpu/cache/IBUS_DO
-add wave -noupdate -expand -group Cache /SH2_tb/cpu/cache/IBUS_WE
-add wave -noupdate -expand -group Cache /SH2_tb/cpu/cache/STATE
-add wave -noupdate -expand -group Cache /SH2_tb/cpu/cache/IBADDR
-add wave -noupdate -expand -group Cache /SH2_tb/cpu/cache/IBREQ
-add wave -noupdate -expand -group Cache /SH2_tb/cpu/cache/CACHE_UPDATE
-add wave -noupdate -expand -group Cache /SH2_tb/cpu/cache/CACHE_WRITE
-add wave -noupdate -expand -group Cache /SH2_tb/cpu/cache/READ_BUSY
-add wave -noupdate -expand -group Cache /SH2_tb/cpu/cache/WRITE_BUSY
-add wave -noupdate -expand -group Cache /SH2_tb/cpu/cache/IBUS_WRITE
-add wave -noupdate -expand -group Cache /SH2_tb/cpu/cache/IBUS_WRITE_PEND
-add wave -noupdate -expand -group Cache /SH2_tb/cpu/cache/IBUS_READ
-add wave -noupdate -expand -group Cache /SH2_tb/cpu/cache/IBUS_READARRAY
+add wave -noupdate -group SBC /SH2_tb/cpu/bsc/IBUS_A
+add wave -noupdate -group SBC /SH2_tb/cpu/bsc/IBUS_DI
+add wave -noupdate -group SBC /SH2_tb/cpu/bsc/IBUS_DO
+add wave -noupdate -group SBC /SH2_tb/cpu/bsc/IBUS_WE
+add wave -noupdate -group SBC /SH2_tb/cpu/bsc/IBUS_REQ
+add wave -noupdate -group SBC /SH2_tb/cpu/bsc/IBUS_BUSY
+add wave -noupdate -group SBC /SH2_tb/cpu/bsc/IBUS_ACT
+add wave -noupdate -group SBC /SH2_tb/cpu/bsc/BCR1
+add wave -noupdate -group SBC /SH2_tb/cpu/bsc/BCR2
+add wave -noupdate -group SBC /SH2_tb/cpu/bsc/WCR
+add wave -noupdate -group SBC /SH2_tb/cpu/bsc/MCR
+add wave -noupdate -group Cache /SH2_tb/cpu/cache/IBUS_A
+add wave -noupdate -group Cache /SH2_tb/cpu/cache/IBUS_DI
+add wave -noupdate -group Cache /SH2_tb/cpu/cache/IBUS_DO
+add wave -noupdate -group Cache /SH2_tb/cpu/cache/IBUS_WE
+add wave -noupdate -group Cache /SH2_tb/cpu/cache/IBADDR
+add wave -noupdate -group Cache /SH2_tb/cpu/cache/IBREQ
+add wave -noupdate -group Cache /SH2_tb/cpu/cache/IBLOCK
+add wave -noupdate -group Cache /SH2_tb/cpu/cache/CACHE_UPDATE
+add wave -noupdate -group Cache /SH2_tb/cpu/cache/CACHE_WRITE
+add wave -noupdate -group Cache /SH2_tb/cpu/cache/READ_BUSY
+add wave -noupdate -group Cache /SH2_tb/cpu/cache/WRITE_BUSY
+add wave -noupdate -group Cache /SH2_tb/cpu/cache/IBUS_WRITE
+add wave -noupdate -group Cache /SH2_tb/cpu/cache/IBUS_WRITE_PEND
+add wave -noupdate -group Cache /SH2_tb/cpu/cache/IBUS_READ
+add wave -noupdate -group Cache /SH2_tb/cpu/cache/IBUS_READARRAY
 add wave -noupdate -radix hexadecimal /SH2_tb/cpu/core/BUS_A
 add wave -noupdate -radix hexadecimal /SH2_tb/cpu/core/BUS_DI
 add wave -noupdate /SH2_tb/cpu/core/BUS_DO
@@ -98,16 +97,18 @@ add wave -noupdate /SH2_tb/cpu/core/REG_A
 add wave -noupdate /SH2_tb/cpu/core/REG_B
 add wave -noupdate /SH2_tb/cpu/core/REG_C
 add wave -noupdate /SH2_tb/cpu/core/ALU_RES
-add wave -noupdate -group MAC /SH2_tb/cpu/MACL
-add wave -noupdate -group MAC /SH2_tb/cpu/MACH
 add wave -noupdate -group MAC /SH2_tb/cpu/MAC_WE
 add wave -noupdate -group MAC /SH2_tb/cpu/MAC_SEL
-add wave -noupdate /SH2_tb/cpu/core/SR
+add wave -noupdate -expand /SH2_tb/cpu/core/SR
 add wave -noupdate /SH2_tb/cpu/core/SR.T
-add wave -noupdate /SH2_tb/cpu/core/INTI
+add wave -noupdate /SH2_tb/cpu/core/VBR
+add wave -noupdate -expand /SH2_tb/cpu/core/INTI
 add wave -noupdate /SH2_tb/cpu/core/BR_COND
+add wave -noupdate /SH2_tb/cpu/IRL_N
+add wave -noupdate /SH2_tb/cpu/intc/IRL_REQ
+add wave -noupdate /SH2_tb/cpu/intc/IRL_LVL
 TreeUpdate [SetDefaultTree]
-WaveRestoreCursors {{Cursor 1} {705 ns} 0}
+WaveRestoreCursors {{Cursor 1} {757 ns} 0}
 quietly wave cursor active 1
 configure wave -namecolwidth 169
 configure wave -valuecolwidth 100
@@ -123,4 +124,4 @@ configure wave -griddelta 40
 configure wave -timeline 0
 configure wave -timelineunits us
 update
-WaveRestoreZoom {615 ns} {879 ns}
+WaveRestoreZoom {1048 ns} {1312 ns}
