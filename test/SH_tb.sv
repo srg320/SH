@@ -45,9 +45,9 @@ module SH2_tb;
 	bit [3:0] IRL_N;
 	initial begin
 	IRL_N = 4'hF;
-	#300 
+	#1200 
 	IRL_N = 4'hE;
-	#1300 
+	#400 
 	IRL_N = 4'hF;
 	end
 	

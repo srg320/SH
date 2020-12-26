@@ -10,7 +10,7 @@ module SCI (
 	
 	input             RXD,
 	output reg        TXD,
-	output reg        SCKO,
+	output            SCKO,
 	input             SCKI,
 	
 	input             CLK4_CE,
@@ -55,12 +55,13 @@ module SCI (
 	wire SSR_WRITE = REG_SEL && IBUS_A[2:0] == 3'h4 && IBUS_WE && IBUS_REQ;
 	
 	//Baud rate generator
+	bit         INT_SCK;
 	bit         INT_CE_R;
 	bit         INT_CE_F;
 	bit         EXT_CE_R;
 	bit         EXT_CE_F;
 	always @(posedge CLK or negedge RST_N) begin
-		bit   [9:0] CNT;
+		bit   [12:0] CNT;
 		bit         CS_CE;
 		bit         SCKI_OLD;
 		
@@ -83,13 +84,23 @@ module SCI (
 			INT_CE_R <= 0;
 			INT_CE_F <= 0;
 			if (CS_CE) begin
-				CNT <= CNT + 10'd1;
-				if (CNT == {1'b0,BRR,1'b1}) begin
-					INT_CE_R <= 1;
-				end
-				else if (CNT == {BRR,2'b11}) begin
-					CNT <= '0;
-					INT_CE_F <= 1;
+				CNT <= CNT + 13'd1;
+				if (SMR.CA)  begin
+					if (CNT == {4'b0000,BRR,1'b1}) begin
+						INT_CE_R <= 1;
+					end
+					else if (CNT == {3'b000,BRR,2'b11}) begin
+						CNT <= '0;
+						INT_CE_F <= 1;
+					end
+				end else begin
+					if (CNT == {1'b0,BRR,4'b1111}) begin
+						INT_CE_R <= 1;
+					end
+					else if (CNT == {BRR,5'b11111}) begin
+						CNT <= '0;
+						INT_CE_F <= 1;
+					end
 				end
 			end
 			
@@ -101,16 +112,29 @@ module SCI (
 		end
 	end
 	
-	assign SCE_R = SCR.CKE[1] ? EXT_CE_R : INT_CE_R;
-	assign SCE_F = SCR.CKE[1] ? EXT_CE_F : INT_CE_F;
+	always @(posedge CLK or negedge RST_N) begin
+		if (!RST_N) begin
+			INT_SCK <= 1;
+		end
+		else if (CE_R) begin
+			if (INT_CE_R)
+				INT_SCK <= 1;
+			else if (INT_CE_F) 
+				INT_SCK <= 0;
+		end
+	end
+	
+	assign SCE_R = !SCR.CKE[1] || !SMR.CA ? INT_CE_R : EXT_CE_R;
+	assign SCE_F = !SCR.CKE[1] || !SMR.CA ? INT_CE_F : EXT_CE_F;
 	
 	//Transmitter
 	always @(posedge CLK or negedge RST_N) begin
-//		bit         SSR_CLR_PEND;
-		bit   [2:0] BIT_CNT;
+		bit [3:0] TBIT_CNT;
+		bit       LAST_BIT;
+		bit       PRELAST_BIT;
+		bit       PB;
 		
 		if (!RST_N) begin
-			SCKO <= 1;
 			TXD <= 1;
 			
 			SSR.TDRE <= 1;
@@ -118,69 +142,72 @@ module SCI (
 			TSR <= '0;
 			TXI <= 0;
 			TEI <= 0;
-//			SSR_CLR_PEND <= 0;
-			BIT_CNT <= '0;
+			TBIT_CNT <= '0;
 			TX_RUN <= 0;
 		end
 		else if (CE_R) begin
-			if (!SSR.TDRE && BIT_CNT == 3'd7) begin
+			LAST_BIT    = SMR.CA ? TBIT_CNT == 4'd7 : TBIT_CNT == 4'd11;
+			PRELAST_BIT = SMR.CA ? TBIT_CNT == 4'd6 : TBIT_CNT == 4'd9;
+			
+			if (!SSR.TDRE && LAST_BIT /*&& SCE_R*/) begin
 				TSR <= TDR;
 				SSR.TDRE <= 1;
 				TXI <= 1;
 			end
-			else if (SSR.TDRE && BIT_CNT == 3'd7) begin
+			else if (SSR.TDRE && PRELAST_BIT && SCE_F) begin
 				SSR.TEND <= 1;
 				TEI <= 1;
 			end
 			
-//			if (SSR_READ) begin
-//				if (SSR.TDRE) SSR_CLR_PEND <= 1;
-//			end
 			if (SSR_WRITE) begin
 				if (!IBUS_DI[31] && SSR.TDRE && SCR.TE) begin
 					SSR.TDRE <= 0;
 					TEI <= 0;
-//					if (SSR_CLR_PEND) begin
-						SSR.TEND <= 0;
-//						SSR_CLR_PEND <= 0;
-						BIT_CNT <= 3'd7;
-						TXI <= 0;
-//					end
+					SSR.TEND <= 0;
+					TBIT_CNT <= SMR.CA ? 4'd7 : 4'd11;
+					TXI <= 0;
 				end
 			end
 			
 			if (SCE_F) begin
 				if (!SSR.TEND) begin
-					TXD <= TSR[0];
-					TSR <= {TSR[7:1],1'b0};
-					BIT_CNT <= BIT_CNT + 3'd1;
+					if (SMR.CA) begin
+						TXD <= TSR[0];
+						TSR <= {1'b0,TSR[7:1]};
+						TBIT_CNT <= !LAST_BIT ? TBIT_CNT + 4'd1 : 4'd0;
+					end else begin
+						if (TBIT_CNT == 4'd0) begin
+							TXD <= 0;
+							PB <= 0;
+							TBIT_CNT <= TBIT_CNT + 4'd1;
+						end else if (TBIT_CNT <= 4'd8) begin
+							TXD <= TSR[0];
+							TSR <= {1'b0,TSR[7:1]};
+							PB <= PB + TSR[0];
+							TBIT_CNT <= SMR.PE || TBIT_CNT != 4'd8 ? TBIT_CNT + 4'd1 : TBIT_CNT + 4'd2;
+						end else if (TBIT_CNT == 4'd9) begin
+							TXD <= PB ^ SMR.OE;
+							TBIT_CNT <= SMR.STOP ? TBIT_CNT + 4'd1 : TBIT_CNT + 4'd2;
+						end else begin
+							TXD <= 1;
+							TBIT_CNT <= !LAST_BIT ? TBIT_CNT + 4'd1 : 4'd0;
+						end
+					end
 				end
-				if (!SSR.TEND) TX_RUN <= 1;
-				else if (SSR.TEND && BIT_CNT == 3'd7) TX_RUN <= 0;
-			end
-			
-			if (SCE_R) begin
-				if (SCR.CKE[1]) begin
-					SCKO <= 1;
-				end
-				else if (TX_RUN) begin
-					SCKO <= 1;
-				end
-			end
-			else if (SCE_F) begin
-				if (SCR.CKE[1]) begin
-					SCKO <= 1;
-				end
-				else if (TX_RUN) begin
-					SCKO <= 0;
-				end
+				
+				if (!SSR.TEND) 
+					TX_RUN <= 1;
+				else if (SSR.TEND && LAST_BIT) 
+					TX_RUN <= 0;
 			end
 		end
 	end
 	
 	//Receiver
 	always @(posedge CLK or negedge RST_N) begin
-		bit   [2:0] BIT_CNT;
+		bit [3:0] RBIT_CNT;
+		bit       LAST_BIT;
+		bit       PB;
 		
 		if (!RST_N) begin
 			RDR <= '0;
@@ -193,15 +220,36 @@ module SCI (
 			SSR.MPBT <= 0;
 			RXI <= 0;
 			ERI <= 0;
-			BIT_CNT <= '0;
+			RBIT_CNT <= '0;
 		end
 		else if (CE_R) begin
+			LAST_BIT    = SMR.CA ? RBIT_CNT == 4'd7 : RBIT_CNT == 4'd11;
+			
 			if (SCE_R) begin
-				if (TX_RUN) begin
-					RSR <= {RSR[6:0],RXD};
-					BIT_CNT <= BIT_CNT + 3'd1;
+				if (SMR.CA) begin
+					if (TX_RUN) begin
+						RSR <= {RXD,RSR[7:1]};
+						RBIT_CNT <= !LAST_BIT ? RBIT_CNT + 4'd1 : 4'd0;
+					end
+				end else begin
+					if (RBIT_CNT == 4'd0) begin
+						if (!RXD) begin
+							PB <= 0;
+							RBIT_CNT <= RBIT_CNT + 4'd1;
+						end
+					end else if (RBIT_CNT <= 4'd8) begin
+						RSR <= {RXD,RSR[7:1]};
+						PB <= PB + RXD;
+						RBIT_CNT <= SMR.PE || RBIT_CNT != 4'd8 ? RBIT_CNT + 4'd1 : RBIT_CNT + 4'd2;
+					end else if (RBIT_CNT == 4'd9) begin
+						SSR.PER <= PB ^ RXD;
+						RBIT_CNT <= SMR.STOP ? RBIT_CNT + 4'd1 : RBIT_CNT + 4'd2;
+					end else begin
+						SSR.FER <= ~RXD;
+						RBIT_CNT <= !LAST_BIT ? RBIT_CNT + 4'd1 : 4'd0;
+					end
 				end
-				if (BIT_CNT == 3'd7) begin
+				if (LAST_BIT) begin
 					if (!SSR.RDRF && SCR.RE) begin
 						RDR <= RSR;
 						SSR.RDRF <= 1;
@@ -223,10 +271,20 @@ module SCI (
 					SSR.ORER <= 0;
 					ERI <= 0;
 				end
+				if (!IBUS_DI[28] && SSR.FER && SCR.RE) begin
+					SSR.FER <= 0;
+					ERI <= 0;
+				end
+				if (!IBUS_DI[27] && SSR.PER && SCR.RE) begin
+					SSR.PER <= 0;
+					ERI <= 0;
+				end
 				SSR.MPBT <= IBUS_DI[24];
 			end
 		end
 	end
+	
+	assign SCKO = (INT_SCK & TX_RUN) | SCR.CKE[1];
 	
 	assign TEI_IRQ = TEI & SCR.TEIE;
 	assign TXI_IRQ = TXI & SCR.TIE;

@@ -16,8 +16,8 @@ module SH_decoder (
 	wire [4:0] RBN = {1'b0,IR[7:4]};
 	always_comb begin
 		DECI = DECI_RESET;
-		DECI.RA.N = {1'b0,IR[11:8]};
-		DECI.RB.N = {1'b0,IR[7:4]};
+		DECI.RA.N = RAN;
+		DECI.RB.N = RBN;
 		case (IR[15:12])
 			4'b0000:	begin
 				case (IR[3:0])
@@ -541,7 +541,7 @@ module SH_decoder (
 								DECI.RA = '{RAN, 1, 0};
 								DECI.DP.RSC = RSC_IMM;
 								DECI.IMMT = ZERO;
-								DECI.ALU = '{0, 1, ADD, 4'b0000, 4'b0000};
+								DECI.ALU = '{0, 1, ADD, 4'b0000, 3'b000};
 								DECI.MEM = '{ALURES, ALUB, 2'b00, 1, 0};
 							end
 							3'd1: begin
@@ -550,7 +550,7 @@ module SH_decoder (
 							3'd2: begin
 								DECI.DP.BPLDA = 1;
 								DECI.DP.BPMAB = 1;
-								DECI.ALU = '{0, 0, LOG, 4'b0100, 4'b0000};
+								DECI.ALU = '{0, 0, LOG, 4'b0100, 3'b000};
 								DECI.MEM = '{ALUB, ALURES, 2'b00, 0, 1};
 							end
 							3'd3: begin
@@ -600,7 +600,7 @@ module SH_decoder (
 				DECI.RB = '{RBN, 1, 0};
 				DECI.DP.RSC = RSC_IMM;
 				DECI.IMMT = ZIMM4;
-				DECI.ALU = '{1, 0, ADD, 4'b0000, 4'b0000};
+				DECI.ALU = '{1, 0, ADD, 4'b0000, 3'b000};
 				DECI.MEM = '{ALURES, ALUB, 2'b10, 1, 0};
 			end
 			
@@ -611,7 +611,7 @@ module SH_decoder (
 						DECI.RB = '{RBN, 1, 0};
 						DECI.DP.RSC = RSC_IMM;
 						DECI.IMMT = ZERO;
-						DECI.ALU = '{1, 0, ADD, 4'b0000, 4'b0000};
+						DECI.ALU = '{1, 0, ADD, 4'b0000, 3'b000};
 						DECI.MEM = '{ALURES, ALUB, IR[1:0], 1, 0};
 					end
 					4'b0011:	begin	//MOV Rm,Rn (0+Rm->Rn)
@@ -619,14 +619,14 @@ module SH_decoder (
 						DECI.RB = '{RBN, 1, 0};
 						DECI.DP.RSC = RSC_IMM;
 						DECI.IMMT = ZERO;
-						DECI.ALU = '{1, 0, ADD, 4'b0000, 4'b0000};
+						DECI.ALU = '{1, 0, ADD, 4'b0000, 3'b000};
 					end
 					4'b0100,4'b0101,4'b0110: begin	//MOV.x @Rm+,Rn ((Rm)->Rn, (1*size)+Rm->Rm)
 						DECI.RA = '{RAN, 0, 1};
 						DECI.RB = '{RBN, 1, 1};
 						DECI.DP.RSC = RSC_IMM;
 						DECI.IMMT = ONE;
-						DECI.ALU = '{1, 0, ADD, 4'b0000, 4'b0000};
+						DECI.ALU = '{1, 0, ADD, 4'b0000, 3'b000};
 						DECI.MEM = '{ALUB, ALUB, IR[1:0], 1, 0};
 					end
 					4'b0111:	begin	//NOT Rm,Rn (0|~Rm->Rn)
@@ -634,13 +634,13 @@ module SH_decoder (
 						DECI.RB = '{RBN, 1, 0};
 						DECI.DP.RSC = RSC_IMM;
 						DECI.IMMT = ZERO;
-						DECI.ALU = '{1, 0, LOG, 4'b0101, 4'b0000};
+						DECI.ALU = '{1, 0, LOG, 4'b0101, 3'b000};
 					end
 					4'b1000,			//SWAP.B Rm,Rn
 					4'b1001:	begin	//SWAP.W Rm,Rn
 						DECI.RA = '{RAN, 0, 1};
 						DECI.RB = '{RBN, 1, 0};
-						DECI.ALU = '{0, 0, EXT, {1'b0,IR[2:0]}, 4'b0000};
+						DECI.ALU = '{0, 0, EXT, {1'b0,IR[2:0]}, 3'b000};
 					end
 					4'b1010,			//NEGC Rm,Rn (0-Rm-T->Rn)
 					4'b1011:	begin	//NEG Rm,Rn (0-Rm->Rn)
@@ -648,7 +648,7 @@ module SH_decoder (
 						DECI.RB = '{RBN, 1, 0};
 						DECI.DP.RSC = RSC_IMM;
 						DECI.IMMT = ZERO;
-						DECI.ALU = '{1, 0, ADD, {~IR[0],1'b0,~IR[0],1'b1}, 4'b0000};
+						DECI.ALU = '{1, 0, ADD, {~IR[0],1'b0,~IR[0],1'b1}, 3'b000};
 						DECI.CTRL = '{~IR[0], SR_, ALU};
 					end
 					4'b1100,			//EXTU.B Rm,Rn
@@ -657,7 +657,7 @@ module SH_decoder (
 					4'b1111:	begin	//EXTS.W Rm,Rn
 						DECI.RA = '{RAN, 0, 1};
 						DECI.RB = '{RBN, 1, 0};
-						DECI.ALU = '{0, 0, EXT, {1'b0,IR[2:0]}, 4'b0000};
+						DECI.ALU = '{0, 0, EXT, {1'b0,IR[2:0]}, 3'b000};
 					end
 					default:;
 				endcase
@@ -667,7 +667,7 @@ module SH_decoder (
 				DECI.RA = '{RAN, 1, 1};
 				DECI.DP.RSC = RSC_IMM;
 				DECI.IMMT = SIMM8;
-				DECI.ALU = '{0, 1, ADD, 4'b0000, 4'b0000};
+				DECI.ALU = '{0, 1, ADD, 4'b0000, 3'b000};
 			end
 			
 			4'b1000:	begin
@@ -678,7 +678,7 @@ module SH_decoder (
 						DECI.RB = '{RBN, 1, 0};
 						DECI.DP.RSC = RSC_IMM;
 						DECI.IMMT = ZIMM4;
-						DECI.ALU = '{1, 0, ADD, 4'b0000, 4'b0000};
+						DECI.ALU = '{1, 0, ADD, 4'b0000, 3'b000};
 						DECI.MEM = '{ALURES, ALUA, IR[9:8], 0, 1};
 					end
 					4'b0100,			//MOV.B @(disp,Rm),R0 ((Rm+disp)->R0)
@@ -687,18 +687,37 @@ module SH_decoder (
 						DECI.RB = '{RBN, 1, 0};
 						DECI.DP.RSC = RSC_IMM;
 						DECI.IMMT = ZIMM4;
-						DECI.ALU = '{1, 0, ADD, 4'b0000, 4'b0000};
+						DECI.ALU = '{1, 0, ADD, 4'b0000, 3'b000};
 						DECI.MEM = '{ALURES, ALUA, IR[9:8], 1, 0};
 					end
 					4'b1000:	begin	//CPM/EQ #imm,R0
 						DECI.RA = '{R0, 1, 0};
 						DECI.DP.RSC = RSC_IMM;
 						DECI.IMMT = SIMM8;
-						DECI.ALU = '{0, 1, ADD, 4'b0101, 4'b0000};
+						DECI.ALU = '{0, 1, ADD, 4'b0101, 3'b000};
 						DECI.CTRL = '{1, SR_, ALU};
 					end
 					4'b1001,			//BT label
-					4'b1011,			//BF label
+					4'b1011:	begin	//BF/S label
+						case (STATE)
+							3'd0: begin
+								DECI.DP.RSB = BPC;
+								DECI.DP.RSC = RSC_IMM;
+								DECI.IMMT = SIMM8;
+								DECI.ALU = '{1, 0, ADD, 4'b0000, 3'b000};
+								DECI.PCW = BC;
+								DECI.BR = '{1, CB, ~IR[9], 0};
+								DECI.LST = BC ? 3'd2 : 3'd0;
+							end
+							3'd1: begin
+								DECI.LST = 3'd2;
+							end
+							3'd2: begin
+								DECI.LST = 3'd2;
+							end
+							default:;
+						endcase
+					end
 					4'b1101,			//BT/S label
 					4'b1111:	begin	//BF/S label
 						case (STATE)
@@ -706,12 +725,13 @@ module SH_decoder (
 								DECI.DP.RSB = BPC;
 								DECI.DP.RSC = RSC_IMM;
 								DECI.IMMT = SIMM8;
-								DECI.ALU = '{1, 0, ADD, 4'b0000, 4'b0000};
+								DECI.ALU = '{1, 0, ADD, 4'b0000, 3'b000};
 								DECI.PCW = BC;
-								DECI.BR = '{1, IR[10] ? DCB : CB, ~IR[9], 0};
-								DECI.LST = {2'b00,BC};
+								DECI.BR = '{1, DCB, ~IR[9], 0};
+								DECI.LST = BC ? 3'd1 : 3'd0;
 							end
 							3'd1: begin
+								DECI.BR = '{0, DCB, ~IR[9], 0};
 								DECI.LST = 3'd1;
 							end
 							default:;
@@ -728,7 +748,7 @@ module SH_decoder (
 				DECI.DP.RSC = RSC_IMM;
 				DECI.DP.PCM = IR[14];
 				DECI.IMMT = ZIMM8;
-				DECI.ALU = '{1, 0, ADD, 4'b0000, 4'b0000};
+				DECI.ALU = '{1, 0, ADD, 4'b0000, 3'b000};
 				DECI.MEM = '{ALURES, ALUA, {IR[14],~IR[14]}, 1, 0};
 			end
 			
@@ -740,7 +760,7 @@ module SH_decoder (
 						DECI.DP.RSB = BPC;
 						DECI.DP.RSC = RSC_IMM;
 						DECI.IMMT = SIMM12;
-						DECI.ALU = '{1, 0, ADD, 4'b0000, 4'b0000};
+						DECI.ALU = '{1, 0, ADD, 4'b0000, 3'b000};
 						DECI.PCW = 1;
 						DECI.BR = '{1, UCB, 0, IR[12]};
 					end
@@ -759,7 +779,7 @@ module SH_decoder (
 						DECI.DP.RSB = SCR;
 						DECI.DP.RSC = RSC_IMM;
 						DECI.IMMT = ZIMM8;
-						DECI.ALU = '{1, 0, ADD, 4'b0000, 4'b0000};
+						DECI.ALU = '{1, 0, ADD, 4'b0000, 3'b000};
 						DECI.CTRL.S = GBR_;
 						DECI.MEM = '{ALURES, ALUA, IR[9:8], 0, 1};
 					end
@@ -816,7 +836,7 @@ module SH_decoder (
 						DECI.DP.RSB = SCR;
 						DECI.DP.RSC = RSC_IMM;
 						DECI.IMMT = ZIMM8;
-						DECI.ALU = '{1, 0, ADD, 4'b0000, 4'b0000};
+						DECI.ALU = '{1, 0, ADD, 4'b0000, 3'b000};
 						DECI.CTRL.S = GBR_;
 						DECI.MEM = '{ALURES, ALUA, IR[9:8], 1, 0};
 					end
@@ -826,7 +846,7 @@ module SH_decoder (
 						DECI.DP.RSC = RSC_IMM;
 						DECI.DP.PCM = 1;
 						DECI.IMMT = ZIMM8;
-						DECI.ALU = '{1, 0, ADD, 4'b0000, 4'b0000};
+						DECI.ALU = '{1, 0, ADD, 4'b0000, 3'b000};
 						DECI.MEM.SZ = 2'b10;
 					end
 					4'b1000:	begin	//TST #imm,R0
@@ -834,26 +854,26 @@ module SH_decoder (
 						DECI.DP.RSC = RSC_IMM;
 						DECI.IMMT = ZIMM8;
 						DECI.ALU.OP = LOG;
-						DECI.ALU = '{0, 1, LOG, 4'b0000, 4'b0000};
+						DECI.ALU = '{0, 1, LOG, 4'b0000, 3'b000};
 						DECI.CTRL = '{1, SR_, ALU};
 					end
 					4'b1001:	begin	//AND #imm,R0
 						DECI.RA = '{R0, 1, 1};
 						DECI.DP.RSC = RSC_IMM;
 						DECI.IMMT = ZIMM8;
-						DECI.ALU = '{0, 1, LOG, 4'b0000, 4'b0000};
+						DECI.ALU = '{0, 1, LOG, 4'b0000, 3'b000};
 					end
 					4'b1010:	begin	//XOR #imm,R0
 						DECI.RA = '{R0, 1, 1};
 						DECI.DP.RSC = RSC_IMM;
 						DECI.IMMT = ZIMM8;
-						DECI.ALU = '{0, 1, LOG, 4'b0010, 4'b0000};
+						DECI.ALU = '{0, 1, LOG, 4'b0010, 3'b000};
 					end
 					4'b1011:	begin	//OR #imm,R0
 						DECI.RA = '{R0, 1, 1};
 						DECI.DP.RSC = RSC_IMM;
 						DECI.IMMT = ZIMM8;
-						DECI.ALU = '{0, 1, LOG, 4'b0100, 4'b0000};
+						DECI.ALU = '{0, 1, LOG, 4'b0100, 3'b000};
 					end
 					4'b1100,			//TST.B #imm,@(R0,GBR)
 					4'b1101,			//AND.B #imm,@(R0,GBR)
@@ -863,7 +883,7 @@ module SH_decoder (
 							3'd0: begin
 								DECI.R0R = 1;
 								DECI.DP.RSB = SCR;
-								DECI.ALU = '{1, 0, ADD, 4'b0000, 4'b0000};
+								DECI.ALU = '{1, 0, ADD, 4'b0000, 3'b000};
 								DECI.CTRL.S = GBR_;
 								DECI.MEM = '{ALURES, ALUB, 2'b00, 1, 0};
 							end
@@ -876,9 +896,9 @@ module SH_decoder (
 								DECI.DP.BPMAB = 1;
 								DECI.IMMT = ZIMM8;
 								case (IR[9:8])
-									2'b10:  DECI.ALU = '{0, 1, LOG, 4'b0010, 4'b0000};
-									2'b11:  DECI.ALU = '{0, 1, LOG, 4'b0100, 4'b0000};
-									default:DECI.ALU = '{0, 1, LOG, 4'b0000, 4'b0000};
+									2'b10:  DECI.ALU = '{0, 1, LOG, 4'b0010, 3'b000};
+									2'b11:  DECI.ALU = '{0, 1, LOG, 4'b0100, 3'b000};
+									default:DECI.ALU = '{0, 1, LOG, 4'b0000, 3'b000};
 								endcase
 								DECI.MEM = '{ALUB, ALURES, 2'b00, 0, |IR[9:8]};
 								DECI.CTRL = '{~|IR[9:8], SR_, ALU};
@@ -894,7 +914,7 @@ module SH_decoder (
 			4'b1110:	begin	//MOV #imm,Rn
 				DECI.RA = '{RAN, 0, 1};
 				DECI.DP.RSC = RSC_IMM;
-				DECI.ALU = '{0, 1, NOP, 4'b0000, 4'b0000};
+				DECI.ALU = '{0, 1, NOP, 4'b0000, 3'b000};
 			end
 			
 			4'b1111:	begin	

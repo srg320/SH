@@ -127,9 +127,7 @@ module SH_core (
 				MA_ACTIVE <= 0;
 			end
 			
-			if ((PC[1] && (!MA_ACTIVE || !BUS_WAIT) && !IFID_STALL && !EX_STALL) || 
-				 (PIPE.EX.BC && (!MA_ACTIVE || !BUS_WAIT)) /*|| 
-				 ((!PC[1] || PIPE.EX.BC) && INST_SPLIT && (!MA_ACTIVE || !BUS_WAIT) && !IFID_STALL)*/) begin
+			if ((PC[1] && (!MA_ACTIVE || !BUS_WAIT) && !IFID_STALL && !EX_STALL) || (PIPE.EX.BC && (!MA_ACTIVE || !BUS_WAIT))) begin
 				IF_ACTIVE <= 1;
 			end else if (!BUS_WAIT && IF_ACTIVE && !PC_STALL) begin
 				IF_ACTIVE <= 0;
@@ -180,7 +178,7 @@ module SH_core (
 				NEW_IR = SAVE_IR;
 			end
 			
-			if ((BR_COND && ID_DECI.BR.BT == CB) || PIPE.EX.BC || INTI.REQ || STBY) begin
+			if (/*(BR_COND && ID_DECI.BR.BT == CB && !ID_DECI.BR.BD) || PIPE.EX.BC ||*/ STBY) begin
 				NEW_IR = 16'h0000;//NOP
 			end
 				
@@ -198,6 +196,7 @@ module SH_core (
 					SAVE_ID.PC <= PC;
 				end
 			end
+			
 			if (!ID_STALL) begin
 				if (ID_DECI.LST && STATE == ID_DECI.LST) begin
 					PIPE.ID <= SAVE_ID;
@@ -212,13 +211,15 @@ module SH_core (
 	assign ID_STALL = (MA_ACTIVE & BUS_WAIT) | (IF_ACTIVE & BUS_WAIT) | INST_SPLIT;
 	
 	assign BR_COND = ID_DECI.BR.BI & ((SR_T == ID_DECI.BR.BCV) | (ID_DECI.BR.BT == UCB));
+	wire ID_DELAY_SLOT = ~PIPE.EX.DI.BR.BI /*& PIPE.EX.DI.BR.BD*/ & (PIPE.EX.DI.BR.BT == CB | PIPE.EX.DI.BR.BT == UCB);
 	
-	wire [15:0] DEC_IR = //RES        ? {8'hF1,6'b000000,~NMI,1'b0} : 
-	                     INTI.REQ   ? {8'hF0,INTI.VEC} : 
-							   IFID_STALL ? PIPE.EX.IR : PIPE.ID.IR;
-	SH_decoder decoder (DEC_IR, STATE, BR_COND, ID_DECI);
+	wire [15:0] DEC_IR = INTI.REQ && !ID_DELAY_SLOT  ? {8'hF0,INTI.VEC} : 
+							   ID_DELAY_SLOT && !PIPE.EX.DI.BR.BD ? 16'h0001 :
+								IFID_STALL ? PIPE.EX.IR : PIPE.ID.IR;
+								
+	assign ID_DECI = Decode(DEC_IR, STATE, BR_COND);
 	
-	wire BP_T_EXID = ID_DECI.BR.BI & ID_DECI.BR.BT != UCB & PIPE.EX.DI.CTRL.W & PIPE.EX.DI.CTRL.S == SR_;
+	wire BP_T_EXID = ID_DECI.BR.BI & ID_DECI.BR.BT == CB & PIPE.EX.DI.CTRL.W & PIPE.EX.DI.CTRL.S == SR_;
 	always_comb begin
 		if (BP_T_EXID) begin
 			SR_T = SR_NEW.T;
@@ -419,9 +420,10 @@ module SH_core (
 		endcase
 	end
 	
-	always_comb begin
-		bit [31:0] ALU_A;
+	bit [31:0] ALU_A;
 		bit [31:0] ALU_B;
+	always_comb begin
+		
 		bit [31:0] ADDER_RES;
 		bit        ADDER_C;
 		bit        ADDER_V;
@@ -581,12 +583,12 @@ module SH_core (
 	
 	always @(posedge CLK or negedge RST_N) begin
 		if (!RST_N) begin
-			SR <= '0;
+			SR <= SR_RESET;
 			GBR <= '0;
 			VBR <= '0;
 		end
 		else if (!RES_N) begin
-			SR <= '0;
+			SR <= SR_RESET;
 			GBR <= '0;
 			VBR <= '0;
 		end
