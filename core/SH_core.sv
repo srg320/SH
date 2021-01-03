@@ -21,7 +21,9 @@ module SH_core (
 	output            MAC_WE,
 	
 	input    IntReq_t INTI,
-	output   IntAck_t INTO
+	output   IntAck_t INTO,
+	
+	output INT_HOOK
 );
 	
 	import SH2_PKG::*;
@@ -44,6 +46,9 @@ module SH_core (
 	bit        ALU_T;
 	SR_t       SR_NEW;
 	bit        SR_T;
+	bit        INT_REQ;
+	bit [ 3:0] INT_LVL;
+	bit [ 7:0] INT_VEC;
 	
 	bit        MA_ACTIVE;
 	bit        IF_ACTIVE;
@@ -213,7 +218,7 @@ module SH_core (
 	assign BR_COND = ID_DECI.BR.BI & ((SR_T == ID_DECI.BR.BCV) | (ID_DECI.BR.BT == UCB));
 	wire ID_DELAY_SLOT = ~PIPE.EX.DI.BR.BI /*& PIPE.EX.DI.BR.BD*/ & (PIPE.EX.DI.BR.BT == CB | PIPE.EX.DI.BR.BT == UCB);
 	
-	wire [15:0] DEC_IR = INTI.REQ && !ID_DELAY_SLOT  ? {8'hF0,INTI.VEC} : 
+	wire [15:0] DEC_IR = INT_REQ && !ID_DELAY_SLOT && !IFID_STALL ? {8'hF0,INT_VEC} : 
 							   ID_DELAY_SLOT && !PIPE.EX.DI.BR.BD ? 16'h0001 :
 								IFID_STALL ? PIPE.EX.IR : PIPE.ID.IR;
 								
@@ -231,6 +236,7 @@ module SH_core (
 	
 	wire [2:0] NEXT_STATE = STATE == ID_DECI.LST ? 3'd0 : STATE + 3'd1;
 	always @(posedge CLK or negedge RST_N) begin
+		bit INT_REQ_OLD;
 		if (!RST_N) begin
 			PIPE.EX.IR <= '0;
 			PIPE.EX.PC <= '0;
@@ -242,6 +248,7 @@ module SH_core (
 			STATE <= '0;
 			IFID_STALL <= 0;
 			STBY <= 1;
+			INT_LVL <= '0;
 		end
 		else if (!RES_N) begin
 			PIPE.EX.IR <= '0;
@@ -254,6 +261,7 @@ module SH_core (
 			STATE <= '0;
 			IFID_STALL <= 0;
 			STBY <= 0;
+			INT_LVL <= '0;
 		end
 		else if (CE) begin
 			if (!ID_STALL) begin
@@ -269,47 +277,52 @@ module SH_core (
 				
 				if (ID_DECI.SLP) STBY <= 1;
 				if (STBY && INTI.REQ) STBY <= 0;
-			end	
+//				if (INTI.REQ && ID_DECI.IACK) begin
+//					INT_LVL <= INTI.LVL;
+//					INT_VEC <= INTI.VEC;
+//				end
+			end
 			
+			INT_REQ_OLD <= INTI.REQ;
+			if (INTI.REQ && !INT_REQ_OLD) begin
+				INT_REQ <= 1;
+				INT_LVL <= INTI.LVL;
+				INT_VEC <= INTI.VEC;
+			end else if (!EX_STALL && PIPE.EX.DI.CTRL.W && PIPE.EX.DI.CTRL.SRS == IMSK) begin
+				INT_REQ <= 0;
+			end
 		end
 	end
+	
+	assign INT_HOOK = INT_LVL != INTI.LVL;
 
 	//**********************************************************
 	//EX stage
 	//**********************************************************
 	//Bypassing datapath
-	wire BP_A_EXEX = (PIPE.EX.DI.RA.N == PIPE.MA.DI.RA.N && PIPE.EX.DI.RA.R && PIPE.MA.DI.RA.W && !PIPE.MA.DI.MEM.R) ||
-						  (PIPE.EX.DI.RA.N == PIPE.MA.DI.RB.N && PIPE.EX.DI.RA.R && PIPE.MA.DI.RB.W);
-
-	wire BP_B_EXEX = (PIPE.EX.DI.RB.N == PIPE.MA.DI.RA.N && PIPE.EX.DI.RB.R && PIPE.MA.DI.RA.W && !PIPE.MA.DI.MEM.R) ||
-						  (PIPE.EX.DI.RB.N == PIPE.MA.DI.RB.N && PIPE.EX.DI.RB.R && PIPE.MA.DI.RB.W);
+	wire BP_A_EXEX = (PIPE.EX.DI.RA.N == PIPE.MA.DI.RA.N & PIPE.EX.DI.RA.R & PIPE.MA.DI.RA.W & !PIPE.MA.DI.MEM.R) ||
+						  (PIPE.EX.DI.RA.N == PIPE.MA.DI.RB.N & PIPE.EX.DI.RA.R & PIPE.MA.DI.RB.W);
+	wire BP_B_EXEX = (PIPE.EX.DI.RB.N == PIPE.MA.DI.RA.N & PIPE.EX.DI.RB.R & PIPE.MA.DI.RA.W & !PIPE.MA.DI.MEM.R) ||
+						  (PIPE.EX.DI.RB.N == PIPE.MA.DI.RB.N & PIPE.EX.DI.RB.R & PIPE.MA.DI.RB.W);
+	wire BP_C_EXEX = 5'd0             == PIPE.MA.DI.RA.N & PIPE.EX.DI.R0R & PIPE.MA.DI.RA.W & !PIPE.MA.DI.MEM.R;
 	
-	wire BP_C_EXEX = 5'd0               == PIPE.MA.DI.RA.N && PIPE.EX.DI.R0R && PIPE.MA.DI.RA.W && !PIPE.MA.DI.MEM.R;
+	wire BP_A_MAEX = (PIPE.EX.DI.RA.N == PIPE.WB.DI.RA.N & PIPE.EX.DI.RA.R & PIPE.WB.DI.RA.W & !PIPE.WB.DI.MEM.R) ||
+						  (PIPE.EX.DI.RA.N == PIPE.WB.DI.RB.N & PIPE.EX.DI.RA.R & PIPE.WB.DI.RB.W);
+	wire BP_B_MAEX = (PIPE.EX.DI.RB.N == PIPE.WB.DI.RA.N & PIPE.EX.DI.RB.R & PIPE.WB.DI.RA.W & !PIPE.WB.DI.MEM.R) ||
+						  (PIPE.EX.DI.RB.N == PIPE.WB.DI.RB.N & PIPE.EX.DI.RB.R & PIPE.WB.DI.RB.W);
+	wire BP_C_MAEX = 5'd0             == PIPE.WB.DI.RA.N & PIPE.EX.DI.R0R & PIPE.WB.DI.RA.W & !PIPE.WB.DI.MEM.R;
 	
-	wire BP_A_MAEX = (PIPE.EX.DI.RA.N == PIPE.WB.DI.RA.N && PIPE.EX.DI.RA.R && PIPE.WB.DI.RA.W && !PIPE.WB.DI.MEM.R) ||
-						  (PIPE.EX.DI.RA.N == PIPE.WB.DI.RB.N && PIPE.EX.DI.RA.R && PIPE.WB.DI.RB.W);
+	wire BP_A_WBEXA = PIPE.EX.DI.RA.N == PIPE.WB2.DI.RA.N & PIPE.EX.DI.RA.R & PIPE.WB2.DI.RA.W;
+	wire BP_A_WBEXB = PIPE.EX.DI.RA.N == PIPE.WB2.DI.RB.N & PIPE.EX.DI.RA.R & PIPE.WB2.DI.RB.W;  
+	wire BP_B_WBEXA = PIPE.EX.DI.RB.N == PIPE.WB2.DI.RA.N & PIPE.EX.DI.RB.R & PIPE.WB2.DI.RA.W;
+	wire BP_B_WBEXB = PIPE.EX.DI.RB.N == PIPE.WB2.DI.RB.N & PIPE.EX.DI.RB.R & PIPE.WB2.DI.RB.W;
+	wire BP_C_WBEX = 5'd0             == PIPE.WB2.DI.RA.N & PIPE.EX.DI.R0R & PIPE.WB2.DI.RA.W;
 	
-	wire BP_B_MAEX = (PIPE.EX.DI.RB.N == PIPE.WB.DI.RA.N && PIPE.EX.DI.RB.R && PIPE.WB.DI.RA.W && !PIPE.WB.DI.MEM.R) ||
-						  (PIPE.EX.DI.RB.N == PIPE.WB.DI.RB.N && PIPE.EX.DI.RB.R && PIPE.WB.DI.RB.W);
-	
-	wire BP_C_MAEX = 5'd0               == PIPE.WB.DI.RA.N && PIPE.EX.DI.R0R && PIPE.WB.DI.RA.W && !PIPE.WB.DI.MEM.R;
-	
-	wire BP_A_WBEX = (PIPE.EX.DI.RA.N == PIPE.WB2.DI.RA.N && PIPE.EX.DI.RA.R && PIPE.WB2.DI.RA.W /*&& !PIPE.WB.DI.MEM.R*/) ||
-						  (PIPE.EX.DI.RA.N == PIPE.WB2.DI.RB.N && PIPE.EX.DI.RA.R && PIPE.WB2.DI.RB.W);
-	
-	wire BP_B_WBEXA = PIPE.EX.DI.RB.N == PIPE.WB2.DI.RA.N && PIPE.EX.DI.RB.R && PIPE.WB2.DI.RA.W /*&& !PIPE.WB.DI.MEM.R*/;
-	
-	wire BP_B_WBEXB = PIPE.EX.DI.RB.N == PIPE.WB2.DI.RB.N && PIPE.EX.DI.RB.R && PIPE.WB2.DI.RB.W /*&& !PIPE.WB.DI.MEM.R*/;
-	
-	wire BP_C_WBEX = 5'd0               == PIPE.WB2.DI.RA.N && PIPE.EX.DI.R0R && PIPE.WB2.DI.RA.W /*&& !PIPE.WB.DI.MEM.R*/;
-	
-	wire BP_A_MALD = (PIPE.EX.DI.RA.N == PIPE.MA.DI.RA.N && PIPE.EX.DI.RA.R && PIPE.MA.DI.RA.W && PIPE.MA.DI.MEM.R);
-
-	wire BP_B_MALD = (PIPE.EX.DI.RB.N == PIPE.MA.DI.RA.N && PIPE.EX.DI.RB.R && PIPE.MA.DI.RA.W && PIPE.MA.DI.MEM.R);
+	wire BP_A_MALD = (PIPE.EX.DI.RA.N == PIPE.MA.DI.RA.N & PIPE.EX.DI.RA.R & PIPE.MA.DI.RA.W & PIPE.MA.DI.MEM.R);
+	wire BP_B_MALD = (PIPE.EX.DI.RB.N == PIPE.MA.DI.RA.N & PIPE.EX.DI.RB.R & PIPE.MA.DI.RA.W & PIPE.MA.DI.MEM.R);
 						  
-	wire BP_A_WBLD = (PIPE.EX.DI.RA.N == PIPE.WB.DI.RA.N && PIPE.EX.DI.RA.R && PIPE.WB.DI.RA.W && PIPE.WB.DI.MEM.R);
-
-	wire BP_B_WBLD = (PIPE.EX.DI.RB.N == PIPE.WB.DI.RA.N && PIPE.EX.DI.RB.R && PIPE.WB.DI.RA.W && PIPE.WB.DI.MEM.R);
+	wire BP_A_WBLD = (PIPE.EX.DI.RA.N == PIPE.WB.DI.RA.N & PIPE.EX.DI.RA.R & PIPE.WB.DI.RA.W & PIPE.WB.DI.MEM.R);
+	wire BP_B_WBLD = (PIPE.EX.DI.RB.N == PIPE.WB.DI.RA.N & PIPE.EX.DI.RB.R & PIPE.WB.DI.RA.W & PIPE.WB.DI.MEM.R);
 	
 	bit [31:0] REG_A;
 	bit [31:0] REG_B;
@@ -358,8 +371,11 @@ module SH_core (
 		else if (BP_A_MAEX) begin
 			BP_A = PIPE.WB.RES;
 		end
-		else if (BP_A_WBEX || PIPE.EX.DI.DP.BPWBA) begin
+		else if (BP_A_WBEXA || PIPE.EX.DI.DP.BPWBA) begin
 			BP_A = PIPE.WB2.RESA;
+		end
+		else if (BP_A_WBEXB) begin
+			BP_A = PIPE.WB2.RESB;
 		end
 		else begin
 			BP_A = PIPE.EX.RA;
@@ -555,7 +571,7 @@ module SH_core (
 	always_comb begin
 		SR_NEW = SR;
 		case (PIPE.EX.DI.CTRL.SRS)
-			LOAD: SR_NEW <= ALU_RES & 32'h000003f3;
+			LOAD: SR_NEW <= ALU_RES;
 			ALU:case (PIPE.EX.DI.ALU.OP)
 					ADD: SR_NEW.T <= ALU_T;
 					LOG: SR_NEW.T <= ALU_T;
@@ -577,7 +593,7 @@ module SH_core (
 				SR_NEW.M <= 0;
 				SR_NEW.T <= 0;
 			end
-			IMSK: SR_NEW.I <= INTI.LVL;
+			IMSK: SR_NEW.I <= INT_LVL;
 		endcase
 	end
 	
@@ -596,7 +612,7 @@ module SH_core (
 			if (!EX_STALL) begin
 				if (PIPE.EX.DI.CTRL.W) begin
 					case (PIPE.EX.DI.CTRL.S)
-						SR_:  SR <= SR_NEW;
+						SR_:  SR <= SR_NEW & 32'h000003f3;
 						GBR_: GBR <= ALU_RES;
 						VBR_: VBR <= ALU_RES;
 						default:;

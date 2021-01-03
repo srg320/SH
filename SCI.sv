@@ -207,6 +207,7 @@ module SCI (
 	always @(posedge CLK or negedge RST_N) begin
 		bit [3:0] RBIT_CNT;
 		bit       LAST_BIT;
+		bit       REC_END;
 		bit       PB;
 		
 		if (!RST_N) begin
@@ -221,16 +222,17 @@ module SCI (
 			RXI <= 0;
 			ERI <= 0;
 			RBIT_CNT <= '0;
+			REC_END <= 0;
 		end
 		else if (CE_R) begin
 			LAST_BIT    = SMR.CA ? RBIT_CNT == 4'd7 : RBIT_CNT == 4'd11;
 			
 			if (SCE_R) begin
 				if (SMR.CA) begin
-					if (TX_RUN) begin
+//					if (TX_RUN) begin
 						RSR <= {RXD,RSR[7:1]};
 						RBIT_CNT <= !LAST_BIT ? RBIT_CNT + 4'd1 : 4'd0;
-					end
+//					end
 				end else begin
 					if (RBIT_CNT == 4'd0) begin
 						if (!RXD) begin
@@ -249,7 +251,11 @@ module SCI (
 						RBIT_CNT <= !LAST_BIT ? RBIT_CNT + 4'd1 : 4'd0;
 					end
 				end
-				if (LAST_BIT) begin
+				REC_END <= !LAST_BIT;
+			end
+			
+			if (SCE_F) begin
+				if (REC_END) begin
 					if (!SSR.RDRF && SCR.RE) begin
 						RDR <= RSR;
 						SSR.RDRF <= 1;
@@ -260,6 +266,7 @@ module SCI (
 						ERI <= 1;
 					end
 				end
+				REC_END <= 0;
 			end
 			
 			if (SSR_WRITE) begin

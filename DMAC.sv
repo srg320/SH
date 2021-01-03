@@ -58,6 +58,8 @@ module DMAC (
 	wire REG1_SEL = (IBUS_A == 32'hFFFFFE71 && IBUS_A == 32'hFFFFFE72);
 	wire REG2_SEL = (IBUS_A >= 32'hFFFFFF80 && IBUS_A <= 32'hFFFFFFB3);
 
+	wire CH_EN[2] = '{DMAOR.DME & CHCR[0].DE, DMAOR.DME & CHCR[1].DE};
+	wire CH_AVAIL[2] = '{~CHCR[0].TE & ~DMAOR.NMIF & ~DMAOR.AE, ~CHCR[1].TE & ~DMAOR.NMIF & ~DMAOR.AE};
 
 	bit         CH_REQ[2];
 	bit         CH_REQ_CLR[2];
@@ -79,7 +81,7 @@ module DMAC (
 			if (!CHCR[0].DS) DREQ0_REQ <= ~DREQ0 ^ CHCR[0].DL;
 			else DREQ0_REQ <= (~DREQ0 ^ CHCR[0].DL) & (DREQ0_OLD ^ CHCR[0].DL);
 			
-			if (!CH_REQ[0]) begin
+			if (!CH_REQ[0] && CH_EN[0] && CH_AVAIL[0]) begin
 				if (CHCR[0].AR) CH_REQ[0] <= 1;
 				else 
 					case(DRCR[0].RS)
@@ -97,7 +99,7 @@ module DMAC (
 			if (!CHCR[1].DS) DREQ1_REQ <= ~DREQ1 ^ CHCR[1].DL;
 			else DREQ1_REQ <= (~DREQ1 ^ CHCR[1].DL) & (DREQ1_OLD ^ CHCR[1].DL);
 			
-			if (!CH_REQ[1]) begin
+			if (!CH_REQ[1] && CH_EN[1] && CH_AVAIL[1]) begin
 				if (CHCR[1].AR) CH_REQ[1] <= 1;
 				else 
 					case(DRCR[1].RS)
@@ -113,8 +115,6 @@ module DMAC (
 		end
 	end
 	
-	wire CH_EN[2] = '{DMAOR.DME & CHCR[0].DE, DMAOR.DME & CHCR[1].DE};
-	wire CH_AVAIL[2] = '{~CHCR[0].TE & ~DMAOR.NMIF & ~DMAOR.AE, ~CHCR[1].TE & ~DMAOR.NMIF & ~DMAOR.AE};
 	
 	bit         DMA_REQ;
 	bit         DMA_REQ_CLR;
@@ -155,6 +155,7 @@ module DMAC (
 	bit         DMA_LOCK;
 	bit  [31:0] RD_BUF[4];
 	bit   [1:0] LW_CNT;
+	bit   [1:0] SA_BA;
 	always @(posedge CLK or negedge RST_N) begin
 		bit  [31:0] AR_INC;
 		bit  [23:0] TCR_NEXT;
@@ -204,13 +205,14 @@ module DMAC (
 					DMA_RD <= 1;
 					LW_CNT <= &CHCR[DMA_CH].TS ? 2'd3 : 2'd0;
 					CH_REQ_CLR[DMA_CH] <= CHCR[DMA_CH].TA & ~CHCR[DMA_CH].AM;
+					DMA_LOCK <= ~CHCR[DMA_CH].TA | &CHCR[DMA_CH].TS;
 				end
 				else begin
 					DMA_WR <= 1;
 					LW_CNT <= &CHCR[DMA_CH].TS ? 2'd3 : 2'd0;
 					CH_REQ_CLR[DMA_CH] <= 1;
+					DMA_LOCK <= &CHCR[DMA_CH].TS;
 				end
-				DMA_LOCK <= &CHCR[DMA_CH].TS;
 			end
 			else if ((DMA_RD || DMA_WR) && !DBUS_WAIT && CE_F) begin
 				if (DMA_RD) begin
@@ -238,6 +240,7 @@ module DMAC (
 						end
 					end
 					RD_BUF_LATCH <= 1;
+					SA_BA <= SAR[DMA_CH][1:0];
 				end
 				else if (DMA_WR) begin
 					if      (CHCR[DMA_CH].DM == 2'b01) DAR[DMA_CH] <= DAR[DMA_CH] + AR_INC;
@@ -305,7 +308,25 @@ module DMAC (
 		end
 	end
 	
-	wire [31:0] DBUS_DO_TEMP = &CHCR[DMA_CH].TS ? RD_BUF[3] : DBUS_DI;
+	bit [31:0] DBUS_DO_TEMP;
+	always_comb begin
+		case (CHCR[DMA_CH].TS)
+			2'b00: 
+				case (SA_BA)
+					2'b00: DBUS_DO_TEMP = {4{DBUS_DI[31:24]}};
+					2'b01: DBUS_DO_TEMP = {4{DBUS_DI[23:16]}};
+					2'b10: DBUS_DO_TEMP = {4{DBUS_DI[15: 8]}};
+					2'b11: DBUS_DO_TEMP = {4{DBUS_DI[ 7: 0]}};
+				endcase
+			2'b01: 
+				case (SA_BA[1])
+					1'b0: DBUS_DO_TEMP = {2{DBUS_DI[31:16]}};
+					1'b1: DBUS_DO_TEMP = {2{DBUS_DI[15: 0]}};
+				endcase
+			2'b10: DBUS_DO_TEMP = DBUS_DI;
+			2'b11: DBUS_DO_TEMP = RD_BUF[3];
+		endcase
+	end
 	
 	assign DBUS_A = DMA_RD ? SAR[DMA_CH] : 
 	                DMA_WR ? DAR[DMA_CH] : 

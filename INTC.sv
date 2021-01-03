@@ -56,7 +56,7 @@ module INTC (
 	bit        IRL_REQ;
 	bit [ 3:0] IRL_LVL;
 	bit        NMI_PEND;
-//	bit        IRL_PEND;
+	bit        IRL_PEND;
 	
 	always @(posedge CLK or negedge RST_N) begin
 		bit NMI_N_OLD;
@@ -88,10 +88,14 @@ module INTC (
 			IRL_OLD[2] <= IRL_OLD[1];
 			IRL_OLD[3] <= IRL_OLD[2];
 			IRL_REQ <= 0;
-			if (IRL_OLD[0] == ~IRL_N && IRL_OLD[1] == ~IRL_N && IRL_OLD[2] == ~IRL_N && IRL_OLD[3] == ~IRL_N) begin
-				IRL_REQ <= ~&IRL_N;
-				IRL_LVL <= ~IRL_N;
+			if (IRL_OLD[0] == ~IRL_N && IRL_OLD[1] == ~IRL_N && IRL_OLD[2] == ~IRL_N && IRL_OLD[3] == ~IRL_N && !(&IRL_N)/* && !IRL_REQ*/) begin
+				IRL_REQ <= 1;
 			end
+				IRL_LVL <= ~IRL_N;
+//			else if (INTI.ACK && IRL_PEND) begin
+//				IRL_REQ <= 0;
+//				IRL_OLD <= '{4{'1}};
+//			end
 		end
 	end
 	
@@ -100,12 +104,15 @@ module INTC (
 		if (!RST_N) begin
 			INTO <= INT_REQ_RESET;
 			NMI_PEND <= 0;
+			IRL_PEND <= 0;
 		end
 		else if (CE_R) begin	
 			NMI_PEND <= 0;
+			IRL_PEND <= 0;
+//			if (~INTO.REQ) begin
 			if (NMI_REQ)                                    begin INTO <= '{4'hF,        8'd11,              0, 1}; NMI_PEND <= 1; end
 			else if (UBC_IRQ     && 4'hF        > INTI.LVL) begin INTO <= '{4'hF,        8'd12,              0, 1};                end
-			else if (IRL_REQ     && IRL_LVL     > INTI.LVL) begin INTO <= '{IRL_LVL,     IRL_VEC,            0, 1};                end
+			else if (IRL_REQ     && IRL_LVL     > INTI.LVL) begin INTO <= '{IRL_LVL,     IRL_VEC,            0, 1}; IRL_PEND <= 1; end
 			else if (DIVU_IRQ    && IPRA.DIVUIP > INTI.LVL) begin INTO <= '{IPRA.DIVUIP, DIVU_VEC,           0, 1};                end
 			else if (DMAC0_IRQ   && IPRA.DMACIP > INTI.LVL) begin INTO <= '{IPRA.DMACIP, DMAC0_VEC,          0, 1};                end
 			else if (DMAC1_IRQ   && IPRA.DMACIP > INTI.LVL) begin INTO <= '{IPRA.DMACIP, DMAC1_VEC,          0, 1};                end
@@ -119,6 +126,9 @@ module INTC (
 			else if (FRT_OCI_IRQ && IPRB.FRTIP  > INTI.LVL) begin INTO <= '{IPRB.FRTIP,  {1'b0,VCRC.FOCV},   0, 1};                end
 			else if (FRT_OVI_IRQ && IPRB.FRTIP  > INTI.LVL) begin INTO <= '{IPRB.FRTIP,  {1'b0,VCRD.FOVV},   0, 1};                end
 			else                                            begin INTO <= INT_REQ_RESET;                                           end
+//			end else if (INTI.ACK && INTO.REQ) begin
+//				INTO.REQ <= 0;
+//			end
 		end
 	end
 	

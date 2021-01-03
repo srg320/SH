@@ -228,6 +228,9 @@ module BSC (
 			
 			if (CE_R) begin
 				if (BUS_STATE == T0 || BUS_STATE == T2 /*|| BUS_STATE == TI*/) begin
+					if (BUS_ACCESS_REQ && !BUS_RLS && !BUSY) begin
+						BUSY <= 1;
+					end
 					if (BUS_STATE == T2 && BUSY) begin
 						case (AREA_SZ)
 							2'b01: begin 
@@ -268,7 +271,7 @@ module BSC (
 						CACK <= 1;
 						STATE_NEXT = T1;
 					end
-					else if (BUS_ACCESS_REQ && !BUS_RLS && !BGR && !BUSY) begin
+					else if (BUS_ACCESS_REQ && !BUS_RLS && ((!BGR && MASTER) || (BREQ && !MASTER)) /*&& !BUSY*/) begin
 						BUSY <= 1;
 						
 						case (BSC_GetAreaSZ(IBUS_A[26:25],BCR2,A0_SZ))
