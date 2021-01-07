@@ -14,8 +14,24 @@ module SH2_regfile (
 	output     [31:0] RA_Q,
 	input       [4:0] RB_ADDR,
 	output     [31:0] RB_Q,
-	output     [31:0] R0_Q
+	output     [31:0] R0_Q,
 	
+	output     [31:0] R0,
+	output     [31:0] R1,
+	output     [31:0] R2,
+	output     [31:0] R3,
+	output     [31:0] R4,
+	output     [31:0] R5,
+	output     [31:0] R6,
+	output     [31:0] R7,
+	output     [31:0] R8,
+	output     [31:0] R9,
+	output     [31:0] R10,
+	output     [31:0] R11,
+	output     [31:0] R12,
+	output     [31:0] R13,
+	output     [31:0] R14,
+	output     [31:0] R15
 );
 	
 	// synopsys translate_off
@@ -122,6 +138,38 @@ module SH2_regfile (
 	end
 
 	assign R0_Q = GR0;
+	
+	reg [31:0] DBG_GR[16];
+	always @(posedge CLK or negedge RST_N) begin
+		if (!RST_N) begin
+			DBG_GR <= '{16{'0}};
+		end
+		else  begin
+			if (WAE && CE) begin
+				DBG_GR[WA_ADDR] <= WA_D;
+			end
+			if (WBE_SAVE) begin
+				DBG_GR[WB_ADDR_SAVE] <= WB_D_SAVE;
+			end
+		end
+	end
+	
+	assign R0 = DBG_GR[0];
+	assign R1 = DBG_GR[1];
+	assign R2 = DBG_GR[2];
+	assign R3 = DBG_GR[3];
+	assign R4 = DBG_GR[4];
+	assign R5 = DBG_GR[5];
+	assign R6 = DBG_GR[6];
+	assign R7 = DBG_GR[7];
+	assign R8 = DBG_GR[8];
+	assign R9 = DBG_GR[9];
+	assign R10 = DBG_GR[10];
+	assign R11 = DBG_GR[11];
+	assign R12 = DBG_GR[12];
+	assign R13 = DBG_GR[13];
+	assign R14 = DBG_GR[14];
+	assign R15 = DBG_GR[15];
 	
 `endif
 	

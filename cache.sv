@@ -64,6 +64,60 @@ module CACHE (
 	bit         CACHE_PURGE;
 	bit   [5:0] LRU_DATA;
 	
+	function bit [3:0] WayFromLRU(input bit [5:0] lru, input bit two_way);
+		bit [3:0] res;
+	
+		if (two_way) begin
+			res = lru[0] ? 4'b0100 : 4'b1000;
+		end else begin
+			casez (lru)
+				6'b111???: res = 4'b0001;
+				6'b0??11?: res = 4'b0010;
+				6'b?0?0?1: res = 4'b0100;
+				6'b??0?00: res = 4'b1000;
+				default:   res = 4'b0001;
+			endcase
+		end
+		return res;
+	endfunction
+	
+	function bit [5:0] LRUSelect(input bit [3:0] way, input bit [5:0] lru);
+		bit [5:0] res;
+	
+		priority case (1'b1)
+			way[0]: res = {1'b0  ,1'b0  ,1'b0  ,lru[2],lru[1],lru[0]};
+			way[1]: res = {1'b1  ,lru[4],lru[3],1'b0  ,1'b0  ,lru[0]};
+			way[2]: res = {lru[5],1'b1  ,lru[3],1'b1  ,lru[1],1'b0  };
+			way[3]: res = {lru[5],lru[4],1'b1,  lru[2],1'b1,  1'b1  };
+		endcase
+		return res;
+	endfunction
+	
+	function bit [1:0] WayToAddr(input bit [3:0] way);
+		bit [1:0] res;
+	
+		priority case (1'b1) 
+			way[0]: res = 2'b00;
+			way[1]: res = 2'b01;
+			way[2]: res = 2'b10;
+			way[3]: res = 2'b11;
+		endcase
+		return res;
+	endfunction
+	
+	function bit [3:0] AddrToWay(input bit [1:0] a);
+		bit [3:0] res;
+	
+		case (a) 
+			2'b00: res = 4'b0001;
+			2'b01: res = 4'b0010;
+			2'b10: res = 4'b0100;
+			2'b11: res = 4'b1000;
+		endcase
+		return res;
+	endfunction
+	
+	
 `ifdef SIM
 	`define VBIT 0
 	`define TAG 19:1

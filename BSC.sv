@@ -51,6 +51,54 @@ module BSC (
 	RTCNT_t     RTCNT;
 	RTCOR_t     RTCOR;
 	
+	function bit [1:0] GetAreaW(input bit [1:0] area, input WCR_t wcr);
+		bit [1:0] res;
+	
+		case (area)
+			2'd0: res = wcr.W0;
+			2'd1: res = wcr.W1;
+			2'd2: res = wcr.W2;
+			2'd3: res = wcr.W3;
+		endcase
+		return res;
+	endfunction
+	
+	function bit [1:0] GetAreaIW(input bit [1:0] area, input WCR_t wcr);
+		bit [1:0] res;
+	
+		case (area)
+			2'd0: res = wcr.IW0;
+			2'd1: res = wcr.IW1;
+			2'd2: res = wcr.IW2;
+			2'd3: res = wcr.IW3;
+		endcase
+		return res;
+	endfunction
+	
+	function bit [1:0] GetAreaLW(input bit [1:0] area, input BCR1_t bcr1);
+		bit [1:0] res;
+	
+		case (area)
+			2'd0: res = bcr1.A0LW;
+			2'd1: res = bcr1.A1LW;
+			2'd2: res = bcr1.AHLW;
+			2'd3: res = bcr1.AHLW;
+		endcase
+		return res;
+	endfunction
+	
+	function bit [1:0] GetAreaSZ(input bit [1:0] area, input BCR2_t bcr2, input bit [1:0] a0sz);
+		bit [1:0] res;
+	
+		case (area)
+			2'd0: res = a0sz;
+			2'd1: res = bcr2.A1SZ;
+			2'd2: res = bcr2.A2SZ;
+			2'd3: res = bcr2.A3SZ;
+		endcase
+		return res;
+	endfunction
+	
 	bit         BREQ;
 	wire        BACK = ~BRLS_N;
 	bit         BGR;
@@ -103,7 +151,7 @@ module BSC (
 		end
 		else begin
 //			NO_IDLE = 0;
-			AREA_SZ = BSC_GetAreaSZ(A[26:25],BCR2,A0_SZ);
+			AREA_SZ = GetAreaSZ(A[26:25],BCR2,A0_SZ);
 			STATE_NEXT = BUS_STATE;
 			case (BUS_STATE)
 				T0: begin
@@ -112,7 +160,7 @@ module BSC (
 				T1: begin
 					if (CE_R) begin
 						BS_N <= 1;
-						case (BSC_GetAreaW(A[26:25],WCR))
+						case (GetAreaW(A[26:25],WCR))
 							2'b00: begin
 								if (!NEXT_BA) begin
 									BUSY <= 0;
@@ -128,7 +176,7 @@ module BSC (
 								STATE_NEXT = TW;
 							end
 							2'b11: begin
-								case (BSC_GetAreaLW(A[26:25],BCR1))
+								case (GetAreaLW(A[26:25],BCR1))
 									2'b00: WAIT_CNT <= 3'd2;
 									2'b01: WAIT_CNT <= 3'd3;
 									2'b10: WAIT_CNT <= 3'd4;
@@ -274,7 +322,7 @@ module BSC (
 					else if (BUS_ACCESS_REQ && !BUS_RLS && ((!BGR && MASTER) || (BREQ && !MASTER)) /*&& !BUSY*/) begin
 						BUSY <= 1;
 						
-						case (BSC_GetAreaSZ(IBUS_A[26:25],BCR2,A0_SZ))
+						case (GetAreaSZ(IBUS_A[26:25],BCR2,A0_SZ))
 							2'b01: begin 
 								case (IBUS_A[1:0])
 									2'b00: begin 

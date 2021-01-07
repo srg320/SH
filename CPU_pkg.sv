@@ -1,7 +1,5 @@
 package CPU_PKG;
 
-	
-	
 	typedef struct packed
 	{
 		bit [3:0]    LVL;
@@ -129,63 +127,6 @@ package CPU_PKG;
 	parameter bit [7:0] CCR_RMASK = 8'hDF;
 	parameter bit [7:0] CCR_INIT = 8'h00;
 	
-	function bit [3:0] WayFromLRU(input bit [5:0] lru, input bit two_way);
-		bit [3:0] res;
-	
-		if (two_way) begin
-			res = lru[0] ? 4'b0100 : 4'b1000;
-		end else begin
-			casez (lru)
-				6'b111???: res = 4'b0001;
-				6'b0??11?: res = 4'b0010;
-				6'b?0?0?1: res = 4'b0100;
-				6'b??0?00: res = 4'b1000;
-				default:   res = 4'b0001;
-			endcase
-		end
-	
-		return res;
-	endfunction
-	
-	function bit [5:0] LRUSelect(input bit [3:0] way, input bit [5:0] lru);
-		bit [5:0] res;
-	
-		priority case (1'b1)
-			way[0]: res = {1'b0  ,1'b0  ,1'b0  ,lru[2],lru[1],lru[0]};
-			way[1]: res = {1'b1  ,lru[4],lru[3],1'b0  ,1'b0  ,lru[0]};
-			way[2]: res = {lru[5],1'b1  ,lru[3],1'b1  ,lru[1],1'b0  };
-			way[3]: res = {lru[5],lru[4],1'b1,  lru[2],1'b1,  1'b1  };
-		endcase
-	
-		return res;
-	endfunction
-	
-	function bit [1:0] WayToAddr(input bit [3:0] way);
-		bit [1:0] res;
-	
-		priority case (1'b1) 
-			way[0]: res = 2'b00;
-			way[1]: res = 2'b01;
-			way[2]: res = 2'b10;
-			way[3]: res = 2'b11;
-		endcase
-	
-		return res;
-	endfunction
-	
-	function bit [3:0] AddrToWay(input bit [1:0] a);
-		bit [3:0] res;
-	
-		case (a) 
-			2'b00: res = 4'b0001;
-			2'b01: res = 4'b0010;
-			2'b10: res = 4'b0100;
-			2'b11: res = 4'b1000;
-		endcase
-	
-		return res;
-	endfunction
-	
 	//BSC
 	typedef struct packed		//R/W;FFFFFFE2/FFFFFFE0
 	{
@@ -272,58 +213,6 @@ package CPU_PKG;
 	parameter bit [7:0] RTCOR_WMASK = 8'hFF;
 	parameter bit [7:0] RTCOR_RMASK = 8'hFF;
 	parameter bit [7:0] RTCOR_INIT = 8'h00;
-	
-	function bit [1:0] BSC_GetAreaW(input bit [1:0] area, input WCR_t wcr);
-		bit [1:0] res;
-	
-		case (area)
-			2'd0: res = wcr.W0;
-			2'd1: res = wcr.W1;
-			2'd2: res = wcr.W2;
-			2'd3: res = wcr.W3;
-		endcase
-	
-		return res;
-	endfunction
-	
-	function bit [1:0] BSC_GetAreaIW(input bit [1:0] area, input WCR_t wcr);
-		bit [1:0] res;
-	
-		case (area)
-			2'd0: res = wcr.IW0;
-			2'd1: res = wcr.IW1;
-			2'd2: res = wcr.IW2;
-			2'd3: res = wcr.IW3;
-		endcase
-	
-		return res;
-	endfunction
-	
-	function bit [1:0] BSC_GetAreaLW(input bit [1:0] area, input BCR1_t bcr1);
-		bit [1:0] res;
-	
-		case (area)
-			2'd0: res = bcr1.A0LW;
-			2'd1: res = bcr1.A1LW;
-			2'd2: res = bcr1.AHLW;
-			2'd3: res = bcr1.AHLW;
-		endcase
-	
-		return res;
-	endfunction
-	
-	function bit [1:0] BSC_GetAreaSZ(input bit [1:0] area, input BCR2_t bcr2, input bit [1:0] a0sz);
-		bit [1:0] res;
-	
-		case (area)
-			2'd0: res = a0sz;
-			2'd1: res = bcr2.A1SZ;
-			2'd2: res = bcr2.A2SZ;
-			2'd3: res = bcr2.A3SZ;
-		endcase
-	
-		return res;
-	endfunction
 	
 	//SCI
 	typedef struct packed		//R/W;FFFFFE00
@@ -569,31 +458,5 @@ package CPU_PKG;
 	parameter bit [7:0] DRCRx_WMASK = 8'h03;
 	parameter bit [7:0] DRCRx_RMASK = 8'h03;
 	parameter bit [7:0] DRCRx_INIT = 8'h00;
-	
-	function bit [3:0] DMAC_BAFromAddr(input bit [1:0] addr, input bit [1:0] sz);
-		bit [3:0] res;
-	
-		case (sz)
-			2'b00: res = {~addr[1]&~addr[0],~addr[1]&addr[0],addr[1]&~addr[0],addr[1]&addr[0]};
-			2'b01: res = {~addr[1]         ,~addr[1]        ,addr[1]                 ,addr[1]};
-			2'b10: res = 4'b1111;
-			2'b11: res = 4'b1111;
-		endcase
-	
-		return res;
-	endfunction
-	
-	function bit [31:0] DMAC_GetAddrInc(input bit [1:0] sz);
-		bit [31:0] res;
-	
-		case (sz)
-			2'b00: res = 32'd1;
-			2'b01: res = 32'd2;
-			2'b10: res = 32'd4;
-			2'b11: res = 32'd4;
-		endcase
-	
-		return res;
-	endfunction
 	
 endpackage

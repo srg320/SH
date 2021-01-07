@@ -86,10 +86,10 @@ module SCI (
 			if (CS_CE) begin
 				CNT <= CNT + 13'd1;
 				if (SMR.CA)  begin
-					if (CNT == {4'b0000,BRR,1'b1}) begin
+					if (CNT[9:0] == {1'b0,BRR,1'b1}) begin
 						INT_CE_R <= 1;
 					end
-					else if (CNT == {3'b000,BRR,2'b11}) begin
+					else if (CNT[9:0] == {BRR,2'b11}) begin
 						CNT <= '0;
 						INT_CE_F <= 1;
 					end
@@ -251,7 +251,7 @@ module SCI (
 						RBIT_CNT <= !LAST_BIT ? RBIT_CNT + 4'd1 : 4'd0;
 					end
 				end
-				REC_END <= !LAST_BIT;
+				REC_END <= LAST_BIT;
 			end
 			
 			if (SCE_F) begin
@@ -305,7 +305,7 @@ module SCI (
 			TDR <= TDR_INIT;
 			SMR <= SMR_INIT;
 			SCR <= SCR_INIT;
-			BRR <= BRR_INIT;
+			BRR <= '0;//BRR_INIT;
 			// synopsys translate_off
 			
 			// synopsys translate_on
@@ -315,12 +315,12 @@ module SCI (
 				TDR <= TDR_INIT;
 				SMR <= SMR_INIT;
 				SCR <= SCR_INIT;
-				BRR <= BRR_INIT;
+				BRR <= '0;//BRR_INIT;
 			end
 			else if (REG_SEL && IBUS_WE && IBUS_REQ) begin
 				case (IBUS_A[2:0])
 					3'h0: SMR <= IBUS_DI[31:24] & SMR_WMASK;
-					3'h1: BRR <= IBUS_DI[23:16] & BRR_WMASK;
+//					3'h1: BRR <= IBUS_DI[23:16] & BRR_WMASK;
 					3'h2: SCR <= IBUS_DI[15:8] & SCR_WMASK;
 					3'h3: TDR <= IBUS_DI[7:0] & TDR_WMASK;
 					default:;

@@ -53,10 +53,13 @@ module SH_core (
 	bit        MA_ACTIVE;
 	bit        IF_ACTIVE;
 	bit        INST_SPLIT;
-	bit        LOAD_SPLIT;
 	bit        MAWB_STALL;
 	bit        IFID_STALL;
 	bit        BR_COND;
+	// synopsys translate_off
+	bit        LOAD_SPLIT;
+	// synopsys translate_on
+	
 	
 	//Register file
 	bit  [4:0] REGS_RAN;
@@ -102,29 +105,32 @@ module SH_core (
 	
 	assign PC = NPC;
 	
-	wire LOAD_ISSUE = PIPE.EX.DI.MEM.R && ((PIPE.EX.DI.RA.N == ID_DECI.RA.N && ID_DECI.RA.R) || (PIPE.EX.DI.RA.N == ID_DECI.RB.N && ID_DECI.RB.R));
+	wire LOAD_ISSUE = (PIPE.EX.DI.MEM.R || PIPE.EX.DI.MAC.R) && ((PIPE.EX.DI.RA.N == ID_DECI.RA.N && ID_DECI.RA.R) || (PIPE.EX.DI.RA.N == ID_DECI.RB.N && ID_DECI.RB.R));
 	wire INST_ISSUE = ~PIPE.ID.PC[1] && (PIPE.EX.DI.MEM.R || PIPE.EX.DI.MEM.W || PIPE.EX.DI.MAC.R || PIPE.EX.DI.MAC.W);
 	always @(posedge CLK or negedge RST_N) begin
 		if (!RST_N) begin
 			MA_ACTIVE <= 0;
 			IF_ACTIVE <= 0;
 			INST_SPLIT <= 0;
-			LOAD_SPLIT <= 0;
 			MAWB_STALL <= 0;
+			// synopsys translate_off
+			LOAD_SPLIT <= 0;
+			// synopsys translate_on
 		end
 		else if (!RES_N) begin
 			MA_ACTIVE <= 0;
 			IF_ACTIVE <= 0;
 			INST_SPLIT <= 0;
-			LOAD_SPLIT <= 0;
 			MAWB_STALL <= 0;
 		end
 		else if (CE) begin
+			// synopsys translate_off
 			if (LOAD_ISSUE && !INST_SPLIT && (!MA_ACTIVE || !BUS_WAIT) && !EX_STALL) begin
 				LOAD_SPLIT <= 1;
 			end else if (INST_SPLIT && (!MA_ACTIVE || !BUS_WAIT)) begin
 				LOAD_SPLIT <= 0;
 			end
+			// synopsys translate_on
 			
 			if ((PIPE.EX.DI.MEM.R || PIPE.EX.DI.MEM.W || PIPE.EX.DI.MAC.R || PIPE.EX.DI.MAC.W) && !INST_SPLIT && (!IF_ACTIVE || !BUS_WAIT)) begin
 				MA_ACTIVE <= 1;
@@ -300,29 +306,33 @@ module SH_core (
 	//EX stage
 	//**********************************************************
 	//Bypassing datapath
-	wire BP_A_EXEX = (PIPE.EX.DI.RA.N == PIPE.MA.DI.RA.N & PIPE.EX.DI.RA.R & PIPE.MA.DI.RA.W & !PIPE.MA.DI.MEM.R) ||
+	wire BP_A_EXEX = (PIPE.EX.DI.RA.N == PIPE.MA.DI.RA.N & PIPE.EX.DI.RA.R & PIPE.MA.DI.RA.W & !(PIPE.MA.DI.MEM.R | PIPE.MA.DI.MAC.R)) |
 						  (PIPE.EX.DI.RA.N == PIPE.MA.DI.RB.N & PIPE.EX.DI.RA.R & PIPE.MA.DI.RB.W);
-	wire BP_B_EXEX = (PIPE.EX.DI.RB.N == PIPE.MA.DI.RA.N & PIPE.EX.DI.RB.R & PIPE.MA.DI.RA.W & !PIPE.MA.DI.MEM.R) ||
+	wire BP_B_EXEX = (PIPE.EX.DI.RB.N == PIPE.MA.DI.RA.N & PIPE.EX.DI.RB.R & PIPE.MA.DI.RA.W & !(PIPE.MA.DI.MEM.R | PIPE.MA.DI.MAC.R)) |
 						  (PIPE.EX.DI.RB.N == PIPE.MA.DI.RB.N & PIPE.EX.DI.RB.R & PIPE.MA.DI.RB.W);
-	wire BP_C_EXEX = 5'd0             == PIPE.MA.DI.RA.N & PIPE.EX.DI.R0R & PIPE.MA.DI.RA.W & !PIPE.MA.DI.MEM.R;
+	wire BP_C_EXEX = (5'd0            == PIPE.MA.DI.RA.N & PIPE.EX.DI.R0R  & PIPE.MA.DI.RA.W & !(PIPE.MA.DI.MEM.R | PIPE.MA.DI.MAC.R)) |
+						  (5'd0            == PIPE.MA.DI.RB.N & PIPE.EX.DI.R0R  & PIPE.MA.DI.RB.W);
 	
-	wire BP_A_MAEX = (PIPE.EX.DI.RA.N == PIPE.WB.DI.RA.N & PIPE.EX.DI.RA.R & PIPE.WB.DI.RA.W & !PIPE.WB.DI.MEM.R) ||
+	wire BP_A_MAEX = (PIPE.EX.DI.RA.N == PIPE.WB.DI.RA.N & PIPE.EX.DI.RA.R & PIPE.WB.DI.RA.W & !(PIPE.WB.DI.MEM.R | PIPE.WB.DI.MAC.R)) |
 						  (PIPE.EX.DI.RA.N == PIPE.WB.DI.RB.N & PIPE.EX.DI.RA.R & PIPE.WB.DI.RB.W);
-	wire BP_B_MAEX = (PIPE.EX.DI.RB.N == PIPE.WB.DI.RA.N & PIPE.EX.DI.RB.R & PIPE.WB.DI.RA.W & !PIPE.WB.DI.MEM.R) ||
+	wire BP_B_MAEX = (PIPE.EX.DI.RB.N == PIPE.WB.DI.RA.N & PIPE.EX.DI.RB.R & PIPE.WB.DI.RA.W & !(PIPE.WB.DI.MEM.R | PIPE.WB.DI.MAC.R)) |
 						  (PIPE.EX.DI.RB.N == PIPE.WB.DI.RB.N & PIPE.EX.DI.RB.R & PIPE.WB.DI.RB.W);
-	wire BP_C_MAEX = 5'd0             == PIPE.WB.DI.RA.N & PIPE.EX.DI.R0R & PIPE.WB.DI.RA.W & !PIPE.WB.DI.MEM.R;
+	wire BP_C_MAEX = (5'd0            == PIPE.WB.DI.RA.N & PIPE.EX.DI.R0R  & PIPE.WB.DI.RA.W & !(PIPE.WB.DI.MEM.R | PIPE.WB.DI.MAC.R)) |
+						  (5'd0            == PIPE.WB.DI.RB.N & PIPE.EX.DI.R0R  & PIPE.WB.DI.RB.W);
 	
 	wire BP_A_WBEXA = PIPE.EX.DI.RA.N == PIPE.WB2.DI.RA.N & PIPE.EX.DI.RA.R & PIPE.WB2.DI.RA.W;
 	wire BP_A_WBEXB = PIPE.EX.DI.RA.N == PIPE.WB2.DI.RB.N & PIPE.EX.DI.RA.R & PIPE.WB2.DI.RB.W;  
 	wire BP_B_WBEXA = PIPE.EX.DI.RB.N == PIPE.WB2.DI.RA.N & PIPE.EX.DI.RB.R & PIPE.WB2.DI.RA.W;
 	wire BP_B_WBEXB = PIPE.EX.DI.RB.N == PIPE.WB2.DI.RB.N & PIPE.EX.DI.RB.R & PIPE.WB2.DI.RB.W;
-	wire BP_C_WBEX = 5'd0             == PIPE.WB2.DI.RA.N & PIPE.EX.DI.R0R & PIPE.WB2.DI.RA.W;
+	wire BP_C_WBEX = 5'd0             == PIPE.WB2.DI.RA.N & PIPE.EX.DI.R0R  & PIPE.WB2.DI.RA.W;
 	
-	wire BP_A_MALD = (PIPE.EX.DI.RA.N == PIPE.MA.DI.RA.N & PIPE.EX.DI.RA.R & PIPE.MA.DI.RA.W & PIPE.MA.DI.MEM.R);
-	wire BP_B_MALD = (PIPE.EX.DI.RB.N == PIPE.MA.DI.RA.N & PIPE.EX.DI.RB.R & PIPE.MA.DI.RA.W & PIPE.MA.DI.MEM.R);
+	wire BP_A_MALD = PIPE.EX.DI.RA.N == PIPE.MA.DI.RA.N  & PIPE.EX.DI.RA.R & PIPE.MA.DI.RA.W & (PIPE.MA.DI.MEM.R | PIPE.MA.DI.MAC.R);
+	wire BP_B_MALD = PIPE.EX.DI.RB.N == PIPE.MA.DI.RA.N  & PIPE.EX.DI.RB.R & PIPE.MA.DI.RA.W & (PIPE.MA.DI.MEM.R | PIPE.MA.DI.MAC.R);
+	wire BP_C_MALD = 5'd0            == PIPE.MA.DI.RA.N  & PIPE.EX.DI.R0R  & PIPE.MA.DI.RA.W & (PIPE.MA.DI.MEM.R | PIPE.MA.DI.MAC.R);
 						  
-	wire BP_A_WBLD = (PIPE.EX.DI.RA.N == PIPE.WB.DI.RA.N & PIPE.EX.DI.RA.R & PIPE.WB.DI.RA.W & PIPE.WB.DI.MEM.R);
-	wire BP_B_WBLD = (PIPE.EX.DI.RB.N == PIPE.WB.DI.RA.N & PIPE.EX.DI.RB.R & PIPE.WB.DI.RA.W & PIPE.WB.DI.MEM.R);
+	wire BP_A_WBLD = PIPE.EX.DI.RA.N == PIPE.WB.DI.RA.N  & PIPE.EX.DI.RA.R & PIPE.WB.DI.RA.W & (PIPE.WB.DI.MEM.R | PIPE.WB.DI.MAC.R);
+	wire BP_B_WBLD = PIPE.EX.DI.RB.N == PIPE.WB.DI.RA.N  & PIPE.EX.DI.RB.R & PIPE.WB.DI.RA.W & (PIPE.WB.DI.MEM.R | PIPE.WB.DI.MAC.R);
+	wire BP_C_WBLD = 5'd0            == PIPE.WB.DI.RA.N  & PIPE.EX.DI.R0R  & PIPE.WB.DI.RA.W & (PIPE.WB.DI.MEM.R | PIPE.WB.DI.MAC.R);
 	
 	bit [31:0] REG_A;
 	bit [31:0] REG_B;
@@ -419,6 +429,12 @@ module SH_core (
 		
 		if (BP_C_EXEX) begin
 			BP_C = PIPE.MA.RES;
+		end
+		else if (BP_C_MALD) begin
+			BP_C = RD_SAVE;
+		end
+		else if (BP_C_WBLD) begin
+			BP_C = PIPE.WB.RD;
 		end
 		else if (BP_C_MAEX) begin
 			BP_C = PIPE.WB.RES;

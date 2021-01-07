@@ -53,7 +53,30 @@ module DMAC (
 	VCRDMAx_t   VCRDMA0;
 	VCRDMAx_t   VCRDMA1;
 	DMAOR_t     DMAOR;
+		
+	function bit [3:0] BAFromAddr(input bit [1:0] addr, input bit [1:0] sz);
+		bit [3:0] res;
 	
+		case (sz)
+			2'b00: res = {~addr[1]&~addr[0],~addr[1]&addr[0],addr[1]&~addr[0],addr[1]&addr[0]};
+			2'b01: res = {~addr[1]         ,~addr[1]        ,addr[1]                 ,addr[1]};
+			2'b10: res = 4'b1111;
+			2'b11: res = 4'b1111;
+		endcase
+		return res;
+	endfunction
+	
+	function bit [31:0] GetAddrInc(input bit [1:0] sz);
+		bit [31:0] res;
+	
+		case (sz)
+			2'b00: res = 32'd1;
+			2'b01: res = 32'd2;
+			2'b10: res = 32'd4;
+			2'b11: res = 32'd4;
+		endcase
+		return res;
+	endfunction
 	
 	wire REG1_SEL = (IBUS_A == 32'hFFFFFE71 && IBUS_A == 32'hFFFFFE72);
 	wire REG2_SEL = (IBUS_A >= 32'hFFFFFF80 && IBUS_A <= 32'hFFFFFFB3);
@@ -194,7 +217,7 @@ module DMAC (
 			RD_BUF_LATCH <= 0;
 		end
 		else begin
-			AR_INC = DMAC_GetAddrInc(CHCR[DMA_CH].TS);
+			AR_INC = GetAddrInc(CHCR[DMA_CH].TS);
 			TCR_NEXT = TCR[DMA_CH] - 24'd1;
 			
 			CH_REQ_CLR[0] <= 0;
@@ -332,8 +355,8 @@ module DMAC (
 	                DMA_WR ? DAR[DMA_CH] : 
 	                IBUS_A;
 	assign DBUS_DO = DMA_RD || DMA_WR ? DBUS_DO_TEMP : IBUS_DI;
-	assign DBUS_BA = DMA_RD ? DMAC_BAFromAddr(SAR[DMA_CH][1:0],CHCR[DMA_CH].TS) : 
-	                 DMA_WR ? DMAC_BAFromAddr(DAR[DMA_CH][1:0],CHCR[DMA_CH].TS) : 
+	assign DBUS_BA = DMA_RD ? BAFromAddr(SAR[DMA_CH][1:0],CHCR[DMA_CH].TS) : 
+	                 DMA_WR ? BAFromAddr(DAR[DMA_CH][1:0],CHCR[DMA_CH].TS) : 
 	                 IBUS_BA;
 	assign DBUS_WE = DMA_RD ? 1'b0 : 
 	                 DMA_WR ? 1'b1 : 

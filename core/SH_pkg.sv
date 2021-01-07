@@ -473,7 +473,7 @@ package SH2_PKG;
 					4'b1111:	begin	//MULS.W Rm,Rn
 						DECI.RA = '{RAN, 1, 0};
 						DECI.RB = '{RBN, 1, 0};
-						DECI.ALU = '{0, 0, EXT, 4'b0010, 3'b000};
+						DECI.ALU = '{0, 0, EXT, 4'b0011, 3'b000};
 						DECI.MEM = '{ALURES, ALURES, 2'b10, 0, 0};
 						DECI.MAC = '{2'b11, 0, 1, {2'b01,IR[1:0]}};
 					end
@@ -808,7 +808,7 @@ package SH2_PKG;
 					4'b1001:	begin	//SWAP.W Rm,Rn
 						DECI.RA = '{RAN, 0, 1};
 						DECI.RB = '{RBN, 1, 0};
-						DECI.ALU = '{0, 0, EXT, {1'b0,IR[2:0]}, 3'b000};
+						DECI.ALU = '{0, 0, EXT, {3'b000,IR[0]}, 3'b000};
 					end
 					4'b1010,			//NEGC Rm,Rn (0-Rm-T->Rn)
 					4'b1011:	begin	//NEG Rm,Rn (0-Rm->Rn)
@@ -825,7 +825,7 @@ package SH2_PKG;
 					4'b1111:	begin	//EXTS.W Rm,Rn
 						DECI.RA = '{RAN, 0, 1};
 						DECI.RB = '{RBN, 1, 0};
-						DECI.ALU = '{0, 0, EXT, {1'b0,IR[2:0]}, 3'b000};
+						DECI.ALU = '{0, 0, EXT, {2'b01,IR[1:0]}, 3'b000};
 					end
 					default:;
 				endcase
@@ -1313,7 +1313,7 @@ package SH2_PKG;
 			3'b000: res = {b[31:16],b[7:0],b[15:8]};
 			3'b001: res = {b[15:0],b[31:16]};
 			3'b010: res = {b[15:0],a[31:16]};
-			3'b011: res = b;
+			3'b011: res = {b[15:0],a[15:0]};
 			3'b100: res = {{24{1'b0}},b[7:0]};
 			3'b101: res = {{16{1'b0}},b[15:0]};
 			3'b110: res = {{24{b[7]}},b[7:0]};
@@ -1346,7 +1346,7 @@ package SH2_PKG;
 				3'b000: res = {a[29:0],{2{1'b0}}};
 				3'b001: res = {{2{1'b0}},a[31:2]};
 				3'b010: res = {a[23:0],{8{1'b0}}};
-				3'b011: res = {{8{1'b0}},a[31:24]};
+				3'b011: res = {{8{1'b0}},a[31:8]};
 				3'b100: res = {a[15:0],{16{1'b0}}};
 				3'b101: res = {{16{1'b0}},a[31:16]};
 				3'b110: res = {a[15:0],{16{1'b0}}};

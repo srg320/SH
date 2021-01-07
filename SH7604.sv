@@ -142,7 +142,6 @@ module SH7604 (
 	bit  [7:0] DIVU_VEC;
 	
 	//Div clocks
-	bit        CLK2_CE;
 	bit        CLK4_CE;
 	bit        CLK8_CE;
 	bit        CLK16_CE;
@@ -152,7 +151,7 @@ module SH7604 (
 	bit        CLK256_CE;
 	bit        CLK512_CE;
 	bit        CLK1024_CE;
-	bit        CLK2048_CE;
+	//bit        CLK2048_CE;
 	bit        CLK4096_CE;
 	bit        CLK8192_CE;
 	
@@ -431,7 +430,6 @@ module SH7604 (
 		bit [12:0] DIV_CNT;
 		
 		if (!RST_N) begin
-			CLK2_CE <= 0;
 			CLK4_CE <= 0;
 			CLK8_CE <= 0;
 			CLK16_CE <= 0;
@@ -441,7 +439,7 @@ module SH7604 (
 			CLK256_CE <= 0;
 			CLK512_CE <= 0;
 			CLK1024_CE <= 0;
-			CLK2048_CE <= 0;
+			//CLK2048_CE <= 0;
 			CLK4096_CE <= 0;
 			CLK8192_CE <= 0;
 			DIV_CNT <= '0;
@@ -449,7 +447,6 @@ module SH7604 (
 		else if (CE_R) begin	
 			DIV_CNT <= DIV_CNT + 13'd1;
 			
-			CLK2_CE    <= (DIV_CNT ==? 13'b????????????1);
 			CLK4_CE    <= (DIV_CNT ==? 13'b???????????11);
 			CLK8_CE    <= (DIV_CNT ==? 13'b??????????111);
 			CLK16_CE   <= (DIV_CNT ==? 13'b?????????1111);
@@ -459,7 +456,7 @@ module SH7604 (
 			CLK256_CE  <= (DIV_CNT ==? 13'b?????11111111);
 			CLK512_CE  <= (DIV_CNT ==? 13'b????111111111);
 			CLK1024_CE <= (DIV_CNT ==? 13'b???1111111111);
-			CLK2048_CE <= (DIV_CNT ==? 13'b??11111111111);
+			//CLK2048_CE <= (DIV_CNT ==? 13'b??11111111111);
 			CLK4096_CE <= (DIV_CNT ==? 13'b?111111111111);
 			CLK8192_CE <= (DIV_CNT ==? 13'b1111111111111);
 		end
