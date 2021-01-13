@@ -27,7 +27,7 @@ module DIVU (
 	DVCR_t      DVCR;
 	VCRDIV_t    VCRDIV;
 	
-	wire REG_SEL = (IBUS_A >= 32'hFFFFFF00 && IBUS_A <= 32'hFFFFFF17);
+	wire REG_SEL = (IBUS_A >= 32'hFFFFFF00 && IBUS_A <= 32'hFFFFFF1F);
 	wire DIV32_START = REG_SEL && IBUS_A[4:0] == 5'h04 && IBUS_WE && IBUS_REQ;
 	wire DIV64_START = REG_SEL && IBUS_A[4:0] == 5'h14 && IBUS_WE && IBUS_REQ;
 	
@@ -74,7 +74,7 @@ module DIVU (
 				Q <= {Q[30:0],~SUM[63]};
 				D <= {D[63],D[63:1]};
 				
-				if (STEP == 6'd4 && OVF) STEP <= 6'd38;
+				//if (STEP == 6'd4 && OVF) STEP <= 6'd38;
 			end
 			else if (STEP == 6'd37) begin
 				Q <= DVDNTH[31]^DVSR[31] ? (~Q + 1) : Q;
@@ -126,7 +126,7 @@ module DIVU (
 			
 			if (STEP == 6'd38) begin
 				DVCR.OVF = OVF;
-				DVDNTL <= !OVF ? Q : {Q[31],{31{~Q[31]}}};
+				DVDNTL <= Q;//!OVF ? Q : {Q[31],{31{~Q[31]}}};
 				DVDNTH <= R[31:0];
 			end
 		end
@@ -150,6 +150,8 @@ module DIVU (
 					5'h0C: REG_DO <= {16'h0000,VCRDIV} & VCRDIV_RMASK;
 					5'h10: REG_DO <= DVDNTH & DVDNT_RMASK;
 					5'h14: REG_DO <= DVDNTL & DVDNT_RMASK;
+					5'h18: REG_DO <= DVDNTH & DVDNT_RMASK;
+					5'h1C: REG_DO <= DVDNTL & DVDNT_RMASK;
 					default:REG_DO <= '0;
 				endcase
 			end

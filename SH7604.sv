@@ -60,8 +60,9 @@ module SH7604 (
 	
 	output            WDTOVF_N,
 	
-	input       [5:0] MD
+	input       [5:0] MD,
 	
+	output     [15:0] HOOK
 );
 	import CPU_PKG::*;
 	
@@ -82,6 +83,7 @@ module SH7604 (
 	bit        IBUS_LOCK;
 	
 	//CACHE
+	bit [31:0] CACHE_DI;
 	bit [31:0] CACHE_DO;
 	bit        CACHE_BUSY;
 	bit        CACHE_ACT;
@@ -109,6 +111,7 @@ module SH7604 (
 	//MULT
 	bit  [1:0] MAC_SEL;
 	bit  [3:0] MAC_OP;
+	bit        MAC_S;
 	bit        MAC_WE;
 	bit [31:0] MULT_DO;
 	
@@ -141,7 +144,13 @@ module SH7604 (
 	bit        DIVU_IRQ;
 	bit  [7:0] DIVU_VEC;
 	
-	//Div clocks
+	
+	//UBC
+	bit [31:0] UBC_DO;
+	bit        UBC_ACT;
+	bit        UBC_IRQ;
+	
+	//Internal clocks
 	bit        CLK4_CE;
 	bit        CLK8_CE;
 	bit        CLK16_CE;
@@ -174,6 +183,7 @@ module SH7604 (
 		
 		.MAC_SEL(MAC_SEL),
 		.MAC_OP(MAC_OP),
+		.MAC_S(MAC_S),
 		.MAC_WE(MAC_WE),
 		
 		.INTI(INTC_INTO),
@@ -182,7 +192,7 @@ module SH7604 (
 	
 	assign CBUS_DI = MAC_SEL ? MULT_DO : CACHE_DO;
 	
-	wire [31:0] MULT_DI = MAC_OP[3:2] == 2'b10 ? CACHE_DO : CBUS_DO;
+	wire [31:0] MULT_DI = MAC_SEL && MAC_OP[3:2] == 2'b10 ? CACHE_DO : CBUS_DO;
 	MULT mult
 	(
 		.CLK(CLK),
@@ -202,9 +212,21 @@ module SH7604 (
 		
 		.MAC_SEL(MAC_SEL),
 		.MAC_OP(MAC_OP),
+		.MAC_S(MAC_S),
 		.MAC_WE(MAC_WE)
 	);
 	
+	always @(posedge CLK or negedge RST_N) begin
+		if (!RST_N) begin
+			HOOK <= '0;
+		end
+		else if (CE_F) begin	
+			if (CBUS_A == 32'h060037E8 && CBUS_REQ && !CBUS_WR) HOOK <= '0;
+			else if (CBUS_A == 32'h060037EC && CBUS_REQ && !CBUS_WR) HOOK <= HOOK + 16'd1;
+		end
+	end
+	
+	assign CACHE_DI = MAC_SEL && !MAC_OP && !MAC_WE ? MULT_DO : CBUS_DO;
 	CACHE cache
 	(
 		.CLK(CLK),
@@ -215,7 +237,7 @@ module SH7604 (
 		.RES_N(RES_N),
 		
 		.CBUS_A(CBUS_A),
-		.CBUS_DI(CBUS_DO),
+		.CBUS_DI(CACHE_DI),
 		.CBUS_DO(CACHE_DO),
 		.CBUS_WR(CBUS_WR),
 		.CBUS_BA(CBUS_BA),
@@ -237,10 +259,32 @@ module SH7604 (
 						  WDT_ACT  ? WDT_DO : 
 						  SCI_ACT  ? SCI_DO : 
 						  DIVU_ACT ? DIVU_DO : 
+						  UBC_ACT  ? UBC_DO : 
 						  DMAC_ACT ? DMAC_DO : 
 						  BSC_DO;
 	assign IBUS_WAIT = DMAC_BUSY;
 
+	
+	UBC UBC
+	(
+		.CLK(CLK),
+		.RST_N(RST_N),
+		.CE_R(CE_R),
+		.CE_F(CE_F),
+		
+		.RES_N(RES_N),
+		
+		.IBUS_A(IBUS_A),
+		.IBUS_DI(IBUS_DO),
+		.IBUS_DO(UBC_DO),
+		.IBUS_BA(IBUS_BA),
+		.IBUS_WE(IBUS_WE),
+		.IBUS_REQ(IBUS_REQ),
+		.IBUS_BUSY(),
+		.IBUS_ACT(UBC_ACT),
+		
+		.IRQ(UBC_IRQ)
+	);
 	
 	bit  [31:0] DBUS_A;
 	bit  [31:0] DBUS_DI;
@@ -373,7 +417,7 @@ module SH7604 (
 		
 		.IRL_N(IRL_N),
 		
-		.UBC_IRQ(1'b0),
+		.UBC_IRQ(UBC_IRQ),
 		.DIVU_IRQ(DIVU_IRQ),
 		.DIVU_VEC(DIVU_VEC),
 		.DMAC0_IRQ(DMAC0_IRQ),

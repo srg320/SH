@@ -461,7 +461,7 @@ package SH2_PKG;
 					4'b1100:	begin	//CMP/STR Rm,Rn
 						DECI.RA = '{RAN, 1, 0};
 						DECI.RB = '{RBN, 1, 0};
-						DECI.ALU = '{0, 0, LOG, 4'b0010, 3'b000};
+						DECI.ALU = '{0, 0, LOG, 4'b1010, 3'b000};
 						DECI.CTRL = '{1, SR_, ALU};
 					end
 					4'b1101:	begin	//XTRCT Rm,Rn
@@ -647,7 +647,7 @@ package SH2_PKG;
 					8'b00001010,			//LDS Rm,MACH
 					8'b00011010: begin	//LDS Rm,MACL
 						DECI.RA = '{RAN, 1, 0};
-						DECI.MEM = '{ALURES, ALUB, 2'b10, 0, 0};
+						DECI.MEM = '{ALURES, ALUA, 2'b10, 0, 0};
 						DECI.MAC = '{{~IR[4],IR[4]}, 0, 1, 4'b0000};
 					end
 					8'b00101010: begin	//LDS Rm,PR
@@ -1285,10 +1285,10 @@ package SH2_PKG;
 		bit [32:0] sum;
 		
 		b2 = b ^ {32{code[0]}};
-		ci2 = code[1] ? ci : code[0];
+		ci2 = code[1] ? ci ^ code[0] : code[0];
 		sum = {1'b0,a} + {1'b0,b2} + {{32{1'b0}},ci2};
 		
-		return sum;
+		return {sum[32] ^ code[0],sum[31:0]};
 	endfunction
 	
 	function bit [31:0] Log(input bit [31:0] a, input bit [31:0] b, input bit [3:0] code);
@@ -1353,7 +1353,7 @@ package SH2_PKG;
 				3'b111: res = {{16{1'b0}},a[31:16]};
 			endcase
 		end
-		co = code[0] ? a[31] : a[0];
+		co = !code[0] ? a[31] : a[0];
 		
 		return {co,res};
 	endfunction

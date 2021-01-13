@@ -459,4 +459,58 @@ package CPU_PKG;
 	parameter bit [7:0] DRCRx_RMASK = 8'h03;
 	parameter bit [7:0] DRCRx_INIT = 8'h00;
 	
+	//UBC
+	typedef bit [15:0] BARx_t;	//R/W;FFFFFF40,FFFFFF42,FFFFFF60,FFFFFF62
+	parameter bit [15:0] BARx_WMASK = 16'hFFFF;
+	parameter bit [15:0] BARx_RMASK = 16'hFFFF;
+	parameter bit [15:0] BARx_INIT = 16'h0000;
+	
+	typedef bit [15:0] BAMRx_t;	//R/W;FFFFFF44,FFFFFF46,FFFFFF64,FFFFFF66
+	parameter bit [15:0] BAMRx_WMASK = 16'hFFFF;
+	parameter bit [15:0] BAMRx_RMASK = 16'hFFFF;
+	parameter bit [15:0] BAMRx_INIT = 16'h0000;
+	
+	typedef struct packed		//R/W;FFFFFF48,FFFFFF68
+	{
+		bit [ 7: 0] UNUSED;
+		bit [ 1: 0] CP;			//R/W
+		bit [ 1: 0] ID;			//R/W
+		bit [ 1: 0] RW;			//R/W
+		bit [ 1: 0] SZ;			//R/W
+	} BBRx_t;
+	parameter bit [15:0] BBRx_WMASK = 16'h00FF;
+	parameter bit [15:0] BBRx_RMASK = 16'h00FF;
+	parameter bit [15:0] BBRx_INIT = 16'h0000;
+	
+	typedef bit [15:0] BDRB_t;	//R/W;FFFFFF70,FFFFFF72
+	parameter bit [15:0] BDRB_WMASK = 16'hFFFF;
+	parameter bit [15:0] BDRB_RMASK = 16'hFFFF;
+	parameter bit [15:0] BDRB_INIT = 16'h0000;
+	
+	typedef bit [15:0] BDMRB_t;	//R/W;FFFFFF74,FFFFFF76
+	parameter bit [15:0] BDMRB_WMASK = 16'hFFFF;
+	parameter bit [15:0] BDMRB_RMASK = 16'hFFFF;
+	parameter bit [15:0] BDMRB_INIT = 16'h0000;
+	
+	typedef struct packed		//R/W;FFFFFF78
+	{
+		bit         CMFCA;		//R/W
+		bit         CMFPA;		//R/W
+		bit         EBBE;			//R/W
+		bit         UMD;			//R/W
+		bit         UNUSED;
+		bit         PCBA;			//R/W
+		bit [ 1: 0] UNUSED2;
+		bit         CMFCB;		//R/W
+		bit         CMFPB;		//R/W
+		bit         UNUSED3;
+		bit         SEQ;			//R/W
+		bit         DBEB;			//R
+		bit         PCBB;			//R/W
+		bit [ 1: 0] UNUSED4;
+	} BRCR_t;
+	parameter bit [15:0] BRCR_WMASK = 16'hF4D4;
+	parameter bit [15:0] BRCR_RMASK = 16'hF4DC;
+	parameter bit [15:0] BRCR_INIT = 16'h0000;
+	
 endpackage

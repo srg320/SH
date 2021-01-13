@@ -45,10 +45,10 @@ module SH2_tb;
 	bit [3:0] IRL_N;
 	initial begin
 	IRL_N = 4'hF;
-	#1200 
-	IRL_N = 4'hE;
-	#400 
-	IRL_N = 4'hF;
+//	#1200 
+//	IRL_N = 4'hE;
+//	#400 
+//	IRL_N = 4'hF;
 	end
 	
 	always @(posedge CLK) begin

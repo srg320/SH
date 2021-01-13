@@ -9,6 +9,7 @@ set_global_assignment -name VERILOG_FILE [file join $::quartus(qip_path) CACHE_L
 set_global_assignment -name SYSTEMVERILOG_FILE [file join $::quartus(qip_path) cache.sv ]
 set_global_assignment -name SYSTEMVERILOG_FILE [file join $::quartus(qip_path) BSC.sv ]
 set_global_assignment -name SYSTEMVERILOG_FILE [file join $::quartus(qip_path) DMAC.sv ]
+set_global_assignment -name SYSTEMVERILOG_FILE [file join $::quartus(qip_path) UBC.sv ]
 set_global_assignment -name SYSTEMVERILOG_FILE [file join $::quartus(qip_path) INTC.sv ]
 set_global_assignment -name SYSTEMVERILOG_FILE [file join $::quartus(qip_path) FRT.sv ]
 set_global_assignment -name SYSTEMVERILOG_FILE [file join $::quartus(qip_path) WDT.sv ]

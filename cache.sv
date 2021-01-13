@@ -580,7 +580,7 @@ module CACHE (
 		end
 	end
 	
-	assign CBUS_BUSY = !CBUS_REQ ? 1'b0 : READ_BUSY | WRITE_BUSY;
+	assign CBUS_BUSY = CBUS_REQ & (READ_BUSY | WRITE_BUSY);
 	
 	
 	wire CCR_SEL = IBADDR == 32'hFFFFFE92 && IBBA[1];
@@ -598,24 +598,26 @@ module CACHE (
 			if (CCR_SEL && IBWE && IBREQ) begin
 				CCR <= IBDATA[15:8] & CCR_WMASK;
 			end
-			
 			if (CCR.CP) CCR.CP <= 0;
 		end
 	end
 	
 	bit [31:0] REG_DO;
+	bit        REG_RDY;
 	always @(posedge CLK or negedge RST_N) begin
 		if (!RST_N) begin
 			REG_DO <= '0;
 		end
 		else if (CE_F) begin
+			REG_RDY <= 0;
 			if (CCR_SEL && !IBWE && IBREQ) begin
 				REG_DO <= {4{CCR & CCR_RMASK}};
+				REG_RDY <= 1;
 			end
 		end
 	end
 	
-	assign CBUS_DO = CCR_SEL    ? REG_DO : 
+	assign CBUS_DO = REG_RDY ? REG_DO : 
 	                 IBDATA_RDY ? IBUS_DI : 
 						  CACHE_DATA;
 						  
