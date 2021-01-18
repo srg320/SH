@@ -140,10 +140,10 @@ module SH7604 (
 
 	//DIVU
 	bit [31:0] DIVU_DO;
+	bit        DIVU_BUSY;
 	bit        DIVU_ACT;
 	bit        DIVU_IRQ;
 	bit  [7:0] DIVU_VEC;
-	
 	
 	//UBC
 	bit [31:0] UBC_DO;
@@ -328,7 +328,7 @@ module SH7604 (
 		.DBUS_BA(DBUS_BA),
 		.DBUS_WE(DBUS_WE),
 		.DBUS_REQ(DBUS_REQ),
-		.DBUS_WAIT(BSC_BUSY),
+		.DBUS_WAIT(BSC_BUSY | DIVU_BUSY),
 		.DBUS_LOCK(DBUS_LOCK),
 		
 		.BSC_ACK(BSC_ACK),
@@ -354,7 +354,7 @@ module SH7604 (
 	bit         IRD_N;
 	bit         IIVECF_N;
 	bit         BUS_RLS;
-	BSC bsc
+	BSC #(.AREA3(0), .W3(1), .IW3(0), .LW3(0)) bsc
 	(
 		.CLK(CLK),
 		.RST_N(RST_N),
@@ -462,7 +462,7 @@ module SH7604 (
 		.IBUS_BA(DBUS_BA),
 		.IBUS_WE(DBUS_WE),
 		.IBUS_REQ(DBUS_REQ),
-		.IBUS_BUSY(),
+		.IBUS_BUSY(DIVU_BUSY),
 		.IBUS_ACT(DIVU_ACT),
 		
 		.IRQ(DIVU_IRQ),

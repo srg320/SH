@@ -26,6 +26,7 @@ module DIVU (
 	DVDNT_t     DVDNTH;
 	DVCR_t      DVCR;
 	VCRDIV_t    VCRDIV;
+	bit         BUSY;
 	
 	wire REG_SEL = (IBUS_A >= 32'hFFFFFF00 && IBUS_A <= 32'hFFFFFF1F);
 	wire DIV32_START = REG_SEL && IBUS_A[4:0] == 5'h04 && IBUS_WE && IBUS_REQ;
@@ -33,12 +34,12 @@ module DIVU (
 	
 	
 	bit    [5:0] STEP;
-	bit   [63:0] R;
+	bit   [64:0] R;
 	bit   [31:0] Q;
 	bit          OVF;
 	always @(posedge CLK or negedge RST_N) begin
-		bit   [63:0] D;
-		bit   [63:0] SUM;
+		bit   [64:0] D;
+		bit   [64:0] SUM;
 		bit   [31:0] TEMP;
 		bit          DIV64;
 		
@@ -62,19 +63,19 @@ module DIVU (
 			SUM = $signed(R) - $signed(D);
 			if (STEP == 6'd0) begin
 				Q <= '0;
-				R <= DVDNTH[31] ? ~{DVDNTH,DVDNTL} + 1 : {DVDNTH,DVDNTL};
-				D <= {DVSR[31] ? ~DVSR + 1 : DVSR, 32'h00000000};
+				R <= DVDNTH[31] ? ~{DVDNTH[31],DVDNTH,DVDNTL} + 1 : {DVDNTH[31],DVDNTH,DVDNTL};
+				D <= {DVSR[31] ? ~{DVSR[31],DVSR} + 1 : {DVSR[31],DVSR}, 32'h00000000};
 				
-				if (!DVSR || (DIV64 && DVDNTH >= DVSR)) begin
+				if (!DVSR /*|| (DIV64 && DVDNTH >= DVSR)*/) begin
 					OVF <= 1;
 				end
 			end
 			else if (STEP >= 6'd4 && STEP <= 6'd36) begin
-				R <= !SUM[63] ? SUM : R;
-				Q <= {Q[30:0],~SUM[63]};
+				R <= !SUM[64] ? SUM : R;
+				Q <= {Q[30:0],~SUM[64]};
 				D <= {D[63],D[63:1]};
 				
-				//if (STEP == 6'd4 && OVF) STEP <= 6'd38;
+				if (STEP == 6'd5 && OVF) STEP <= 6'd38;
 			end
 			else if (STEP == 6'd37) begin
 				Q <= DVDNTH[31]^DVSR[31] ? (~Q + 1) : Q;
@@ -85,6 +86,8 @@ module DIVU (
 			end
 		end
 	end
+	
+	wire OPERATE = (STEP != 6'h3F);
 	
 	
 	//Registers
@@ -107,7 +110,7 @@ module DIVU (
 				DVCR <= DVCR_INIT;
 				VCRDIV <= VCRDIV_INIT;
 			end
-			else if (REG_SEL && IBUS_WE && IBUS_REQ) begin
+			else if (REG_SEL && IBUS_WE && IBUS_REQ && !OPERATE) begin
 				case ({IBUS_A[4:2],2'b00})
 					5'h00: DVSR <= IBUS_DI & DVSR_WMASK;
 					5'h04: {DVDNTH,DVDNTL} <= {{32{IBUS_DI[31]}},IBUS_DI} & {DVDNT_WMASK,DVDNT_WMASK};
@@ -126,7 +129,7 @@ module DIVU (
 			
 			if (STEP == 6'd38) begin
 				DVCR.OVF = OVF;
-				DVDNTL <= Q;//!OVF ? Q : {Q[31],{31{~Q[31]}}};
+				DVDNTL <= !OVF || DVCR.OVFIE ? Q : {DVDNTH[31]^DVSR[31],{31{~(DVDNTH[31]^DVSR[31])}}};
 				DVDNTH <= R[31:0];
 			end
 		end
@@ -142,7 +145,7 @@ module DIVU (
 			REG_DO <= '0;
 		end
 		else if (CE_F) begin
-			if (REG_SEL && !IBUS_WE && IBUS_REQ) begin
+			if (REG_SEL && !IBUS_WE && IBUS_REQ && !OPERATE) begin
 				case ({IBUS_A[4:2],2'b00})
 					5'h00: REG_DO <= DVSR & DVSR_RMASK;
 					5'h04: REG_DO <= DVDNTL & DVDNT_RMASK;
@@ -158,8 +161,19 @@ module DIVU (
 		end
 	end
 	
+	always @(posedge CLK or negedge RST_N) begin
+		if (!RST_N) begin
+			BUSY <= 0;
+		end
+		else if (CE_R) begin
+			if (REG_SEL && IBUS_REQ) begin
+				BUSY <= OPERATE;
+			end
+		end
+	end
+	
 	assign IBUS_DO = REG_SEL ? REG_DO : '0;
-	assign IBUS_BUSY = 0;
+	assign IBUS_BUSY = BUSY;
 	assign IBUS_ACT = REG_SEL;
 
 endmodule

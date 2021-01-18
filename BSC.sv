@@ -1,6 +1,8 @@
 import CPU_PKG::*;
 
-module BSC (
+module BSC 
+#(parameter bit AREA3=0, bit [1:0] W3=0, bit [1:0] IW3=0, bit [1:0] LW3=0)
+(
 	input             CLK,
 	input             RST_N,
 	input             CE_R,
@@ -58,7 +60,7 @@ module BSC (
 			2'd0: res = wcr.W0;
 			2'd1: res = wcr.W1;
 			2'd2: res = wcr.W2;
-			2'd3: res = wcr.W3;
+			2'd3: res = AREA3 ? W3 : wcr.W3;
 		endcase
 		return res;
 	endfunction
@@ -70,7 +72,7 @@ module BSC (
 			2'd0: res = wcr.IW0;
 			2'd1: res = wcr.IW1;
 			2'd2: res = wcr.IW2;
-			2'd3: res = wcr.IW3;
+			2'd3: res = AREA3 ? IW3 : wcr.IW3;
 		endcase
 		return res;
 	endfunction
@@ -82,7 +84,7 @@ module BSC (
 			2'd0: res = bcr1.A0LW;
 			2'd1: res = bcr1.A1LW;
 			2'd2: res = bcr1.AHLW;
-			2'd3: res = bcr1.AHLW;
+			2'd3: res = AREA3 ? LW3 : bcr1.AHLW;
 		endcase
 		return res;
 	endfunction
@@ -194,9 +196,7 @@ module BSC (
 							WAIT_CNT <= WAIT_CNT - 3'd1;
 						end
 						else if (WAIT_N) begin
-							if (!NEXT_BA) begin
-								BUSY <= 0;
-							end
+							if (!NEXT_BA) BUSY <= 0;
 							STATE_NEXT = T2;
 						end
 					end
@@ -264,7 +264,7 @@ module BSC (
 						if (WAIT_CNT) begin
 							WAIT_CNT <= WAIT_CNT - 3'd1;
 						end
-						else if (WAIT_N) begin
+						else begin
 							STATE_NEXT = T0;
 						end
 //						NO_IDLE = ~(IBUS_A[31:27] ==? 5'b00?00 && IBUS_REQ && (IBUS_A[26:25] != CS_LAST || (RD_LAST && IBUS_WE)));

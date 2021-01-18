@@ -150,6 +150,7 @@ package SH2_PKG;
 		bit          SLP;		//SLEEP instruction
 		bit [2:0]    LST;		//Last state
 		bit          IACK;	//Interrupt acknowledge
+		bit          ILI;		//Illegal instruction
 	} DecInstr_t;
 
 	parameter DecInstr_t DECI_RESET = '{'{GRX, GRX, 0, 0, 0, 0, 0},
@@ -166,6 +167,7 @@ package SH2_PKG;
 												 1'b0,
 												 1'b0,
 												 3'b000,
+												 1'b0,
 												 1'b0};
 	
 	parameter bit [4:0] R0 = 5'b00000;
@@ -198,7 +200,7 @@ package SH2_PKG;
 									default:DECI.CTRL = '{0, VBR_, LOAD};
 								endcase
 							end
-							default:;
+							default: DECI.ILI = 1;
 						endcase
 					end
 					4'b0011:	begin
@@ -222,7 +224,7 @@ package SH2_PKG;
 									default:;
 								endcase
 							end
-							default:;
+							default: DECI.ILI = 1;
 						endcase
 					end
 					4'b0100,4'b0101,4'b0110:	begin	//MOV.x Rm,@(R0,Rn) (Rm->(Rn+R0))
@@ -264,7 +266,7 @@ package SH2_PKG;
 								DECI.MEM = '{ALURES, ALURES, 2'b10, 0, 0};
 								DECI.MAC = '{2'b11, 0, 1, 4'b1111};
 							end
-							default:;
+							default: DECI.ILI = 1;
 						endcase
 					end
 					4'b1001:	begin
@@ -287,7 +289,7 @@ package SH2_PKG;
 								DECI.ALU = '{1, 0, LOG, 4'b0000, 3'b000};
 								DECI.CTRL.S = SR_;
 							end
-							default:;
+							default: DECI.ILI = 1;
 						endcase
 					end
 					4'b1010:	begin
@@ -302,7 +304,7 @@ package SH2_PKG;
 								DECI.RA = '{RAN, 0, 1};
 								DECI.RB = '{PR, 1, 0};
 							end
-							default:;
+							default: DECI.ILI = 1;
 						endcase
 					end
 					4'b1011:	begin
@@ -369,7 +371,7 @@ package SH2_PKG;
 								endcase
 								DECI.LST = 3'd3;
 							end
-							default:;
+							default: DECI.ILI = 1;
 						endcase
 					end
 					4'b1100,4'b1101,4'b1110:	begin	//MOV.x @(R0,Rm),Rn ((Rm+R0)->Rn)
@@ -401,7 +403,7 @@ package SH2_PKG;
 						endcase
 						DECI.LST = 3'd1;
 					end
-					default:;
+					default: DECI.ILI = 1;
 				endcase
 			end
 			
@@ -477,7 +479,7 @@ package SH2_PKG;
 						DECI.MEM = '{ALURES, ALURES, 2'b10, 0, 0};
 						DECI.MAC = '{2'b11, 0, 1, {2'b01,IR[1:0]}};
 					end
-					default:;
+					default: DECI.ILI = 1;
 				endcase
 			end
 			
@@ -532,7 +534,7 @@ package SH2_PKG;
 						DECI.ALU = '{0, 0, ADD, {IR[1:0],IR[1]&~IR[0],1'b0}, 3'b000};
 						DECI.CTRL = '{|IR[1:0], SR_, ALU};
 					end
-					default:;
+					default: DECI.ILI = 1;
 				endcase
 			end
 			
@@ -597,7 +599,7 @@ package SH2_PKG;
 						DECI.IMMT = ONE;
 						DECI.ALU = '{1, 0, ADD, 4'b0000, 3'b000};
 						DECI.MEM = '{ALUB, ALUB, 2'b10, 1, 0};
-						DECI.MAC = '{{~IR[4],IR[4]}, 0, 1, 4'b0000};
+						DECI.MAC = '{{~IR[4],IR[4]}, 0, 1, 4'b1000};
 					end
 					8'b00100110: begin	//LDS.L @Rm+,PR
 						DECI.RA = '{PR, 0, 1};
@@ -733,11 +735,22 @@ package SH2_PKG;
 						DECI.TAS = 1;
 						DECI.LST = 3'd3;
 					end
-					default:;
-				endcase
-				
-				case (IR[3:0])
-					4'b1111: begin	//MAC.W @Rm+,@Rn+
+					8'b00001111,
+					8'b00011111,
+					8'b00101111,
+					8'b00111111,
+					8'b01001111,
+					8'b01011111,
+					8'b01101111,
+					8'b01111111,
+					8'b10001111,
+					8'b10011111,
+					8'b10101111,
+					8'b10111111,
+					8'b11001111,
+					8'b11011111,
+					8'b11101111,
+					8'b11111111,: begin	//MAC.W @Rm+,@Rn+
 						case (STATE)
 							3'd0: begin
 								DECI.RB = '{RBN, 1, 1};
@@ -759,7 +772,7 @@ package SH2_PKG;
 						endcase
 						DECI.LST = 3'd1;
 					end
-					default:;
+					default: DECI.ILI = 1;
 				endcase
 			end
 			
@@ -827,7 +840,7 @@ package SH2_PKG;
 						DECI.RB = '{RBN, 1, 0};
 						DECI.ALU = '{0, 0, EXT, {2'b01,IR[1:0]}, 3'b000};
 					end
-					default:;
+					default: DECI.ILI = 1;
 				endcase
 			end
 			
@@ -903,7 +916,7 @@ package SH2_PKG;
 							default:;
 						endcase
 					end
-					default:;
+					default: DECI.ILI = 1;
 				endcase
 			end
 			
@@ -1073,7 +1086,7 @@ package SH2_PKG;
 						endcase
 						DECI.LST = 3'd2;
 					end
-					default:;
+					default: DECI.ILI = 1;
 				endcase
 			end
 			
@@ -1182,11 +1195,11 @@ package SH2_PKG;
 						endcase
 						DECI.LST = 3'd5;
 					end
-					default:;
+					default: DECI.ILI = 1;
 				endcase
 			end
 			
-			default:;
+			default: DECI.ILI = 1;
 		endcase
 		
 		return DECI;

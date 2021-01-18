@@ -171,7 +171,7 @@ module FRT (
 					4'h5: if (!TOCR.OCRS) OCRA <= {TEMP,IBUS_DI[23:16]} & OCR_WMASK; 
 					      else OCRB <= {TEMP,IBUS_DI[23:16]} & OCR_WMASK;
 					4'h6: TCR <= IBUS_DI[15:8] & TCR_WMASK;
-					4'h7: TOCR <= IBUS_DI[7:0] & TOCR_WMASK;
+					4'h7: TOCR <= (IBUS_DI[7:0] & TOCR_WMASK) | TOCR_INIT;
 					default:;
 				endcase
 			end
@@ -203,7 +203,7 @@ module FRT (
 					            TEMP   <= OCR[7:0]; end
 					4'h5:       REG_DO <= {4{TEMP}};
 					4'h6:       REG_DO <= {4{TCR & TCR_RMASK}};
-					4'h7:       REG_DO <= {4{TOCR & TOCR_RMASK}};
+					4'h7:       REG_DO <= {4{(TOCR & TOCR_RMASK) | TOCR_INIT}};
 					4'h8:       REG_DO <= {4{TEMP}};
 					4'h9: begin REG_DO <= {4{ICR[15:8]}}; 
 					            TEMP   <= ICR[7:0]; end

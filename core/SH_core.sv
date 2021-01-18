@@ -25,7 +25,8 @@ module SH_core (
 	output   IntAck_t INTO,
 	
 	output INT_HOOK,
-	output     [15:0] WB_IR
+	output     [15:0] WB_IR,
+	output			   ILI
 );
 	
 	import SH2_PKG::*;
@@ -176,7 +177,7 @@ module SH_core (
 		IFtoID_t   SAVE_ID;
 		
 		if (!RST_N) begin
-			PIPE.ID.IR <= 16'h0000;
+			PIPE.ID.IR <= 16'h0009;
 			PIPE.ID.PC <= '0;
 			SAVE_IR <= '0;
 		end
@@ -194,7 +195,7 @@ module SH_core (
 			end
 			
 			if (/*(BR_COND && ID_DECI.BR.BT == CB && !ID_DECI.BR.BD) || PIPE.EX.BC ||*/ STBY) begin
-				NEW_IR = 16'h0000;//NOP
+				NEW_IR = 16'h0009;//NOP
 			end
 				
 			if (!IF_STALL) begin
@@ -229,10 +230,11 @@ module SH_core (
 	wire ID_DELAY_SLOT = ~PIPE.EX.DI.BR.BI /*& PIPE.EX.DI.BR.BD*/ & (PIPE.EX.DI.BR.BT == CB | PIPE.EX.DI.BR.BT == UCB);
 	
 	wire [15:0] DEC_IR = INT_REQ && !ID_DELAY_SLOT && !IFID_STALL ? {8'hF0,INT_VEC} : 
-							   ID_DELAY_SLOT && !PIPE.EX.DI.BR.BD ? 16'h0001 :
+							   ID_DELAY_SLOT && !PIPE.EX.DI.BR.BD ? 16'h0009 :
 								IFID_STALL ? PIPE.EX.IR : PIPE.ID.IR;
 								
 	assign ID_DECI = Decode(DEC_IR, STATE, BR_COND);
+	
 	
 	wire BP_T_EXID = ID_DECI.BR.BI & ID_DECI.BR.BT == CB & PIPE.EX.DI.CTRL.W & PIPE.EX.DI.CTRL.S == SR_;
 	always_comb begin
@@ -765,5 +767,7 @@ module SH_core (
 	
 	assign INTO.LVL = SR.I;
 	assign INTO.ACK = PIPE.EX.DI.IACK;
+	
+	assign ILI = ID_DECI.ILI & ~ID_STALL;
 	
 endmodule
