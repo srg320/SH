@@ -62,7 +62,7 @@ module SH7604 (
 	
 	input       [5:0] MD,
 	
-	output     [15:0] HOOK
+	output reg [15:0] HOOK
 );
 	import CPU_PKG::*;
 	

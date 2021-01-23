@@ -750,7 +750,7 @@ package SH2_PKG;
 					8'b11001111,
 					8'b11011111,
 					8'b11101111,
-					8'b11111111,: begin	//MAC.W @Rm+,@Rn+
+					8'b11111111: begin	//MAC.W @Rm+,@Rn+
 						case (STATE)
 							3'd0: begin
 								DECI.RB = '{RBN, 1, 1};

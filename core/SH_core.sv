@@ -53,6 +53,7 @@ module SH_core (
 	bit [ 3:0] INT_LVL;
 	bit [ 7:0] INT_VEC;
 	
+	bit        IF_STALL;
 	bit        MA_ACTIVE;
 	bit        IF_ACTIVE;
 	bit        INST_SPLIT;
@@ -107,11 +108,13 @@ module SH_core (
 	end
 	
 	assign PC = NPC;
+
+	wire LOAD_ISSUE = (PIPE.EX.DI.MEM.R | PIPE.EX.DI.MAC.R) & ((PIPE.EX.DI.RA.N == ID_DECI.RA.N & ID_DECI.RA.R) |
+	                                                           (PIPE.EX.DI.RA.N == ID_DECI.RB.N & ID_DECI.RB.R) |
+	                                                           (PIPE.EX.DI.RA.N ==         5'd0 & ID_DECI.R0R));
+//	wire INST_ISSUE = ~PIPE.ID.PC[1] & (PIPE.EX.DI.MEM.R | PIPE.EX.DI.MEM.W | PIPE.EX.DI.MAC.R | PIPE.EX.DI.MAC.W);
+	wire INST_ISSUE = ((IFID_STALL & ~PC[1]) | ~PIPE.ID.PC[1]) & (PIPE.EX.DI.MEM.R | PIPE.EX.DI.MEM.W | PIPE.EX.DI.MAC.R | PIPE.EX.DI.MAC.W);
 	
-	wire LOAD_ISSUE = (PIPE.EX.DI.MEM.R || PIPE.EX.DI.MAC.R) && ((PIPE.EX.DI.RA.N == ID_DECI.RA.N && ID_DECI.RA.R) || 
-	                                                             (PIPE.EX.DI.RA.N == ID_DECI.RB.N && ID_DECI.RB.R) || 
-	                                                             (PIPE.EX.DI.RA.N ==         5'd0 && ID_DECI.R0R));
-	wire INST_ISSUE = ~PIPE.ID.PC[1] && (PIPE.EX.DI.MEM.R || PIPE.EX.DI.MEM.W || PIPE.EX.DI.MAC.R || PIPE.EX.DI.MAC.W);
 	always @(posedge CLK or negedge RST_N) begin
 		if (!RST_N) begin
 			MA_ACTIVE <= 0;
@@ -168,7 +171,7 @@ module SH_core (
 	//**********************************************************
 	// IF stage
 	//**********************************************************
-	wire IF_STALL = (MA_ACTIVE & BUS_WAIT) | (IF_ACTIVE & BUS_WAIT) | INST_SPLIT | IFID_STALL;
+	assign IF_STALL = (MA_ACTIVE & BUS_WAIT) | (IF_ACTIVE & BUS_WAIT) | INST_SPLIT | IFID_STALL;
 	
 	bit        NEED_FETCH;
 	always @(posedge CLK or negedge RST_N) begin
