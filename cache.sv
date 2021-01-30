@@ -83,25 +83,23 @@ module CACHE (
 	
 	function bit [5:0] LRUSelect(input bit [3:0] way, input bit [5:0] lru);
 		bit [5:0] res;
-	
-		priority case (1'b1)
-			way[0]: res = {1'b0  ,1'b0  ,1'b0  ,lru[2],lru[1],lru[0]};
-			way[1]: res = {1'b1  ,lru[4],lru[3],1'b0  ,1'b0  ,lru[0]};
-			way[2]: res = {lru[5],1'b1  ,lru[3],1'b1  ,lru[1],1'b0  };
-			way[3]: res = {lru[5],lru[4],1'b1,  lru[2],1'b1,  1'b1  };
-		endcase
+
+		res = way[0] ? {1'b0  ,1'b0  ,1'b0  ,lru[2],lru[1],lru[0]} :
+		      way[1] ? {1'b1  ,lru[4],lru[3],1'b0  ,1'b0  ,lru[0]} :
+		      way[2] ? {lru[5],1'b1  ,lru[3],1'b1  ,lru[1],1'b0  } :
+		      way[3] ? {lru[5],lru[4],1'b1,  lru[2],1'b1,  1'b1  } :
+				         {1'b0  ,1'b0  ,1'b0  ,lru[2],lru[1],lru[0]};
 		return res;
 	endfunction
 	
 	function bit [1:0] WayToAddr(input bit [3:0] way);
 		bit [1:0] res;
-	
-		priority case (1'b1) 
-			way[0]: res = 2'b00;
-			way[1]: res = 2'b01;
-			way[2]: res = 2'b10;
-			way[3]: res = 2'b11;
-		endcase
+
+		res = way[0] ? 2'b00 :
+		      way[1] ? 2'b01 :
+		      way[2] ? 2'b10 :
+		      way[3] ? 2'b11 : 
+				         2'b00;
 		return res;
 	endfunction
 	

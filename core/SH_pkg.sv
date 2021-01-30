@@ -19,7 +19,8 @@ package SH2_PKG;
 		ZIMM8 = 3'b010,
 		SIMM12 = 3'b011,
 		ZERO = 3'b100,
-		ONE = 3'b101
+		ONE = 3'b101,
+		VECT = 3'b110
 	} IMMType_t;
 	
 	typedef enum bit[1:0] {
@@ -150,6 +151,7 @@ package SH2_PKG;
 		bit          SLP;		//SLEEP instruction
 		bit [2:0]    LST;		//Last state
 		bit          IACK;	//Interrupt acknowledge
+		bit          VECR;
 		bit          ILI;		//Illegal instruction
 	} DecInstr_t;
 
@@ -167,6 +169,7 @@ package SH2_PKG;
 												 1'b0,
 												 1'b0,
 												 3'b000,
+												 1'b0,
 												 1'b0,
 												 1'b0};
 	
@@ -1122,12 +1125,13 @@ package SH2_PKG;
 							end
 							3'd3: begin
 								DECI.CTRL = '{1, SR_, IMSK};
+								DECI.VECR = 1;
 							end
 							3'd4: begin
 								DECI.DP.RSB = SCR;
 								DECI.CTRL.S = VBR_;
 								DECI.DP.RSC = RSC_IMM;
-								DECI.IMMT = ZIMM8;
+								DECI.IMMT = VECT;
 								DECI.ALU = '{1, 0, ADD, 4'b0000, 3'b000};
 								DECI.MEM = '{ALURES, ALUB, 2'b10, 1, 0};
 							end
@@ -1152,8 +1156,8 @@ package SH2_PKG;
 					4'b0001:	begin	//RESET
 						case (STATE)
 							3'd0: begin
-								DECI.CTRL = '{1, SR_, IMSK};
-								DECI.IACK = 1;
+//								DECI.CTRL = '{1, SR_, IMSK};
+//								DECI.IACK = 1;
 							end
 							3'd1: begin
 								DECI.DP.RSC = RSC_IMM;
@@ -1164,7 +1168,7 @@ package SH2_PKG;
 							3'd2: begin
 								DECI.DP.BPMAB = 1;
 								DECI.DP.RSC = RSC_IMM;
-								DECI.IMMT = ZIMM8;
+								DECI.IMMT = VECT;
 								DECI.ALU = '{1, 0, ADD, 4'b0000, 3'b000};
 								DECI.MEM = '{ALURES, ALUB, 2'b10, 1, 0};
 							end
@@ -1230,7 +1234,6 @@ package SH2_PKG;
 		bit [31:0] RES;		//ALU output
 		bit [31:0] ADDR;		//Data memory address
 		bit [31:0] WD;			//Write data
-//		bit        LOCK;
 	} EXtoMA_t;
 
 	typedef struct

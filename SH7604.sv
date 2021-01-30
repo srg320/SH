@@ -82,6 +82,20 @@ module SH7604 (
 	bit        IBUS_WAIT;
 	bit        IBUS_LOCK;
 	
+	bit  [3:0] INT_LVL;
+	bit  [7:0] INT_VEC;
+	bit        INT_REQ;
+	bit  [3:0] INT_MASK;
+	bit        INT_ACK;
+	bit        INT_ACP;
+	bit        VECT_REQ;
+	bit        VECT_WAIT;
+	
+	bit  [3:0] VBUS_A;
+	bit  [7:0] VBUS_DO;
+	bit        VBUS_REQ;
+	bit        VBUS_BUSY;
+	
 	//CACHE
 	bit [31:0] CACHE_DI;
 	bit [31:0] CACHE_DO;
@@ -103,10 +117,12 @@ module SH7604 (
 	bit  [7:0] DMAC1_VEC;
 	
 	//INTC
+	
 	bit [31:0] INTC_DO;
 	bit        INTC_ACT;
-	IntReq_t   INTC_INTO;
-	IntAck_t   CPU_INTO;
+	bit        INTC_BUSY;
+//	IntReq_t   INTC_INTO;
+//	IntAck_t   CPU_INTO;
 	
 	//MULT
 	bit  [1:0] MAC_SEL;
@@ -186,8 +202,14 @@ module SH7604 (
 		.MAC_S(MAC_S),
 		.MAC_WE(MAC_WE),
 		
-		.INTI(INTC_INTO),
-		.INTO(CPU_INTO)
+		.INT_LVL(INT_LVL),
+		.INT_VEC(INT_VEC),
+		.INT_REQ(INT_REQ),
+		.INT_MASK(INT_MASK),
+		.INT_ACK(INT_ACK),
+		.INT_ACP(INT_ACP),
+		.VECT_REQ(VECT_REQ),
+		.VECT_WAIT(VECT_WAIT)
 	);
 	
 	assign CBUS_DI = MAC_SEL ? MULT_DO : CACHE_DO;
@@ -262,7 +284,7 @@ module SH7604 (
 						  UBC_ACT  ? UBC_DO : 
 						  DMAC_ACT ? DMAC_DO : 
 						  BSC_DO;
-	assign IBUS_WAIT = DMAC_BUSY;
+	assign IBUS_WAIT = DMAC_BUSY | INTC_BUSY;
 
 	
 	UBC UBC
@@ -392,6 +414,11 @@ module SH7604 (
 		.IBUS_LOCK(DBUS_LOCK),
 		.IBUS_ACT(),
 		
+		.VBUS_A(VBUS_A),
+		.VBUS_DO(VBUS_DO),
+		.VBUS_REQ(VBUS_REQ),
+		.VBUS_BUSY(VBUS_BUSY),
+		
 		.IRQ(),
 		
 		.CACK(BSC_ACK),
@@ -414,8 +441,16 @@ module SH7604 (
 		
 		.RES_N(RES_N),
 		.NMI_N(NMI_N),
-		
 		.IRL_N(IRL_N),
+		
+		.INT_MASK(INT_MASK),
+		.INT_ACK(INT_ACK),
+		.INT_ACP(INT_ACP),
+		.INT_LVL(INT_LVL),
+		.INT_VEC(INT_VEC),
+		.INT_REQ(INT_REQ),
+		.VECT_REQ(VECT_REQ),
+		.VECT_WAIT(VECT_WAIT),
 		
 		.UBC_IRQ(UBC_IRQ),
 		.DIVU_IRQ(DIVU_IRQ),
@@ -440,11 +475,13 @@ module SH7604 (
 		.IBUS_BA(DBUS_BA),
 		.IBUS_WE(DBUS_WE),
 		.IBUS_REQ(DBUS_REQ),
-		.IBUS_BUSY(),
+		.IBUS_BUSY(INTC_BUSY),
 		.IBUS_ACT(INTC_ACT),
 		
-		.INTI(CPU_INTO),
-		.INTO(INTC_INTO)
+		.VBUS_A(VBUS_A),
+		.VBUS_DI(VBUS_DO),
+		.VBUS_REQ(VBUS_REQ),
+		.VBUS_WAIT(VBUS_BUSY)
 	);
 	
 	DIVU divu

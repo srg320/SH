@@ -41,7 +41,7 @@ module DIVU (
 		bit   [64:0] D;
 		bit   [64:0] SUM;
 		bit   [31:0] TEMP;
-		bit          DIV64;
+//		bit          DIV64;
 		
 		if (!RST_N) begin
 			STEP <= 6'h3F;
@@ -56,7 +56,7 @@ module DIVU (
 			end
 			else if (DIV32_START || DIV64_START) begin
 				STEP <= 6'd0;
-				DIV64 <= DIV64_START;
+//				DIV64 <= DIV64_START;
 				OVF <= 0;
 			end
 			

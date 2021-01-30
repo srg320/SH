@@ -1,29 +1,5 @@
 package CPU_PKG;
 
-	typedef struct packed
-	{
-		bit [3:0]    LVL;
-		bit [7:0]    VEC;
-		bit          RES;
-		bit          REQ;
-	} IntReq_t;
-	
-	parameter IntReq_t INT_REQ_RESET = '{4'b1111, 8'd0, 0, 0};
-	
-	typedef struct packed
-	{
-		bit [3:0]    LVL;
-		bit          ACK;
-	} IntAck_t;
-	
-	parameter IntAck_t INT_ACK_RESET = '{4'b0000, 0};
-	
-	typedef struct packed
-	{
-		bit [7:0]    VEC;
-		bit          REQ;
-	} OPMIntReq_t;
-	
 	//INTC
 	typedef struct packed		//R/W;FFFFFEE2
 	{
