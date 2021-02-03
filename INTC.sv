@@ -201,24 +201,16 @@ module INTC (
 	bit [3:0] VBA;
 	bit       VBREQ;
 	always @(posedge CLK or negedge RST_N) begin
-//		bit VLATCH;
-		
 		if (!RST_N) begin
 			VBREQ <= 0;
 			VBA <= '0;
 		end else if (CE_F) begin	
-//			VLATCH <= 0;
 			if (VECT_REQ && IRL_PEND && ICR.VECMD && !VBREQ) begin
 				VBREQ <= 1;
 				VBA <= IRL_LVL;
 			end else if (VBREQ && !VBUS_WAIT) begin
 				VBREQ <= 0;
-//				VLATCH <= 1;
 			end
-//		end else if (CE_R) begin	
-//			if (VLATCH ) begin
-//				EXT_VEC <= VBUS_DI;
-//			end
 		end
 	end
 	assign VECT_WAIT = VBREQ;

@@ -434,7 +434,7 @@ module BSC
 	end
 	
 	assign VBUS_DO = VEC_BUF;
-	assign VBUS_BUSY = VBUSY;
+	assign VBUS_BUSY = VBUSY | ((BUS_RLS | BGR) & VBUS_REQ);
 		
 	bit MST_BUS_RLS;
 	bit SLV_BUS_RLS;
@@ -536,7 +536,7 @@ module BSC
 	end
 	
 	assign IBUS_DO = REG_SEL ? REG_DO : DAT_BUF;
-	assign IBUS_BUSY = DBUSY | ((BUS_RLS | BGR) & BUS_ACCESS_REQ);
+	assign IBUS_BUSY = DBUSY | ((BUS_RLS | BGR) & DBUS_REQ);
 	assign IBUS_ACT = REG_SEL;
 	
 	assign OE_N = 1;
