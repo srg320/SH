@@ -205,7 +205,7 @@ module INTC (
 			VBREQ <= 0;
 			VBA <= '0;
 		end else if (CE_F) begin	
-			if (VECT_REQ && IRL_PEND && ICR.VECMD && !VBREQ) begin
+			if (VECT_REQ && !VBREQ) begin
 				VBREQ <= 1;
 				VBA <= IRL_LVL;
 			end else if (VBREQ && !VBUS_WAIT) begin
@@ -216,7 +216,7 @@ module INTC (
 	assign VECT_WAIT = VBREQ;
 	
 	assign VBUS_A   = VBA;
-	assign VBUS_REQ = VBREQ;
+	assign VBUS_REQ = VBREQ && IRL_PEND && ICR.VECMD;
 	
 	
 	

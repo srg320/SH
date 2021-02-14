@@ -170,7 +170,12 @@ module SCI (
 			end
 			
 			if (SCE_F) begin
-				if (!SSR.TEND) begin
+				if (!SSR.TEND) 
+					TX_RUN <= 1;
+				else if (SSR.TEND && LAST_BIT) 
+					TX_RUN <= 0;
+					
+				if (TX_RUN) begin
 					if (SMR.CA) begin
 						TXD <= TSR[0];
 						TSR <= {1'b0,TSR[7:1]};
@@ -186,7 +191,7 @@ module SCI (
 							PB <= PB + TSR[0];
 							TBIT_CNT <= SMR.PE || TBIT_CNT != 4'd8 ? TBIT_CNT + 4'd1 : TBIT_CNT + 4'd2;
 						end else if (TBIT_CNT == 4'd9) begin
-							TXD <= PB ^ SMR.OE;
+							TXD <= PB ^ ~SMR.OE;
 							TBIT_CNT <= SMR.STOP ? TBIT_CNT + 4'd1 : TBIT_CNT + 4'd2;
 						end else begin
 							TXD <= 1;
@@ -194,11 +199,6 @@ module SCI (
 						end
 					end
 				end
-				
-				if (!SSR.TEND) 
-					TX_RUN <= 1;
-				else if (SSR.TEND && LAST_BIT) 
-					TX_RUN <= 0;
 			end
 		end
 	end

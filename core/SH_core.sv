@@ -30,7 +30,8 @@ module SH_core (
 	input             VECT_WAIT,
 	
 	output     [15:0] WB_IR,
-	output			   ILI
+	output			   ILI,
+	output			   REG_HOOK
 );
 	
 	import SH2_PKG::*;
@@ -316,11 +317,11 @@ module SH_core (
 	//**********************************************************
 	//Bypassing datapath
 	wire BP_A_EXEX = ((PIPE.EX.DI.RA.N == PIPE.MA.DI.RA.N) & PIPE.EX.DI.RA.R & PIPE.MA.DI.RA.W & !((PIPE.MA.DI.MEM.R & !PIPE.MA.DI.MAC.W) | (PIPE.MA.DI.MAC.R & !PIPE.MA.DI.MEM.W))) |
-						  ((PIPE.EX.DI.RA.N == PIPE.MA.DI.RB.N) & PIPE.EX.DI.RA.R & PIPE.MA.DI.RB.W);
+						  ((PIPE.EX.DI.RA.N == PIPE.MA.DI.RB.N) & PIPE.EX.DI.RA.R & PIPE.MA.DI.RB.W & (PIPE.MA.DI.RA.N != PIPE.MA.DI.RB.N | !PIPE.MA.DI.RA.W));
 	wire BP_B_EXEX = ((PIPE.EX.DI.RB.N == PIPE.MA.DI.RA.N) & PIPE.EX.DI.RB.R & PIPE.MA.DI.RA.W & !((PIPE.MA.DI.MEM.R & !PIPE.MA.DI.MAC.W) | (PIPE.MA.DI.MAC.R & !PIPE.MA.DI.MEM.W))) |
-						  ((PIPE.EX.DI.RB.N == PIPE.MA.DI.RB.N) & PIPE.EX.DI.RB.R & PIPE.MA.DI.RB.W);
+						  ((PIPE.EX.DI.RB.N == PIPE.MA.DI.RB.N) & PIPE.EX.DI.RB.R & PIPE.MA.DI.RB.W & (PIPE.MA.DI.RA.N != PIPE.MA.DI.RB.N | !PIPE.MA.DI.RA.W));
 	wire BP_C_EXEX = ((5'd0            == PIPE.MA.DI.RA.N) & PIPE.EX.DI.R0R  & PIPE.MA.DI.RA.W & !((PIPE.MA.DI.MEM.R & !PIPE.MA.DI.MAC.W) | (PIPE.MA.DI.MAC.R & !PIPE.MA.DI.MEM.W))) |
-						  ((5'd0            == PIPE.MA.DI.RB.N) & PIPE.EX.DI.R0R  & PIPE.MA.DI.RB.W);
+						  ((5'd0            == PIPE.MA.DI.RB.N) & PIPE.EX.DI.R0R  & PIPE.MA.DI.RB.W & (PIPE.MA.DI.RA.N != 5'd0            | !PIPE.MA.DI.RA.W));
 	
 	wire BP_A_MAEX = ((PIPE.EX.DI.RA.N == PIPE.WB.DI.RA.N) & PIPE.EX.DI.RA.R & PIPE.WB.DI.RA.W & !((PIPE.WB.DI.MEM.R & !PIPE.WB.DI.MAC.W) | (PIPE.WB.DI.MAC.R & !PIPE.WB.DI.MEM.W))) |
 						  ((PIPE.EX.DI.RA.N == PIPE.WB.DI.RB.N) & PIPE.EX.DI.RA.R & PIPE.WB.DI.RB.W);
@@ -342,6 +343,8 @@ module SH_core (
 	wire BP_A_WBLD = (PIPE.EX.DI.RA.N == PIPE.WB.DI.RA.N)  & PIPE.EX.DI.RA.R & PIPE.WB.DI.RA.W & ((PIPE.WB.DI.MEM.R & !PIPE.WB.DI.MAC.W) | (PIPE.WB.DI.MAC.R & !PIPE.WB.DI.MEM.W));
 	wire BP_B_WBLD = (PIPE.EX.DI.RB.N == PIPE.WB.DI.RA.N)  & PIPE.EX.DI.RB.R & PIPE.WB.DI.RA.W & ((PIPE.WB.DI.MEM.R & !PIPE.WB.DI.MAC.W) | (PIPE.WB.DI.MAC.R & !PIPE.WB.DI.MEM.W));
 	wire BP_C_WBLD = (5'd0            == PIPE.WB.DI.RA.N)  & PIPE.EX.DI.R0R  & PIPE.WB.DI.RA.W & ((PIPE.WB.DI.MEM.R & !PIPE.WB.DI.MAC.W) | (PIPE.WB.DI.MAC.R & !PIPE.WB.DI.MEM.W));
+	
+	assign REG_HOOK = (PIPE.MA.DI.RA.N == PIPE.MA.DI.RB.N) & PIPE.MA.DI.RA.W & PIPE.MA.DI.RB.W;
 	
 	bit [31:0] REG_A;
 	bit [31:0] REG_B;
@@ -755,7 +758,7 @@ module SH_core (
 	
 	assign REGS_WBN = PIPE.WB.DI.RB.N;
 	assign REGS_WBD = PIPE.WB.RES;
-	assign REGS_WBE = PIPE.WB.DI.RB.W & !WB_STALL;
+	assign REGS_WBE = PIPE.WB.DI.RB.W & (!PIPE.WB.DI.RA.W | PIPE.WB.DI.RA.N != PIPE.WB.DI.RB.N) & !WB_STALL;
 	
 	
 	assign BUS_A = MA_ACTIVE ? PIPE.MA.ADDR : PC;
