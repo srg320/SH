@@ -38,7 +38,7 @@
 
 set_global_assignment -name FAMILY "Cyclone V"
 set_global_assignment -name DEVICE 5CSEMA6F31I7
-set_global_assignment -name TOP_LEVEL_ENTITY SH7604
+set_global_assignment -name TOP_LEVEL_ENTITY SH7034
 set_global_assignment -name ORIGINAL_QUARTUS_VERSION 17.1.1
 set_global_assignment -name PROJECT_CREATION_TIME_DATE "20:37:24  SEPTEMBER 28, 2020"
 set_global_assignment -name LAST_QUARTUS_VERSION "17.1.1 Standard Edition"
@@ -52,24 +52,17 @@ set_global_assignment -name PARTITION_COLOR 16764057 -section_id Top
 set_global_assignment -name POWER_PRESET_COOLING_SOLUTION "23 MM HEAT SINK WITH 200 LFPM AIRFLOW"
 set_global_assignment -name POWER_BOARD_THERMAL_MODEL "NONE (CONSERVATIVE)"
 set_global_assignment -name SYSTEMVERILOG_FILE core/SH_pkg.sv
-set_global_assignment -name VERILOG_FILE core/SH_regram.v
 set_global_assignment -name SYSTEMVERILOG_FILE core/SH_regfile.sv
+set_global_assignment -name SYSTEMVERILOG_FILE core/SH_mem.sv
 set_global_assignment -name SYSTEMVERILOG_FILE core/SH_core.sv
-set_global_assignment -name SYSTEMVERILOG_FILE CPU_pkg.sv
-set_global_assignment -name VERILOG_FILE CACHE_TAG.v
-set_global_assignment -name VERILOG_FILE CACHE_RAM.v
-set_global_assignment -name VERILOG_FILE CACHE_LRU.v
-set_global_assignment -name SYSTEMVERILOG_FILE cache.sv
-set_global_assignment -name SYSTEMVERILOG_FILE BSC.sv
-set_global_assignment -name SYSTEMVERILOG_FILE DMAC.sv
-set_global_assignment -name SYSTEMVERILOG_FILE DIVU.sv
-set_global_assignment -name SYSTEMVERILOG_FILE WDT.sv
-set_global_assignment -name SYSTEMVERILOG_FILE FRT.sv
-set_global_assignment -name SYSTEMVERILOG_FILE INTC.sv
-set_global_assignment -name SYSTEMVERILOG_FILE MULT.sv
-set_global_assignment -name SYSTEMVERILOG_FILE SCI.sv
-set_global_assignment -name SYSTEMVERILOG_FILE UBC.sv
-set_global_assignment -name SYSTEMVERILOG_FILE SH7604.sv
+set_global_assignment -name SYSTEMVERILOG_FILE SH7034/SH7034_pkg.sv
+set_global_assignment -name SYSTEMVERILOG_FILE SH7034/SH7034_mem.sv
+set_global_assignment -name SYSTEMVERILOG_FILE SH7034/MULT.sv
+set_global_assignment -name SYSTEMVERILOG_FILE SH7034/INTC.sv
+set_global_assignment -name SYSTEMVERILOG_FILE SH7034/BSC.sv
+set_global_assignment -name SYSTEMVERILOG_FILE SH7034/WDT.sv
+set_global_assignment -name SYSTEMVERILOG_FILE SH7034/SCI.sv
+set_global_assignment -name SYSTEMVERILOG_FILE SH7034/SH7034.sv
 set_global_assignment -name SYSTEMVERILOG_FILE test/RAM.sv
-set_global_assignment -name SYSTEMVERILOG_FILE test/SH_tb.sv
+set_global_assignment -name SYSTEMVERILOG_FILE test/SH7034_tb.sv
 set_instance_assignment -name PARTITION_HIERARCHY root_partition -to | -section_id Top

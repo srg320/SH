@@ -1,5 +1,3 @@
-import CPU_PKG::*;
-
 module MULT (
 	input             CLK,
 	input             RST_N,
@@ -8,7 +6,7 @@ module MULT (
 	
 	input             RES_N,
 	
-	input      [31:0] CBUS_A,
+	input      [27:0] CBUS_A,
 	input      [31:0] CBUS_DI,
 	output     [31:0] CBUS_DO,
 	input             CBUS_WR,
@@ -22,6 +20,8 @@ module MULT (
 	input             MAC_WE
 );
 
+	import SH7034_PKG::*;
+	
 	bit [31:0] MACL;
 	bit [31:0] MACH;
 	bit [31:0] MA;

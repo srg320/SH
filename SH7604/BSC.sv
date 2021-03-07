@@ -1,4 +1,4 @@
-import CPU_PKG::*;
+import SH7604_PKG::*;
 
 module BSC 
 #(parameter bit AREA3=0, bit [1:0] W3=0, bit [1:0] IW3=0, bit [1:0] LW3=0)

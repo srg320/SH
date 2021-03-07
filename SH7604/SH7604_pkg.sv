@@ -1,4 +1,4 @@
-package CPU_PKG;
+package SH7604_PKG;
 
 	//INTC
 	typedef struct packed		//R/W;FFFFFEE2

@@ -1,6 +1,6 @@
-module SH2_tb;
+module SH7034_tb;
 
-	import SH7604_PKG::*;
+	import SH7034_PKG::*;
 	
 	bit        CLK;
 	bit        RST_N;
@@ -58,7 +58,7 @@ module SH2_tb;
 	
 	wire [1:0] CS0_SZ = 2'b01;
 	
-	SH7604 cpu
+	SH7034 cpu
 	(
 		.CLK(CLK),
 		.RST_N(RST_N),

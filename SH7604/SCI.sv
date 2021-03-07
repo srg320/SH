@@ -1,4 +1,4 @@
-import CPU_PKG::*;
+import SH7604_PKG::*;
 
 module SCI (
 	input             CLK,

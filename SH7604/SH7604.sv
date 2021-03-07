@@ -64,7 +64,7 @@ module SH7604 (
 	
 	output reg [15:0] HOOK
 );
-	import CPU_PKG::*;
+	import SH7604_PKG::*;
 	
 	bit [31:0] CBUS_A;
 	bit [31:0] CBUS_DO;
