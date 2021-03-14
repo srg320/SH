@@ -177,7 +177,7 @@ package SH2_PKG;
 	parameter bit [4:0] SP = 5'b01111;
 	parameter bit [4:0] PR = 5'b10000;
 	
-	function DecInstr_t Decode(input [15:0] IR, input [2:0] STATE,	input BC);
+	function DecInstr_t Decode(input [15:0] IR, input [2:0] STATE,	input BC, input VER);
 		DecInstr_t DECI;
 		bit [4:0] RAN, RBN;
 		
@@ -210,22 +210,25 @@ package SH2_PKG;
 						case (IR[7:4])
 							4'b0000,			//BSRF Rm
 							4'b0010: begin	//BRAF Rm
-								case (STATE)
-									3'd0: begin
-										DECI.RA = '{RAN, 1, 0};
-										DECI.RB = '{PR,  0, ~IR[5]};
-										DECI.DP.RSB = BPC;
-										DECI.ALU = '{0, 0, ADD, 4'b0000, 3'b000};
-										DECI.PCW = 1;
-										DECI.BR = '{1, UCB, 1, 0, ~IR[5]};
-										DECI.LST = 3'd1;
-									end
-									3'd1: begin
-										DECI.BR = '{0, UCB, 1, 0, 0};
-										DECI.LST = 3'd1;
-									end
-									default:;
-								endcase
+								if (VER == 1) begin
+									case (STATE)
+										3'd0: begin
+											DECI.RA = '{RAN, 1, 0};
+											DECI.RB = '{PR,  0, ~IR[5]};
+											DECI.DP.RSB = BPC;
+											DECI.ALU = '{0, 0, ADD, 4'b0000, 3'b000};
+											DECI.PCW = 1;
+											DECI.BR = '{1, UCB, 1, 0, ~IR[5]};
+											DECI.LST = 3'd1;
+										end
+										3'd1: begin
+											DECI.BR = '{0, UCB, 1, 0, 0};
+											DECI.LST = 3'd1;
+										end
+										default:;
+									endcase
+								end else
+									DECI.ILI = 1;
 							end
 							default: DECI.ILI = 1;
 						endcase
@@ -238,20 +241,23 @@ package SH2_PKG;
 						DECI.MEM = '{ALURES, ALUB, IR[1:0], 0, 1};
 					end
 					4'b0111: begin	//MUL.L Rm,Rn
-						case (STATE)
-							3'd0: begin
-								DECI.RB = '{RBN, 1, 0};
-								DECI.MEM = '{ALURES, ALUB, 2'b10, 0, 0};
-								DECI.MAC = '{2'b01, 0, 1, 4'b0001};
-							end
-							3'd1: begin
-								DECI.RA = '{ RAN, 1, 0};
-								DECI.MEM = '{ALURES, ALUA, 2'b10, 0, 0};
-								DECI.MAC = '{2'b10, 0, 1, 4'b0001};
-							end
-							default:;
-						endcase
-						DECI.LST = 3'd1;
+						if (VER == 1) begin
+							case (STATE)
+								3'd0: begin
+									DECI.RB = '{RBN, 1, 0};
+									DECI.MEM = '{ALURES, ALUB, 2'b10, 0, 0};
+									DECI.MAC = '{2'b01, 0, 1, 4'b0001};
+								end
+								3'd1: begin
+									DECI.RA = '{ RAN, 1, 0};
+									DECI.MEM = '{ALURES, ALUA, 2'b10, 0, 0};
+									DECI.MAC = '{2'b10, 0, 1, 4'b0001};
+								end
+								default:;
+							endcase
+							DECI.LST = 3'd1;
+						end else
+							DECI.ILI = 1;
 					end
 					4'b1000:	begin
 						case (IR[11:4])
@@ -385,26 +391,29 @@ package SH2_PKG;
 						DECI.MEM = '{ALURES, ALUB, IR[1:0], 1, 0};
 					end
 					4'b1111: begin	//MAC.L @Rm+,@Rn+
-						case (STATE)
-							3'd0: begin
-								DECI.RB = '{RBN, 1, 1};
-								DECI.DP.RSC = RSC_IMM;
-								DECI.IMMT = ONE;
-								DECI.ALU = '{1, 0, ADD, 4'b0000, 3'b000};
-								DECI.MEM = '{ALUB, ALUB, 2'b10, 1, 0};
-								DECI.MAC = '{2'b01, 0, 1, 4'b1001};
-							end
-							3'd1: begin
-								DECI.RA = '{RAN, 1, 1};
-								DECI.DP.RSC = RSC_IMM;
-								DECI.IMMT = ONE;
-								DECI.ALU = '{0, 1, ADD, 4'b0000, 3'b000};
-								DECI.MEM = '{ALUA, ALUA, 2'b10, 1, 0};
-								DECI.MAC = '{2'b10, 0, 1, 4'b1001};
-							end
-							default:;
-						endcase
-						DECI.LST = 3'd1;
+						if (VER == 1) begin
+							case (STATE)
+								3'd0: begin
+									DECI.RB = '{RBN, 1, 1};
+									DECI.DP.RSC = RSC_IMM;
+									DECI.IMMT = ONE;
+									DECI.ALU = '{1, 0, ADD, 4'b0000, 3'b000};
+									DECI.MEM = '{ALUB, ALUB, 2'b10, 1, 0};
+									DECI.MAC = '{2'b01, 0, 1, 4'b1001};
+								end
+								3'd1: begin
+									DECI.RA = '{RAN, 1, 1};
+									DECI.DP.RSC = RSC_IMM;
+									DECI.IMMT = ONE;
+									DECI.ALU = '{0, 1, ADD, 4'b0000, 3'b000};
+									DECI.MEM = '{ALUA, ALUA, 2'b10, 1, 0};
+									DECI.MAC = '{2'b10, 0, 1, 4'b1001};
+								end
+								default:;
+							endcase
+							DECI.LST = 3'd1;
+						end else
+							DECI.ILI = 1;
 					end
 					default: DECI.ILI = 1;
 				endcase
@@ -506,20 +515,23 @@ package SH2_PKG;
 					end
 					4'b0101,			//DMULU.L Rm,Rn
 					4'b1101: begin	//DMULS.L Rm,Rn
-						case (STATE)
-							3'd0: begin
-								DECI.RB = '{RBN, 1, 0};
-								DECI.MEM = '{ALURES, ALUB, 2'b10, 0, 0};
-								DECI.MAC = '{2'b01, 0, 1, {3'b001,IR[3]}};
-							end
-							3'd1: begin
-								DECI.RA = '{RAN, 1, 0};
-								DECI.MEM = '{ALURES, ALUA, 2'b10, 0, 0};
-								DECI.MAC = '{2'b10, 0, 1, {3'b001,IR[3]}};
-							end
-							default:;
-						endcase
-						DECI.LST = 3'd1;
+						if (VER == 1) begin
+							case (STATE)
+								3'd0: begin
+									DECI.RB = '{RBN, 1, 0};
+									DECI.MEM = '{ALURES, ALUB, 2'b10, 0, 0};
+									DECI.MAC = '{2'b01, 0, 1, {3'b001,IR[3]}};
+								end
+								3'd1: begin
+									DECI.RA = '{RAN, 1, 0};
+									DECI.MEM = '{ALURES, ALUA, 2'b10, 0, 0};
+									DECI.MAC = '{2'b10, 0, 1, {3'b001,IR[3]}};
+								end
+								default:;
+							endcase
+							DECI.LST = 3'd1;
+						end else 
+							DECI.ILI = 1;
 					end
 					4'b1000,			//SUB Rm,Rn
 					4'b1010,			//SUBC Rm,Rn
@@ -694,11 +706,14 @@ package SH2_PKG;
 						endcase
 					end
 					8'b00010000: begin	//DT Rn (Rn-1->Rn)
-						DECI.RA = '{RAN, 1, 1};
-						DECI.DP.RSC = RSC_IMM;
-						DECI.IMMT = ONE;
-						DECI.ALU = '{0, 1, ADD, 4'b0101, 3'b000};
-						DECI.CTRL = '{1, SR_, ALU};
+						if (VER == 1) begin
+							DECI.RA = '{RAN, 1, 1};
+							DECI.DP.RSC = RSC_IMM;
+							DECI.IMMT = ONE;
+							DECI.ALU = '{0, 1, ADD, 4'b0101, 3'b000};
+							DECI.CTRL = '{1, SR_, ALU};
+						end else
+							DECI.ILI = 1;
 					end
 					8'b00010001,			//CMP/PZ Rn
 					8'b00010101: begin	//CMP/PL Rn
@@ -902,22 +917,25 @@ package SH2_PKG;
 					end
 					4'b1101,			//BT/S label
 					4'b1111:	begin	//BF/S label
-						case (STATE)
-							3'd0: begin
-								DECI.DP.RSB = BPC;
-								DECI.DP.RSC = RSC_IMM;
-								DECI.IMMT = SIMM8;
-								DECI.ALU = '{1, 0, ADD, 4'b0000, 3'b000};
-								DECI.PCW = BC;
-								DECI.BR = '{1, CB, 1, ~IR[9], 0};
-								DECI.LST = BC ? 3'd1 : 3'd0;
-							end
-							3'd1: begin
-								DECI.BR = '{0, CB, 1, 0, 0};
-								DECI.LST = 3'd1;
-							end
-							default:;
-						endcase
+						if (VER == 1) begin
+							case (STATE)
+								3'd0: begin
+									DECI.DP.RSB = BPC;
+									DECI.DP.RSC = RSC_IMM;
+									DECI.IMMT = SIMM8;
+									DECI.ALU = '{1, 0, ADD, 4'b0000, 3'b000};
+									DECI.PCW = BC;
+									DECI.BR = '{1, CB, 1, ~IR[9], 0};
+									DECI.LST = BC ? 3'd1 : 3'd0;
+								end
+								3'd1: begin
+									DECI.BR = '{0, CB, 1, 0, 0};
+									DECI.LST = 3'd1;
+								end
+								default:;
+							endcase
+						end else
+							DECI.ILI = 1;
 					end
 					default: DECI.ILI = 1;
 				endcase

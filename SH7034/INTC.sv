@@ -8,14 +8,8 @@ module INTC (
 	
 	input             RES_N,
 	input             NMI_N,
-	input             IRQ0_N,
-	input             IRQ1_N,
-	input             IRQ2_N,
-	input             IRQ3_N,
-	input             IRQ4_N,
-	input             IRQ5_N,
-	input             IRQ6_N,
-	input             IRQ7_N,
+	input       [7:0] IRQ_N,
+	output            IRQOUT_N,
 	
 	input       [3:0] INT_MASK,
 	input             INT_ACK,
@@ -50,10 +44,10 @@ module INTC (
 	input             SCI1_ERI_IRQ,
 	input             SCI1_RXI_IRQ,
 	input             SCI1_TXI_IRQ,
-	input             SCI1_TEI_IRQ,
+	input             SCI1_TEI_IRQ/*,
 	input             FRT_ICI_IRQ,
 	input             FRT_OCI_IRQ,
-	input             FRT_OVI_IRQ
+	input             FRT_OVI_IRQ*/
 );
 
 	import SH7034_PKG::*;
@@ -93,9 +87,9 @@ module INTC (
 	bit        SCI1_RXI_PEND;
 	bit        SCI1_TXI_PEND;
 	bit        SCI1_TEI_PEND;
-	bit        FRT_ICI_PEND;
-	bit        FRT_OCI_PEND;
-	bit        FRT_OVI_PEND;
+//	bit        FRT_ICI_PEND;
+//	bit        FRT_OCI_PEND;
+//	bit        FRT_OVI_PEND;
 	bit [ 7:0] EXT_VEC;
 	
 	always @(posedge CLK or negedge RST_N) begin
@@ -123,10 +117,10 @@ module INTC (
 			IRQ_REQ <= '0;
 		end
 		else if (CE_R) begin	
-			IRQ_OLD[0] <= ~{IRQ7_N,IRQ6_N,IRQ5_N,IRQ4_N,IRQ3_N,IRQ2_N,IRQ1_N,IRQ0_N};
+			IRQ_OLD[0] <= ~IRQ_N;
 			IRQ_OLD[1] <= IRQ_OLD[0];
 			IRQ_REQ <= '0;
-			if (IRQ_OLD[0][0] && IRQ_OLD[1][0] && !IRQ0_N) begin
+			if (IRQ_OLD[0][0] && IRQ_OLD[1][0] && !IRQ_N[0]) begin
 				IRQ_REQ[0] <= 1;
 			end
 //			IRQ_LVL <= ~IRL_N;
@@ -202,9 +196,9 @@ module INTC (
 				SCI1_RXI_PEND <= 0;
 				SCI1_TXI_PEND <= 0;
 				SCI1_TEI_PEND <= 0;
-				FRT_ICI_PEND <= 0;
-				FRT_OCI_PEND <= 0;
-				FRT_OVI_PEND <= 0;
+//				FRT_ICI_PEND <= 0;
+//				FRT_OCI_PEND <= 0;
+//				FRT_OVI_PEND <= 0;
 			end
 		end else if (CE_F) begin
 			INT_CLR <= 0;
@@ -262,7 +256,7 @@ module INTC (
 	end
 	assign VECT_WAIT = VBREQ;
 	
-	
+	assign IRQOUT_N = 1;
 	
 	//Registers
 	wire REG_SEL = (IBUS_A >= 28'h5FFFF84 & IBUS_A <= 28'h5FFFF8F);

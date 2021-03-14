@@ -261,69 +261,130 @@ package SH7034_PKG;
 	parameter bit [7:0] RDR_RMASK = 8'hFF;
 	parameter bit [7:0] RDR_INIT = 8'h00;
 
-	//FRT
-//	typedef struct packed		//R/W;FFFFFE10
-//	{
-//		bit         ICIE;			//R/W
-//		bit [ 2: 0] UNUSED;
-//		bit         OCIAE;		//R/W
-//		bit         OCIBE;		//R/W
-//		bit         OVIE;			//R/W
-//		bit         UNUSED2;
-//	} TIER_t;
-//	parameter bit [7:0] TIER_WMASK = 8'h8E;
-//	parameter bit [7:0] TIER_RMASK = 8'h8E;
-//	parameter bit [7:0] TIER_INIT = 8'h01;
-//	
-//	typedef struct packed		//R/W;FFFFFE11
-//	{
-//		bit         ICF;			//R/W
-//		bit [ 2: 0] UNUSED;
-//		bit         OCFA;			//R/W
-//		bit         OCFB;			//R/W
-//		bit         OVF;			//R/W
-//		bit         CCLRA;		//R/W
-//	} FTCSR_t;
-//	parameter bit [7:0] FTCSR_WMASK = 8'h8F;
-//	parameter bit [7:0] FTCSR_RMASK = 8'h8F;
-//	parameter bit [7:0] FTCSR_INIT = 8'h00;
-//	
-//	typedef bit [15:0] FRC_t;	//R/W;FFFFFE12-FFFFFE13
-//	parameter bit [15:0] FRC_WMASK = 16'hFFFF;
-//	parameter bit [15:0] FRC_RMASK = 16'hFFFF;
-//	parameter bit [15:0] FRC_INIT = 16'h0000;
-//	
-//	typedef bit [15:0] OCR_t;	//R/W;FFFFFE14-FFFFFE15
-//	parameter bit [15:0] OCR_WMASK = 16'hFFFF;
-//	parameter bit [15:0] OCR_RMASK = 16'hFFFF;
-//	parameter bit [15:0] OCR_INIT = 16'hFFFF;
-//	
-//	typedef struct packed		//R/W;FFFFFE16
-//	{
-//		bit         IEDG;			//R/W
-//		bit [ 4: 0] UNUSED;
-//		bit [ 1: 0] CKS;			//R/W
-//	} TCR_t;
-//	parameter bit [7:0] TCR_WMASK = 8'h83;
-//	parameter bit [7:0] TCR_RMASK = 8'h83;
-//	parameter bit [7:0] TCR_INIT = 8'h00;
-//	
-//	typedef struct packed		//R/W;FFFFFE17
-//	{
-//		bit [ 2: 0] UNUSED;
-//		bit         OCRS;			//R/W
-//		bit [ 1: 0] UNUSED2;
-//		bit         OLVLA;		//R/W
-//		bit         OLVLB;		//R/W
-//	} TOCR_t;
-//	parameter bit [7:0] TOCR_WMASK = 8'h13;
-//	parameter bit [7:0] TOCR_RMASK = 8'h13;
-//	parameter bit [7:0] TOCR_INIT = 8'hE0;
-//	
-//	typedef bit [15:0] FICR_t;	//R;FFFFFE18-FFFFFE19
-//	parameter bit [15:0] FICR_WMASK = 16'h0000;
-//	parameter bit [15:0] FICR_RMASK = 16'hFFFF;
-//	parameter bit [15:0] FICR_INIT = 16'h0000;
+	//ITU
+	typedef struct packed		//R/W;5FFFF00
+	{
+		bit [ 2: 0] UNUSED;
+		bit         STR4;			//R/W
+		bit         STR3;			//R/W
+		bit         STR2;			//R/W
+		bit         STR1;			//R/W
+		bit         STR0;			//R/W
+	} TSTR_t;
+	parameter bit [7:0] TSTR_WMASK = 8'h1F;
+	parameter bit [7:0] TSTR_RMASK = 8'h1F;
+	parameter bit [7:0] TSTR_INIT = 8'hE0;
+	
+	typedef struct packed		//R/W;5FFFF01
+	{
+		bit [ 2: 0] UNUSED;
+		bit         SYNC4;		//R/W
+		bit         SYNC3;		//R/W
+		bit         SYNC2;		//R/W
+		bit         SYNC1;		//R/W
+		bit         SYNC0;		//R/W
+	} TSNC_t;
+	parameter bit [7:0] TSNC_WMASK = 8'h1F;
+	parameter bit [7:0] TSNC_RMASK = 8'h1F;
+	parameter bit [7:0] TSNC_INIT = 8'hE0;
+	
+	typedef struct packed		//R/W;5FFFF02
+	{
+		bit         UNUSED;
+		bit         MDF;			//R/W
+		bit         FDIR;			//R/W
+		bit         PWM4;			//R/W
+		bit         PWM3;			//R/W
+		bit         PWM2;			//R/W
+		bit         PWM1;			//R/W
+		bit         PWM0;			//R/W
+	} TMDR_t;
+	parameter bit [7:0] TMDR_WMASK = 8'h7F;
+	parameter bit [7:0] TMDR_RMASK = 8'h7F;
+	parameter bit [7:0] TMDR_INIT = 8'h00;
+
+	typedef struct packed		//R/W;5FFFF03
+	{
+		bit [ 1: 0] UNUSED;
+		bit [ 1: 0] CMD;			//R/W
+		bit         BFB4;			//R/W
+		bit         BFA4;			//R/W
+		bit         BFB3;			//R/W
+		bit         BFA3;			//R/W
+	} TFCR_t;
+	parameter bit [7:0] TFCR_WMASK = 8'h3F;
+	parameter bit [7:0] TFCR_RMASK = 8'h3F;
+	parameter bit [7:0] TFCR_INIT = 8'hC0;
+
+	typedef struct packed		//R/W;5FFFF31
+	{
+		bit [ 5: 0] UNUSED;
+		bit         OLS4;			//R/W
+		bit         OLS3;			//R/W
+	} TOCR_t;
+	parameter bit [7:0] TOCR_WMASK = 8'h03;
+	parameter bit [7:0] TOCR_RMASK = 8'h03;
+	parameter bit [7:0] TOCR_INIT = 8'hFF;
+	
+	typedef struct packed		//R/W;5FFFF04,5FFFF0E,5FFFF18,5FFFF22,5FFFF32
+	{
+		bit         UNUSED;
+		bit [ 1: 0] CCLR;			//R/W
+		bit [ 1: 0] CKEG;			//R/W
+		bit [ 2: 0] TPSC;			//R/W
+	} TCR_t;
+	parameter bit [7:0] TCR_WMASK = 8'h7F;
+	parameter bit [7:0] TCR_RMASK = 8'h7F;
+	parameter bit [7:0] TCR_INIT = 8'h00;
+	
+	typedef struct packed		//R/W;5FFFF05,5FFFF0F,5FFFF19,5FFFF23,5FFFF33
+	{
+		bit         UNUSED;
+		bit [ 2: 0] ION;			//R/W
+		bit         UNUSED2;
+		bit [ 2: 0] IOA;			//R/W
+	} TIOR_t;
+	parameter bit [7:0] TIOR_WMASK = 8'h77;
+	parameter bit [7:0] TIOR_RMASK = 8'h77;
+	parameter bit [7:0] TIOR_INIT = 8'h88;
+	
+	typedef struct packed		//R/W;5FFFF06,5FFFF10,5FFFF1A,5FFFF24,5FFFF34
+	{
+		bit [ 4: 0] UNUSED;
+		bit         OVIE;			//R/W
+		bit         IMIEB;			//R/W
+		bit         IMIEA;			//R/W
+	} TIER_t;
+	parameter bit [7:0] TIER_WMASK = 8'h07;
+	parameter bit [7:0] TIER_RMASK = 8'h07;
+	parameter bit [7:0] TIER_INIT = 8'hF8;
+	
+	typedef struct packed		//R/W;5FFFF07,5FFFF11,5FFFF1B,5FFFF25,5FFFF35
+	{
+		bit [ 4: 0] UNUSED;
+		bit         OVF;			//R/W0
+		bit         IMFB;			//R/W0
+		bit         IMFA;			//R/W0
+	} TSR_t;
+	parameter bit [7:0] TSR_WMASK = 8'h07;
+	parameter bit [7:0] TSR_RMASK = 8'h07;
+	parameter bit [7:0] TSR_INIT = 8'hF8;
+	
+	typedef bit [15:0] TCNT_t;	//R/W;5FFFF08-5FFFF09,5FFFF12-5FFFF13,5FFFF1C-5FFFF1D,5FFFF26-5FFFF27,5FFFF36-5FFFF37
+	parameter bit [15:0] TCNT_WMASK = 16'hFFFF;
+	parameter bit [15:0] TCNT_RMASK = 16'hFFFF;
+	parameter bit [15:0] TCNT_INIT = 16'h0000;
+	
+	typedef bit [15:0] GRX_t;	//R/W;5FFFF0A-5FFFF0D,5FFFF14-5FFFF17,5FFFF1E-5FFFF21,5FFFF28-5FFFF2B,5FFFF38-5FFFF3B
+	parameter bit [15:0] GRX_WMASK = 16'hFFFF;
+	parameter bit [15:0] GRX_RMASK = 16'hFFFF;
+	parameter bit [15:0] GRX_INIT = 16'hFFFF;
+	
+	typedef bit [15:0] BRX_t;	//R/W;5FFFF2C-5FFFF2F,5FFFF3C-5FFFF3F
+	parameter bit [15:0] BRX_WMASK = 16'hFFFF;
+	parameter bit [15:0] BRX_RMASK = 16'hFFFF;
+	parameter bit [15:0] BRX_INIT = 16'hFFFF;
+	
 
 	//WDT
 	typedef bit [7:0] WTCNT_t;	//R;5FFFFB8/W;5FFFFB9
@@ -400,6 +461,103 @@ package SH7034_PKG;
 	parameter bit [15:0] DMAOR_WMASK = 16'h0307;
 	parameter bit [15:0] DMAOR_RMASK = 16'h0307;
 	parameter bit [15:0] DMAOR_INIT = 16'h0000;
+	
+	//IO
+	typedef bit [15:0] PADR_t;		//R/W;5FFFFC0
+	parameter bit [15:0] PADR_WMASK = 16'hFFFF;
+	parameter bit [15:0] PADR_RMASK = 16'hFFFF;
+	parameter bit [15:0] PADR_INIT = 16'h0000;
+	
+	typedef bit [15:0] PBDR_t;		//R/W;5FFFFC2
+	parameter bit [15:0] PBDR_WMASK = 16'hFFFF;
+	parameter bit [15:0] PBDR_RMASK = 16'hFFFF;
+	parameter bit [15:0] PBDR_INIT = 16'h0000;
+	
+	typedef bit [15:0] PCDR_t;		//R;5FFFFD0
+	parameter bit [15:0] PCDR_WMASK = 16'h00FF;
+	parameter bit [15:0] PCDR_RMASK = 16'h00FF;
+	parameter bit [15:0] PCDR_INIT = 16'h0000;
+	
+	//PFC
+	typedef bit [15:0] PAIOR_t;		//R/W;5FFFFC4
+	parameter bit [15:0] PAIOR_WMASK = 16'hFFFF;
+	parameter bit [15:0] PAIOR_RMASK = 16'hFFFF;
+	parameter bit [15:0] PAIOR_INIT = 16'h0000;
+	
+	typedef bit [15:0] PBIOR_t;		//R/W;5FFFFC6
+	parameter bit [15:0] PBIOR_WMASK = 16'hFFFF;
+	parameter bit [15:0] PBIOR_RMASK = 16'hFFFF;
+	parameter bit [15:0] PBIOR_INIT = 16'h0000;
+	
+	typedef struct packed		//R/W;5FFFFC8
+	{
+		bit [ 1: 0] PA15MD;		//R/W
+		bit [ 1: 0] PA14MD;		//R/W
+		bit [ 1: 0] PA13MD;		//R/W
+		bit [ 1: 0] PA12MD;		//R/W
+		bit [ 1: 0] PA11MD;		//R/W
+		bit [ 1: 0] PA10MD;		//R/W
+		bit [ 1: 0] PA9MD;		//R/W
+		bit [ 1: 0] PA8MD;		//R/W
+	} PACR1_t;
+	parameter bit [15:0] PACR1_WMASK = 16'hFFFF;
+	parameter bit [15:0] PACR1_RMASK = 16'hFFFF;
+	parameter bit [15:0] PACR1_INIT = 16'h3302;
+	
+	typedef struct packed		//R/W;5FFFFCA
+	{
+		bit [ 1: 0] PA7MD;		//R/W
+		bit [ 1: 0] PA6MD;		//R/W
+		bit [ 1: 0] PA5MD;		//R/W
+		bit [ 1: 0] PA4MD;		//R/W
+		bit [ 1: 0] PA3MD;		//R/W
+		bit [ 1: 0] PA2MD;		//R/W
+		bit [ 1: 0] PA1MD;		//R/W
+		bit [ 1: 0] PA0MD;		//R/W
+	} PACR2_t;
+	parameter bit [15:0] PACR2_WMASK = 16'hFFFF;
+	parameter bit [15:0] PACR2_RMASK = 16'hFFFF;
+	parameter bit [15:0] PACR2_INIT = 16'hFF95;
+	
+	typedef struct packed		//R/W;5FFFFCC
+	{
+		bit [ 1: 0] PB15MD;		//R/W
+		bit [ 1: 0] PB14MD;		//R/W
+		bit [ 1: 0] PB13MD;		//R/W
+		bit [ 1: 0] PB12MD;		//R/W
+		bit [ 1: 0] PB11MD;		//R/W
+		bit [ 1: 0] PB10MD;		//R/W
+		bit [ 1: 0] PB9MD;		//R/W
+		bit [ 1: 0] PB8MD;		//R/W
+	} PBCR1_t;
+	parameter bit [15:0] PBCR1_WMASK = 16'hFFFF;
+	parameter bit [15:0] PBCR1_RMASK = 16'hFFFF;
+	parameter bit [15:0] PBCR1_INIT = 16'h0000;
+	
+	typedef struct packed		//R/W;5FFFFCE
+	{
+		bit [ 1: 0] PB7MD;		//R/W
+		bit [ 1: 0] PB6MD;		//R/W
+		bit [ 1: 0] PB5MD;		//R/W
+		bit [ 1: 0] PB4MD;		//R/W
+		bit [ 1: 0] PB3MD;		//R/W
+		bit [ 1: 0] PB2MD;		//R/W
+		bit [ 1: 0] PB1MD;		//R/W
+		bit [ 1: 0] PB0MD;		//R/W
+	} PBCR2_t;
+	parameter bit [15:0] PBCR2_WMASK = 16'hFFFF;
+	parameter bit [15:0] PBCR2_RMASK = 16'hFFFF;
+	parameter bit [15:0] PBCR2_INIT = 16'h0000;
+	
+	typedef struct packed		//R/W;5FFFFEE
+	{
+		bit [ 1: 0] CASHMD;		//R/W
+		bit [ 1: 0] CASLMD;		//R/W
+		bit [11: 0] UNUSED;
+	} CASCR_t;
+	parameter bit [15:0] CASCR_WMASK = 16'hF000;
+	parameter bit [15:0] CASCR_RMASK = 16'hF000;
+	parameter bit [15:0] CASCR_INIT = 16'h5000;
 	
 	//UBC
 //	typedef bit [15:0] BARx_t;	//R/W;FFFFFF40,FFFFFF42,FFFFFF60,FFFFFF62

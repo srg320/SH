@@ -11,15 +11,9 @@ module BSC
 	output     [23:0] A,
 	input      [15:0] DI,
 	output reg [15:0] DO,
-	output reg        CS0_N,
-	output reg        CS1_N,
-	output reg        CS2_N,
-	output reg        CS3_N,
-	output reg        CS4_N,
-	output reg        CS5_N,
-	output reg        CS6_N,
-	output reg        CS7_N,
-	output reg  [1:0] WE_N,
+	output reg  [7:0] CS_N,
+	output reg        WRL_N,
+	output reg        WRH_N,
 	output reg        RD_N,
 	input             WAIT_N,
 	input             BREQ_N,
@@ -133,16 +127,10 @@ module BSC
 		if (!RST_N) begin
 			BUSY <= 0;
 			ADDR <= '0;
-			CS0_N <= 1;
-			CS1_N <= 1;
-			CS2_N <= 1;
-			CS3_N <= 1;
-			CS4_N <= 1;
-			CS5_N <= 1;
-			CS6_N <= 1;
-			CS7_N <= 1;
+			CS_N <= '1;
 			RD_N <= 1;
-			WE_N <= 2'b11;
+			WRL_N <= 1;
+			WRH_N <= 1;
 			CACK <= 0;
 			DBUSY <= 0;
 			BUS_STATE <= T0;
@@ -209,20 +197,14 @@ module BSC
 							1'b1: DAT_BUF <= DI;
 							default:;
 						endcase
-						WE_N <= 2'b11;
+						WRL_N <= 1;
+						WRH_N <= 1;
 						RD_N <= 1;
 						CACK <= 0;
 					end
 					else if (CE_R) begin
 						if (!NEXT_BA) begin
-							CS0_N <= 1;
-							CS1_N <= 1;
-							CS2_N <= 1;
-							CS3_N <= 1;
-							CS4_N <= 1;
-							CS5_N <= 1;
-							CS6_N <= 1;
-							CS7_N <= 1;
+							CS_N <= '1;
 						end
 						STATE_NEXT = T0;
 					end
@@ -244,21 +226,25 @@ module BSC
 								case (ADDR[1:0] + 2'd1)
 									2'b01: begin 
 										DO <= {8'h00,IBUS_DI_SAVE[23:16]};
-										WE_N <= ~{1'b0,IBUS_WE_SAVE & NEXT_BA[2]};
+										WRL_N <= ~(IBUS_WE_SAVE & NEXT_BA[2]);
+										WRH_N <= 1;
 										NEXT_BA <= {2'b00,NEXT_BA[1:0]};
 									end
 									2'b10: begin 
 										DO <= {8'h00,IBUS_DI_SAVE[15: 8]}; 
-										WE_N <= ~{1'b0,IBUS_WE_SAVE & NEXT_BA[1]};
+										WRL_N <= ~(IBUS_WE_SAVE & NEXT_BA[1]);
+										WRH_N <= 1;
 										NEXT_BA <= {3'b000,NEXT_BA[0]};
 									end
 									2'b11: begin 
 										DO <= {8'h00,IBUS_DI_SAVE[ 7: 0]};
-										WE_N <= ~{1'b0,IBUS_WE_SAVE & NEXT_BA[0]}; 
+										WRL_N <= ~(IBUS_WE_SAVE & NEXT_BA[0]); 
+										WRH_N <= 1;
 										NEXT_BA <= 4'b0000;
 									end
 									default: begin //shouldn't happen
-										WE_N <= 2'b11;
+										WRL_N <= 1;
+										WRH_N <= 1;
 										NEXT_BA <= 4'b0000;
 									end
 								endcase
@@ -266,7 +252,8 @@ module BSC
 							1'b1: begin 
 								ADDR[1:0] <= ADDR[1:0] + 2'd2; 
 								DO <= IBUS_DI_SAVE[15: 0];
-								WE_N <= ~({IBUS_WE_SAVE,IBUS_WE_SAVE} & NEXT_BA[1:0]); 
+								WRL_N <= ~(IBUS_WE_SAVE & NEXT_BA[0]); 
+								WRH_N <= ~(IBUS_WE_SAVE & NEXT_BA[1]);
 								NEXT_BA <= 4'b0000;
 							end
 							default: ;
@@ -284,22 +271,26 @@ module BSC
 								case (IBUS_A[1:0])
 									2'b00: begin 
 										DO <= {8'h00,IBUS_DI[31:24]}; 
-										WE_N <= ~{1'b0,IBUS_WE & IBUS_BA[3]};
+										WRL_N <= ~(IBUS_WE & IBUS_BA[3]);
+										WRH_N <= 1;
 										NEXT_BA <= {1'b0,IBUS_BA[2:0]};
 									end
 									2'b01: begin 
 										DO <= {8'h00,IBUS_DI[23:16]};
-										WE_N <= ~{1'b0,IBUS_WE & IBUS_BA[2]};
+										WRL_N <= ~(IBUS_WE & IBUS_BA[2]);
+										WRH_N <= 1;
 										NEXT_BA <= {2'b00,IBUS_BA[1:0]};
 									end
 									2'b10: begin 
 										DO <= {8'h00,IBUS_DI[15: 8]}; 
-										WE_N <= ~{1'b0,IBUS_WE & IBUS_BA[1]};
+										WRL_N <= ~(IBUS_WE & IBUS_BA[1]);
+										WRH_N <= 1;
 										NEXT_BA <= {3'b000,IBUS_BA[0]};
 									end
 									2'b11: begin 
 										DO <= {8'h00,IBUS_DI[ 7: 0]};
-										WE_N <= ~{1'b0,IBUS_WE & IBUS_BA[0]}; 
+										WRL_N <= ~(IBUS_WE & IBUS_BA[0]);
+										WRH_N <= 1;
 										NEXT_BA <= 4'b0000;
 									end
 								endcase
@@ -308,12 +299,14 @@ module BSC
 								case (IBUS_A[1])
 									1'b0: begin 
 										DO <= IBUS_DI[31:16]; 
-										WE_N <= ~({2{IBUS_WE}} & IBUS_BA[3:2]);
+										WRL_N <= ~(IBUS_WE & IBUS_BA[2]);
+										WRH_N <= ~(IBUS_WE & IBUS_BA[3]);
 										NEXT_BA <= {2'b00,IBUS_BA[1:0]};
 									end
 									1'b1: begin 
 										DO <= IBUS_DI[15: 0]; 
-										WE_N <= ~({2{IBUS_WE}} & IBUS_BA[1:0]);
+										WRL_N <= ~(IBUS_WE & IBUS_BA[0]);
+										WRH_N <= ~(IBUS_WE & IBUS_BA[1]);
 										NEXT_BA <= 4'b0000;
 									end
 								endcase
@@ -321,14 +314,14 @@ module BSC
 							default:; 
 						endcase
 						ADDR <= IBUS_A;
-						CS0_N <= ~(IBUS_A[26:24] == 3'b000);
-						CS1_N <= ~(IBUS_A[26:24] == 3'b001);
-						CS2_N <= ~(IBUS_A[26:24] == 3'b010);
-						CS3_N <= ~(IBUS_A[26:24] == 3'b011);
-						CS4_N <= ~(IBUS_A[26:24] == 3'b000);
-						CS5_N <= ~(IBUS_A[26:24] == 3'b101);
-						CS6_N <= ~(IBUS_A[26:24] == 3'b110);
-						CS7_N <= ~(IBUS_A[26:24] == 3'b111);
+						CS_N[0] <= ~(IBUS_A[26:24] == 3'b000);
+						CS_N[1] <= ~(IBUS_A[26:24] == 3'b001);
+						CS_N[2] <= ~(IBUS_A[26:24] == 3'b010);
+						CS_N[3] <= ~(IBUS_A[26:24] == 3'b011);
+						CS_N[4] <= ~(IBUS_A[26:24] == 3'b000);
+						CS_N[5] <= ~(IBUS_A[26:24] == 3'b101);
+						CS_N[6] <= ~(IBUS_A[26:24] == 3'b110);
+						CS_N[7] <= ~(IBUS_A[26:24] == 3'b111);
 						RD_N <= IBUS_WE;
 						CACK <= 1;
 						

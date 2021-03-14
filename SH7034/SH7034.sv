@@ -1,4 +1,8 @@
-module SH7034(
+module SH7034
+#(
+	parameter string rom_file = " "
+)
+(
 	input             CLK,
 	input             RST_N,
 	input             CE_R,
@@ -6,60 +10,93 @@ module SH7034(
 	
 	input             RES_N,
 	input             NMI_N,
-	input             IRQ0_N,
-	input             IRQ1_N,
-	input             IRQ2_N,
-	input             IRQ3_N,
-	input             IRQ4_N,
-	input             IRQ5_N,
-	input             IRQ6_N,
-	input             IRQ7_N,
 	
 	output     [21:0] A,
 	input      [15:0] DI,
 	output     [15:0] DO,
-	output            CS0_N,
-	output            CS1_N,
-	output            CS2_N,
-	output            CS3_N,
-	output            CS4_N,
-	output            CS5_N,
-	output            CS6_N,
-	output            CS7_N,
-	output      [1:0] WE_N,
-	output            RD_N,
+
+	//PA in
+	input             PA0I_TIOCA0,
+	input             PA1I,
+	input             PA2I_TIOCB0,
+	input             PA3I_WAITN,
+	input             PA4I,
+	input             PA5I,
+	input             PA6I,
+	input             PA7I,
+	input             PA8I_BREQN,
+	input             PA9I_ADTRGN,
+	input             PA10I_DPL_TIOCA1,
+	input             PA11I_DPH_TIOCB1,
+	input             PA12I_IRQ0N_TCLKA,
+	input             PA13I_IRQ1N_TCLKB_DREQ0N,
+	input             PA14I_IRQ2N,
+	input             PA15I_IRQ3N_DREQ1N,
+	//PB in
+	input             PB0I_TIOCA2,
+	input             PB1I_TIOCB2,
+	input             PB2I_TIOCA3,
+	input             PB3I_TIOCB3,
+	input             PB4I_TIOCA4,
+	input             PB5I_TIOCB4,
+	input             PB6I_TCLKC,
+	input             PB7I_TCLKD,
+	input             PB8I_RXD0,
+	input             PB9I,
+	input             PB10I_RXD1,
+	input             PB11I,
+	input             PB12I_IRQ4N_SCK0I,
+	input             PB13I_IRQ5N_SCK1I,
+	input             PB14I_IRQ6N,
+	input             PB15I_IRQ7N,
+	//PC in
+	input             PC0I,
+	input             PC1I,
+	input             PC2I,
+	input             PC3I,
+	input             PC4I,
+	input             PC5I,
+	input             PC6I,
+	input             PC7I,
+	//PA out
+	output            PA0O_CS4N_TIOCA0,
+	output            PA1O_CS5N_RASN,
+	output            PA2O_CS6N_TIOCB0,
+	output            PA3O_CS7N,
+	output            PA4O_WRLN,
+	output            PA5O_WRHN,
+	output            PA6O_RDN,
+	output            PA7O_BACKN,
+	output            PA8O,
+	output            PA9O_AHN_IRQOUTN,
+	output            PA10O_DPL_TIOCA1,
+	output            PA11O_DPH_TIOCB1,
+	output            PA12O_DACK0,
+	output            PA13O,
+	output            PA14O_DACK1,
+	output            PA15O,
+	//PB out
+	output            PB0O_TIOCA2_TP0,
+	output            PB1O_TIOCB2_TP1,
+	output            PB2O_TIOCA3_TP2,
+	output            PB3O_TIOCB3_TP3,
+	output            PB4O_TIOCA4_TP4,
+	output            PB5O_TIOCB4_TP5,
+	output            PB6O_TOCXA4_TP6,
+	output            PB7O_TOCXB4_TP7,
+	output            PB8O_TP8,
+	output            PB9O_TXD0_TP9,
+	output            PB10O_TP10,
+	output            PB11O_TXD1_TP11,
+	output            PB12O_SCK0O_TP12,
+	output            PB13O_SCK1O_TP13,
+	output            PB14O_TP14,
+	output            PB15O_TP15,
 	
-	input      [21:0] EA,
-	output     [15:0] EDI,
-	input      [15:0] EDO,
-	input             ECS0_N,
-	input             ECS1_N,
-	input             ECS2_N,
-	input             ECS3_N,
-	input             ECS4_N,
-	input             ECS5_N,
-	input             ECS6_N,
-	input             ECS7_N,
-	input       [1:0] EWE_N,
-	input             ERD_N,
-	
-	input             WAIT_N,
-	input             BREQ_N,
-	output            BACK_N,
-	
-	input             DREQ0,
-	output            DACK0,
-	input             DREQ1,
-	output            DACK1,
-	
-	input             RXD0,
-	output            TXD0,
-	output            SCKO0,
-	input             SCKI0,
-	input             RXD1,
-	output            TXD1,
-	output            SCKO1,
-	input             SCKI1,
+	output            CS0N,
+	output            CS1N_CASHN,
+	output            CS2N,
+	output            CS3N_CASLN,
 	
 	output            WDTOVF_N,
 	
@@ -73,6 +110,7 @@ module SH7034(
 	bit        CBUS_WR;
 	bit  [3:0] CBUS_BA;
 	bit        CBUS_REQ;
+	bit        CBUS_WAIT;
 	
 	bit [27:0] IBUS_A;
 	bit [31:0] IBUS_DO;
@@ -93,6 +131,16 @@ module SH7034(
 	bit        VECT_WAIT;
 	
 	//BSC
+	bit  [7:0] BSC_CS_N;
+	bit        BSC_RAS_N;
+	bit        BSC_CASL_N;
+	bit        BSC_CASH_N;
+	bit        BSC_WRL_N;
+	bit        BSC_WRH_N;
+	bit        BSC_RD_N;
+	bit        BSC_WAIT_N;
+	bit        BSC_BACK_N;
+	bit        BSC_BREQ_N;
 	bit [31:0] BSC_DO;
 	bit        BSC_BUSY;
 	bit        BSC_ACK;
@@ -107,6 +155,8 @@ module SH7034(
 	bit  [7:0] DMAC1_VEC;
 	
 	//INTC
+	bit  [7:0] INTC_IRQ_N;
+	bit        INTC_IRQOUT_N;
 	bit [31:0] INTC_DO;
 	bit        INTC_ACT;
 	bit        INTC_BUSY;
@@ -119,10 +169,18 @@ module SH7034(
 	bit [31:0] MULT_DO;
 	
 	//SCI
+	bit        SCI_RXD0;
+	bit        SCI_RXD1;
+	bit        SCI_TXD0;
+	bit        SCI_TXD1;
+	bit        SCI_SCK0I;
+	bit        SCI_SCK1I;
+	bit        SCI_SCK0O;
+	bit        SCI_SCK1O;
 	bit [31:0] SCI0_DO;
 	bit [31:0] SCI1_DO;
-	bit        SCI_ACT0;
-	bit        SCI_ACT1;
+	bit        SCI0_ACT;
+	bit        SCI1_ACT;
 	bit        TEI0_IRQ;
 	bit        TXI0_IRQ;
 	bit        RXI0_IRQ;
@@ -152,6 +210,10 @@ module SH7034(
 	bit        UBC_ACT;
 	bit        UBC_IRQ;
 	
+	//PFC
+	bit [31:0] PFC_DO;
+	bit        PFC_ACT;
+	
 	//Internal clocks
 	bit        CLK4_CE;
 	bit        CLK8_CE;
@@ -166,7 +228,7 @@ module SH7034(
 	bit        CLK4096_CE;
 	bit        CLK8192_CE;
 	
-	SH_core core
+	SH_core #(.VER(0)) core
 	(
 		.CLK(CLK),
 		.RST_N(RST_N),
@@ -181,7 +243,7 @@ module SH7034(
 		.BUS_WR(CBUS_WR),
 		.BUS_BA(CBUS_BA),
 		.BUS_REQ(CBUS_REQ),
-		.BUS_WAIT(CACHE_BUSY),
+		.BUS_WAIT(CBUS_WAIT),
 		
 		.MAC_SEL(MAC_SEL),
 		.MAC_OP(MAC_OP),
@@ -199,6 +261,7 @@ module SH7034(
 	);
 	
 	assign CBUS_DI = MAC_SEL ? MULT_DO : IBUS_DI;
+	assign CBUS_WAIT = IBUS_WAIT;
 	
 	wire [31:0] MULT_DI = MAC_SEL && MAC_OP[3:2] == 2'b10 ? IBUS_DI : CBUS_DO;
 	MULT mult
@@ -233,6 +296,7 @@ module SH7034(
 						  SCI1_ACT ? SCI1_DO : 
 //						  UBC_ACT  ? UBC_DO : 
 //						  DMAC_ACT ? DMAC_DO : 
+						  PFC_ACT  ? PFC_DO :
 						  BSC_DO;
 	assign IBUS_WAIT = DMAC_BUSY | INTC_BUSY;
 
@@ -315,21 +379,10 @@ module SH7034(
 	assign DBUS_BA = CBUS_BA;
 	assign DBUS_WE = CBUS_WR;
 	assign DBUS_REQ = CBUS_REQ;
-	assign CACHE_BUSY = BSC_BUSY;
 	
 	bit  [23:0] IA;
 	bit  [15:0] IDI;
 	bit  [15:0] IDO;
-	bit         ICS0_N;
-	bit         ICS1_N;
-	bit         ICS2_N;
-	bit         ICS3_N;
-	bit         ICS4_N;
-	bit         ICS5_N;
-	bit         ICS6_N;
-	bit         ICS7_N;
-	bit   [1:0] IWE_N;
-	bit         IRD_N;
 	bit         BUS_RLS;
 	BSC #(.AREA3(0), .W3(1), .IW3(0), .LW3(0)) bsc
 	(
@@ -340,22 +393,16 @@ module SH7034(
 		
 		.RES_N(RES_N),
 		
-		.A(IA),
-		.DI(IDI),
-		.DO(IDO),
-		.CS0_N(ICS0_N),
-		.CS1_N(ICS1_N),
-		.CS2_N(ICS2_N),
-		.CS3_N(ICS3_N),
-		.CS4_N(ICS4_N),
-		.CS5_N(ICS5_N),
-		.CS6_N(ICS6_N),
-		.CS7_N(ICS7_N),
-		.WE_N(IWE_N),
-		.RD_N(IRD_N),
-		.WAIT_N(WAIT_N),
-		.BREQ_N(BREQ_N),
-		.BACK_N(BACK_N),
+		.A(A),
+		.DI(DI),
+		.DO(DO),
+		.CS_N(BSC_CS_N),
+		.WRL_N(BSC_WRL_N),
+		.WRH_N(BSC_WRH_N),
+		.RD_N(BSC_RD_N),
+		.WAIT_N(BSC_WAIT_N),
+		.BREQ_N(BSC_BREQ_N),
+		.BACK_N(BSC_BACK_N),
 		.MD(MD),
 		
 		.IBUS_A(DBUS_A),
@@ -374,11 +421,11 @@ module SH7034(
 		.BUS_RLS(BUS_RLS)
 	);
 	
-	assign {A,DO}                         = !BUS_RLS ? {IA[21:0],IDO} : {EA,EDO};
-	assign IDI                            = !BUS_RLS ? DI        : EDO;
-	assign {CS0_N,CS1_N,CS2_N,CS3_N,CS4_N,CS5_N,CS6_N,CS7_N} = !BUS_RLS ? {ICS0_N,ICS1_N,ICS2_N,ICS3_N,ICS4_N,ICS5_N,ICS6_N,ICS7_N} : {ECS0_N,ECS1_N,ECS2_N,ECS3_N,ECS4_N,ECS5_N,ECS6_N,ECS7_N};
-	assign {WE_N,RD_N}  = !BUS_RLS ? {IWE_N,IRD_N}  : {EWE_N,ERD_N};
-	assign EDI = DI;
+//	assign {A,DO}                         = !BUS_RLS ? {IA[21:0],IDO} : {EA,EDO};
+//	assign IDI                            = !BUS_RLS ? DI        : EDO;
+//	assign {CS0_N,CS1_N,CS2_N,CS3_N,CS4_N,CS5_N,CS6_N,CS7_N} = !BUS_RLS ? {ICS0_N,ICS1_N,ICS2_N,ICS3_N,ICS4_N,ICS5_N,ICS6_N,ICS7_N} : {ECS0_N,ECS1_N,ECS2_N,ECS3_N,ECS4_N,ECS5_N,ECS6_N,ECS7_N};
+//	assign {WE_N,RD_N}  = !BUS_RLS ? {IWE_N,IRD_N}  : {EWE_N,ERD_N};
+//	assign EDI = DI;
 	
 	
 	INTC intc
@@ -390,14 +437,8 @@ module SH7034(
 		
 		.RES_N(RES_N),
 		.NMI_N(NMI_N),
-		.IRQ0_N(IRQ0_N),
-		.IRQ1_N(IRQ1_N),
-		.IRQ2_N(IRQ2_N),
-		.IRQ3_N(IRQ3_N),
-		.IRQ4_N(IRQ4_N),
-		.IRQ5_N(IRQ5_N),
-		.IRQ6_N(IRQ6_N),
-		.IRQ7_N(IRQ7_N),
+		.IRQ_N(INTC_IRQ_N),
+		.IRQOUT_N(INTC_IRQOUT_N),
 		
 		.INT_MASK(INT_MASK),
 		.INT_ACK(INT_ACK),
@@ -421,9 +462,9 @@ module SH7034(
 		.SCI1_RXI_IRQ(RXI1_IRQ),
 		.SCI1_TXI_IRQ(TXI1_IRQ),
 		.SCI1_TEI_IRQ(TEI1_IRQ),
-		.FRT_ICI_IRQ(ICI_IRQ),
-		.FRT_OCI_IRQ(OCIA_IRQ | OCIB_IRQ),
-		.FRT_OVI_IRQ(OVI_IRQ),
+//		.FRT_ICI_IRQ(ICI_IRQ),
+//		.FRT_OCI_IRQ(OCIA_IRQ | OCIB_IRQ),
+//		.FRT_OVI_IRQ(OVI_IRQ),
 		
 		.IBUS_A(DBUS_A),
 		.IBUS_DI(DBUS_DO),
@@ -482,10 +523,10 @@ module SH7034(
 		
 		.RES_N(RES_N),
 		
-		.RXD(RXD0),
-		.TXD(TXD0),
-		.SCKO(SCKO0),
-		.SCKI(SCKI0),
+		.RXD(SCI_RXD0),
+		.TXD(SCI_TXD0),
+		.SCKO(SCI_SCK0O),
+		.SCKI(SCI_SCK0I),
 		
 		.CLK4_CE(CLK4_CE),
 		.CLK16_CE(CLK16_CE),
@@ -516,10 +557,10 @@ module SH7034(
 		
 		.RES_N(RES_N),
 		
-		.RXD(RXD1),
-		.TXD(TXD1),
-		.SCKO(SCKO1),
-		.SCKI(SCKI1),
+		.RXD(SCI_RXD1),
+		.TXD(SCI_TXD1),
+		.SCKO(SCI_SCK1O),
+		.SCKI(SCI_SCK1I),
 		
 		.CLK4_CE(CLK4_CE),
 		.CLK16_CE(CLK16_CE),
@@ -606,6 +647,148 @@ module SH7034(
 		.ITI_IRQ(ITI_IRQ),
 		.PRES(WDT_PRES),
 		.MRES(WDT_MRES)
+	);
+	
+	
+	
+	PFC pfc
+	(
+		.CLK(CLK),
+		.RST_N(RST_N),
+		.CE_R(CE_R),
+		.CE_F(CE_F),
+		
+		.RES_N(RES_N),
+		
+		.PA0I_TIOCA0(PA0I_TIOCA0),
+		.PA1I(PA1I),
+		.PA2I_TIOCB0(PA2I_TIOCB0),
+		.PA3I_WAITN(PA3I_WAITN),
+		.PA4I(PA4I),
+		.PA5I(PA5I),
+		.PA6I(PA6I),
+		.PA7I(PA7I),
+		.PA8I_BREQN(PA8I_BREQN),
+		.PA9I_ADTRGN(PA9I_ADTRGN),
+		.PA10I_DPL_TIOCA1(PA10I_DPL_TIOCA1),
+		.PA11I_DPH_TIOCB1(PA11I_DPH_TIOCB1),
+		.PA12I_IRQ0N_TCLKA(PA12I_IRQ0N_TCLKA),
+		.PA13I_IRQ1N_TCLKB_DREQ0N(PA13I_IRQ1N_TCLKB_DREQ0N),
+		.PA14I_IRQ2N(PA14I_IRQ2N),
+		.PA15I_IRQ3N_DREQ1N(PA15I_IRQ3N_DREQ1N),
+		
+		.PB0I_TIOCA2(PB0I_TIOCA2),
+		.PB1I_TIOCB2(PB1I_TIOCB2),
+		.PB2I_TIOCA3(PB2I_TIOCA3),
+		.PB3I_TIOCB3(PB3I_TIOCB3),
+		.PB4I_TIOCA4(PB4I_TIOCA4),
+		.PB5I_TIOCB4(PB5I_TIOCB4),
+		.PB6I_TCLKC(PB6I_TCLKC),
+		.PB7I_TCLKD(PB7I_TCLKD),
+		.PB8I_RXD0(PB8I_RXD0),
+		.PB9I(PB9I),
+		.PB10I_RXD1(PB10I_RXD1),
+		.PB11I(PB11I),
+		.PB12I_IRQ4N_SCK0I(PB12I_IRQ4N_SCK0I),
+		.PB13I_IRQ5N_SCK1I(PB13I_IRQ5N_SCK1I),
+		.PB14I_IRQ6N(PB14I_IRQ6N),
+		.PB15I_IRQ7N(PB15I_IRQ7N),
+		
+		.PC0I(PC0I),
+		.PC1I(PC1I),
+		.PC2I(PC2I),
+		.PC3I(PC3I),
+		.PC4I(PC4I),
+		.PC5I(PC5I),
+		.PC6I(PC6I),
+		.PC7I(PC7I),
+		
+		.PA0O_CS4N_TIOCA0(PA0O_CS4N_TIOCA0),
+		.PA1O_CS5N_RASN(PA1O_CS5N_RASN),
+		.PA2O_CS6N_TIOCB0(PA2O_CS6N_TIOCB0),
+		.PA3O_CS7N(PA3O_CS7N),
+		.PA4O_WRLN(PA4O_WRLN),
+		.PA5O_WRHN(PA5O_WRHN),
+		.PA6O_RDN(PA6O_RDN),
+		.PA7O_BACKN(PA7O_BACKN),
+		.PA8O(PA8O),
+		.PA9O_AHN_IRQOUTN(PA9O_AHN_IRQOUTN),
+		.PA10O_DPL_TIOCA1(PA10O_DPL_TIOCA1),
+		.PA11O_DPH_TIOCB1(PA11O_DPH_TIOCB1),
+		.PA12O_DACK0(PA12O_DACK0),
+		.PA13O(PA13O),
+		.PA14O_DACK1(PA14O_DACK1),
+		.PA15O(PA15O),
+		
+		.PB0O_TIOCA2_TP0(PB0O_TIOCA2_TP0),
+		.PB1O_TIOCB2_TP1(PB1O_TIOCB2_TP1),
+		.PB2O_TIOCA3_TP2(PB2O_TIOCA3_TP2),
+		.PB3O_TIOCB3_TP3(PB3O_TIOCB3_TP3),
+		.PB4O_TIOCA4_TP4(PB4O_TIOCA4_TP4),
+		.PB5O_TIOCB4_TP5(PB5O_TIOCB4_TP5),
+		.PB6O_TOCXA4_TP6(PB6O_TOCXA4_TP6),
+		.PB7O_TOCXB4_TP7(PB7O_TOCXB4_TP7),
+		.PB8O_TP8(PB8O_TP8),
+		.PB9O_TXD0_TP9(PB9O_TXD0_TP9),
+		.PB10O_TP10(PB10O_TP10),
+		.PB11O_TXD1_TP11(PB11O_TXD1_TP11),
+		.PB12O_SCK0O_TP12(PB12O_SCK0O_TP12),
+		.PB13O_SCK1O_TP13(PB13O_SCK1O_TP13),
+		.PB14O_TP14(PB14O_TP14),
+		.PB15O_TP15(PB15O_TP15),
+		
+		.CS0N(CS0N),
+		.CS1N_CASHN(CS1N_CASHN),
+		.CS2N(CS2N),
+		.CS3N_CASLN(CS3N_CASLN),
+		
+		//BSC
+		.CS_N(BSC_CS_N),
+		.RAS_N(1'b1),
+		.CASL_N(1'b1),
+		.CASH_N(1'b1),
+		.WRL_N(BSC_WRL_N),
+		.WRH_N(BSC_WRH_N),
+		.RD_N(BSC_RD_N),
+		.AH_N(1'b1),
+		.WAIT_N(BSC_WAIT_N),
+		.BACK_N(BSC_BACK_N),
+		.BREQ_N(BSC_BREQ_N),
+		.DPLO(1'b1),
+		.DPHO(1'b1),
+		//DMAC
+		.DACK0(),
+		.DACK1(),
+		.DREQ0_N(),
+		.DREQ1_N(),
+		//SCI
+		.RXD0(SCI_RXD0),
+		.TXD0(SCI_TXD0),
+		.SCK0I(SCI_SCK0I),
+		.SCK0O(SCI_SCK0O),
+		.RXD1(SCI_RXD1),
+		.TXD1(SCI_TXD1),
+		.SCK1I(SCI_SCK1I),
+		.SCK1O(SCI_SCK1O),
+		
+		.TIOCAO('0),
+		.TIOCBO('0),
+		.TOCXA4(0),
+		.TOCXB4(0),
+	
+		.TP('0),
+		
+		.IRQOUT_N(INTC_IRQOUT_N),
+		.IRQ_N(INTC_IRQ_N),
+		
+		.IBUS_A(DBUS_A),
+		.IBUS_DI(DBUS_DO),
+		.IBUS_DO(PFC_DO),
+		.IBUS_BA(DBUS_BA),
+		.IBUS_WE(DBUS_WE),
+		.IBUS_REQ(DBUS_REQ),
+		.IBUS_BUSY(),
+		.IBUS_ACT(PFC_ACT)
 	);
 	
 	

@@ -1,4 +1,6 @@
-module SH_core (
+module SH_core
+#(parameter bit VER=1)//0-SH1,1-SH2
+ (
 	input             CLK,
 	input             RST_N,
 	input             CE,
@@ -247,7 +249,7 @@ module SH_core (
 							   ID_DELAY_SLOT && !PIPE.EX.DI.BR.BD ? 16'h0009 :
 								IFID_STALL ? PIPE.EX.IR : PIPE.ID.IR;
 								
-	assign ID_DECI = Decode(DEC_IR, STATE, BR_COND);
+	assign ID_DECI = Decode(DEC_IR, STATE, BR_COND, VER);
 	
 	
 	wire BP_T_EXID = ID_DECI.BR.BI & ID_DECI.BR.BT == CB & PIPE.EX.DI.CTRL.W & PIPE.EX.DI.CTRL.S == SR_;
