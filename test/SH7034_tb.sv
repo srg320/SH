@@ -99,7 +99,7 @@ module SH7034_tb;
 	
 	wire ROM_SEL = CPU_A[26:14] == 13'b0000000000000;//00000000-00003FFF
 	
-	RAM #(.bios_file("test/bios.txt"), .rom_file("test/rom.txt")) ram(CLK, RST_N, CS0_SZ, CPU_A, CPU_DO, ~CPU_WE_N, CPU_A, RAM_DO);
+	RAM_tb #(.bios_file("test/bios.txt"), .rom_file("test/rom.txt")) ram(CLK, RST_N, CS0_SZ, CPU_A, CPU_DO, ~CPU_WE_N, CPU_A, RAM_DO);
 	
 	wire REG_SEL = CPU_A[26:14] == 13'b0000000000001;//00004000-00004100
 	always_comb begin

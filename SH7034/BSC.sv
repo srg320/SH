@@ -109,13 +109,12 @@ module BSC
 	} BusState_t;
 	BusState_t BUS_STATE;
 	
-	wire DBUS_REQ = /*IBUS_A[31:27] ==? 5'b00?00 & */IBUS_REQ; 
+	wire DBUS_REQ = (IBUS_A[26:24] != 3'b000 | ~MD[1]) & IBUS_A[27:24] != 4'b1111 & IBUS_A[27:24] != 4'b0101 & IBUS_REQ; 
 	wire BUS_ACCESS_REQ = DBUS_REQ; 
 	
 	bit         BUSY;
-	bit         DBUSY;
 	bit  [27:0] ADDR;
-	bit  [15:0] DAT_BUF;
+	bit  [31:0] DAT_BUF;
 	bit   [3:0] NEXT_BA;
 	always @(posedge CLK or negedge RST_N) begin
 		BusState_t STATE_NEXT;
@@ -127,18 +126,18 @@ module BSC
 		if (!RST_N) begin
 			BUSY <= 0;
 			ADDR <= '0;
+			DO <= '0;
 			CS_N <= '1;
 			RD_N <= 1;
 			WRL_N <= 1;
 			WRH_N <= 1;
 			CACK <= 0;
-			DBUSY <= 0;
 			BUS_STATE <= T0;
 			WAIT_CNT <= '0;
 			NEXT_BA <= '0;
 		end
 		else begin
-			AREA_SZ = GetAreaSZ(ADDR[26:24],BCR,A0_SZ);
+			AREA_SZ = GetAreaSZ(ADDR,BCR,A0_SZ);
 			STATE_NEXT = BUS_STATE;
 			case (BUS_STATE)
 				T0: begin
@@ -149,9 +148,9 @@ module BSC
 						case (GetAreaW(ADDR[26:24],WCR1))
 							2'b00: begin
 								if (!NEXT_BA) begin
-									DBUSY <= 0;
 									BUSY <= 0;
 								end
+								CACK <= 1;
 								STATE_NEXT = T2;
 							end
 							2'b01: begin
@@ -172,15 +171,16 @@ module BSC
 				end
 				
 				TW: begin
-					if (CE_R) begin
+					if (CE_F) begin
+						CACK <= 1;
+					end else if (CE_R) begin
 						if (WAIT_CNT) begin
 							WAIT_CNT <= WAIT_CNT - 3'd1;
 						end
 						else if (WAIT_N) begin
-							if (!NEXT_BA) begin
-								DBUSY <= 0;
-								BUSY <= 0;
-							end
+//							if (!NEXT_BA) begin
+//								BUSY <= 0;
+//							end
 							STATE_NEXT = T2;
 						end
 					end
@@ -190,13 +190,22 @@ module BSC
 					if (CE_F) begin
 						case (AREA_SZ)
 							1'b0: 
-								case (ADDR[0])
-									1'b0: DAT_BUF[15: 8] <= DI[7:0];
-									1'b1: DAT_BUF[ 7: 0] <= DI[7:0];
+								case (A[1:0])
+									2'b00: DAT_BUF[31:24] <= DI[7:0];
+									2'b01: DAT_BUF[23:16] <= DI[7:0];
+									2'b10: DAT_BUF[15: 8] <= DI[7:0];
+									2'b11: DAT_BUF[ 7: 0] <= DI[7:0];
 								endcase
-							1'b1: DAT_BUF <= DI;
+							1'b1: 
+								case (A[1])
+									1'b0: DAT_BUF[31:16] <= DI[15:0];
+									1'b1: DAT_BUF[15: 0] <= DI[15:0];
+								endcase
 							default:;
 						endcase
+						if (!NEXT_BA) begin
+							BUSY <= 0;
+						end
 						WRL_N <= 1;
 						WRH_N <= 1;
 						RD_N <= 1;
@@ -213,13 +222,16 @@ module BSC
 				default:;
 			endcase
 			
-			if (CE_R) begin
-				if (BUS_STATE == T0 || BUS_STATE == T2) begin
-					if (BUS_ACCESS_REQ && !BUS_RLS && !BUSY) begin
+			/*if (CE_F) begin
+				if (BUS_ACCESS_REQ && !BUS_RLS && !BUSY) begin
 						BUSY <= 1;
-						DBUSY <= DBUS_REQ;
 					end
-					if (BUS_STATE == T2 && BUSY && DBUSY) begin
+			end elseif (CE_F)*/  begin
+				if (BUS_STATE == T0 || BUS_STATE == T2) begin
+					if (BUS_ACCESS_REQ && !BUS_RLS && !BUSY && CE_F) begin
+						BUSY <= 1;
+					end
+					if (BUS_STATE == T0 && BUSY && CE_R) begin
 						case (AREA_SZ)
 							1'b0: begin 
 								ADDR[1:0] <= ADDR[1:0] + 2'd1; 
@@ -259,14 +271,13 @@ module BSC
 							default: ;
 						endcase
 						RD_N <= IBUS_WE_SAVE;
-						CACK <= 1;
+//						CACK <= 1;
 						STATE_NEXT = T1;
 					end
-					else if (BUS_ACCESS_REQ && !BUS_RLS && !BACK /*&& !BUSY*/) begin
+					else if (BUS_ACCESS_REQ && !BUS_RLS && !BACK && !BUSY && CE_F) begin
 						BUSY <= 1;
-						DBUSY <= DBUS_REQ;
 						
-						case (GetAreaSZ(IBUS_A[26:24],BCR,A0_SZ))
+						case (GetAreaSZ(IBUS_A,BCR,A0_SZ))
 							1'b0: begin 
 								case (IBUS_A[1:0])
 									2'b00: begin 
@@ -323,12 +334,12 @@ module BSC
 						CS_N[6] <= ~(IBUS_A[26:24] == 3'b110);
 						CS_N[7] <= ~(IBUS_A[26:24] == 3'b111);
 						RD_N <= IBUS_WE;
-						CACK <= 1;
+//						CACK <= 1;
 						
 						IBUS_WE_SAVE <= IBUS_WE;
 						IBUS_DI_SAVE <= IBUS_DI; 
 						
-						if (BUS_STATE == T0 || BUS_STATE == T2) begin
+						if (BUS_STATE == T0 /*|| BUS_STATE == T2*/) begin
 							STATE_NEXT = T1;
 						end
 					end
@@ -440,7 +451,7 @@ module BSC
 	end
 	
 	assign IBUS_DO = REG_SEL ? REG_DO : DAT_BUF;
-	assign IBUS_BUSY = DBUSY | ((BUS_RLS | BACK) & DBUS_REQ);
+	assign IBUS_BUSY = BUSY | ((BUS_RLS | BACK) & DBUS_REQ);
 	assign IBUS_ACT = REG_SEL;
 	
 	assign IRQ = 0;

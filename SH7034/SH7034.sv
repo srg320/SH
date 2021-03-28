@@ -1,6 +1,6 @@
 module SH7034
 #(
-	parameter string rom_file = " "
+	parameter rom_file = "sh7034.mif"
 )
 (
 	input             CLK,
@@ -146,13 +146,25 @@ module SH7034
 	bit        BSC_ACK;
 	
 	//DMAC
+	bit        DREQ0_N;
+	bit        DREQ1_N;
+	bit        DACK0;
+	bit        DACK1;
 	bit [31:0] DMAC_DO;
 	bit        DMAC_ACT;
 	bit        DMAC_BUSY;
 	bit        DMAC0_IRQ;
-	bit  [7:0] DMAC0_VEC;
 	bit        DMAC1_IRQ;
-	bit  [7:0] DMAC1_VEC;
+	bit        DMAC2_IRQ;
+	bit        DMAC3_IRQ;
+	
+	//RAM
+	bit [31:0] RAM_DO;
+	bit        RAM_ACT;
+	
+	//ROM
+	bit [31:0] ROM_DO;
+	bit        ROM_ACT;
 	
 	//INTC
 	bit  [7:0] INTC_IRQ_N;
@@ -190,13 +202,22 @@ module SH7034
 	bit        RXI1_IRQ;
 	bit        ERI1_IRQ;
 	
-	//FRT
-	bit [31:0] FRT_DO;
-	bit        FRT_ACT;
-	bit        ICI_IRQ;
-	bit        OCIA_IRQ;
-	bit        OCIB_IRQ;
-	bit        OVI_IRQ;
+	//ITU
+	bit        TCLKA;
+	bit        TCLKB;
+	bit        TCLKC;
+	bit        TCLKD;
+	bit  [4:0] TIOCAI;
+	bit  [4:0] TIOCBI;
+	bit  [4:0] TIOCAO;
+	bit  [4:0] TIOCBO;
+	bit        TOCXA4;
+	bit        TOCXB4;
+	bit [31:0] ITU_DO;
+	bit        ITU_ACT;
+	bit  [4:0] IMIA_IRQ;
+	bit  [4:0] IMIB_IRQ;
+	bit  [4:0] OVI_IRQ;
 	
 	//WDT
 	bit [31:0] WDT_DO;
@@ -215,10 +236,11 @@ module SH7034
 	bit        PFC_ACT;
 	
 	//Internal clocks
+	bit        CLK2_CE;
 	bit        CLK4_CE;
 	bit        CLK8_CE;
 	bit        CLK16_CE;
-	bit        CLK32_CE;
+//	bit        CLK32_CE;
 	bit        CLK64_CE;
 	bit        CLK128_CE;
 	bit        CLK256_CE;
@@ -287,42 +309,45 @@ module SH7034
 		.MAC_WE(MAC_WE)
 	);
 	
+	assign IBUS_A = CBUS_A;
+	assign IBUS_BA = CBUS_BA;
 	assign IBUS_DO = MAC_SEL && !MAC_OP && !MAC_WE ? MULT_DO : CBUS_DO;
+	assign IBUS_WE = CBUS_WR;
+	assign IBUS_REQ = CBUS_REQ;
 	
 	assign IBUS_DI = INTC_ACT ? INTC_DO : 
-//						  FRT_ACT  ? FRT_DO : 
+						  ITU_ACT  ? ITU_DO : 
 						  WDT_ACT  ? WDT_DO : 
 						  SCI0_ACT ? SCI0_DO : 
 						  SCI1_ACT ? SCI1_DO : 
-//						  UBC_ACT  ? UBC_DO : 
-//						  DMAC_ACT ? DMAC_DO : 
+						  UBC_ACT  ? UBC_DO : 
 						  PFC_ACT  ? PFC_DO :
-						  BSC_DO;
+						  DMAC_DO;
 	assign IBUS_WAIT = DMAC_BUSY | INTC_BUSY;
 
 	
-//	UBC UBC
-//	(
-//		.CLK(CLK),
-//		.RST_N(RST_N),
-//		.CE_R(CE_R),
-//		.CE_F(CE_F),
-//		
-//		.RES_N(RES_N),
-//		
-//		.IBUS_A(IBUS_A),
-//		.IBUS_DI(IBUS_DO),
-//		.IBUS_DO(UBC_DO),
-//		.IBUS_BA(IBUS_BA),
-//		.IBUS_WE(IBUS_WE),
-//		.IBUS_REQ(IBUS_REQ),
-//		.IBUS_BUSY(),
-//		.IBUS_ACT(UBC_ACT),
-//		
-//		.IRQ(UBC_IRQ)
-//	);
+	UBC ubc
+	(
+		.CLK(CLK),
+		.RST_N(RST_N),
+		.CE_R(CE_R),
+		.CE_F(CE_F),
+		
+		.RES_N(RES_N),
+		
+		.IBUS_A(IBUS_A),
+		.IBUS_DI(IBUS_DO),
+		.IBUS_DO(UBC_DO),
+		.IBUS_BA(IBUS_BA),
+		.IBUS_WE(IBUS_WE),
+		.IBUS_REQ(IBUS_REQ),
+		.IBUS_BUSY(),
+		.IBUS_ACT(UBC_ACT),
+		
+		.IRQ(UBC_IRQ)
+	);
 	
-	bit  [28:0] DBUS_A;
+	bit  [27:0] DBUS_A;
 	bit  [31:0] DBUS_DI;
 	bit  [31:0] DBUS_DO;
 	bit   [3:0] DBUS_BA;
@@ -330,55 +355,94 @@ module SH7034
 	bit         DBUS_REQ;
 	bit         DBUS_WAIT;
 	bit         DBUS_LOCK;
-//	DMAC dmac
-//	(
-//		.CLK(CLK),
-//		.RST_N(RST_N),
-//		.CE_R(CE_R),
-//		.CE_F(CE_F),
-//		
-//		.RES_N(RES_N),
-//		.NMI_N(NMI_N),
-//		
-//		.DREQ0(DREQ0),
-//		.DACK0(DACK0),
-//		.DREQ1(DREQ1),
-//		.DACK1(DACK1),
-//		
-//		.RXI_IRQ(1'b0),
-//		.TXI_IRQ(1'b0),
-//		
-//		.IBUS_A(IBUS_A),
-//		.IBUS_DI(IBUS_DO),
-//		.IBUS_DO(DMAC_DO),
-//		.IBUS_BA(IBUS_BA),
-//		.IBUS_WE(IBUS_WE),
-//		.IBUS_REQ(IBUS_REQ),
-//		.IBUS_BUSY(DMAC_BUSY),
-//		.IBUS_LOCK(IBUS_LOCK),
-//		.IBUS_ACT(DMAC_ACT),
-//		
-//		.DBUS_A(DBUS_A),
-//		.DBUS_DI(BSC_DO),
-//		.DBUS_DO(DBUS_DO),
-//		.DBUS_BA(DBUS_BA),
-//		.DBUS_WE(DBUS_WE),
-//		.DBUS_REQ(DBUS_REQ),
-//		.DBUS_WAIT(BSC_BUSY | DIVU_BUSY),
-//		.DBUS_LOCK(DBUS_LOCK),
-//		
-//		.BSC_ACK(BSC_ACK),
-//		
-//		.DMAC0_IRQ(DMAC0_IRQ),
-//		.DMAC0_VEC(DMAC0_VEC),
-//		.DMAC1_IRQ(DMAC1_IRQ),
-//		.DMAC1_VEC(DMAC1_VEC)
-//	);
-	assign DBUS_A = CBUS_A;
-	assign DBUS_DO = IBUS_DO;
-	assign DBUS_BA = CBUS_BA;
-	assign DBUS_WE = CBUS_WR;
-	assign DBUS_REQ = CBUS_REQ;
+	DMAC dmac
+	(
+		.CLK(CLK),
+		.RST_N(RST_N),
+		.CE_R(CE_R),
+		.CE_F(CE_F),
+		
+		.RES_N(RES_N),
+		.NMI_N(NMI_N),
+		
+		.DREQ0_N(DREQ0_N),
+		.DACK0(DACK0),
+		.DREQ1_N(DREQ1_N),
+		.DACK1(DACK1),
+		
+		.RXI0_IRQ(RXI0_IRQ),
+		.TXI0_IRQ(TXI0_IRQ),
+		.RXI1_IRQ(RXI1_IRQ),
+		.TXI1_IRQ(TXI1_IRQ),
+		.IMIA0_IRQ(IMIA_IRQ[0]),
+		.IMIA1_IRQ(IMIA_IRQ[1]),
+		.IMIA2_IRQ(IMIA_IRQ[2]),
+		.IMIA3_IRQ(IMIA_IRQ[3]),
+		.ADI_IRQ(1'b0),
+		
+		.IBUS_A(IBUS_A),
+		.IBUS_DI(IBUS_DO),
+		.IBUS_DO(DMAC_DO),
+		.IBUS_BA(IBUS_BA),
+		.IBUS_WE(IBUS_WE),
+		.IBUS_REQ(IBUS_REQ),
+		.IBUS_BUSY(DMAC_BUSY),
+		.IBUS_LOCK(IBUS_LOCK),
+		.IBUS_ACT(DMAC_ACT),
+		
+		.DBUS_A(DBUS_A),
+		.DBUS_DI(DBUS_DI),
+		.DBUS_DO(DBUS_DO),
+		.DBUS_BA(DBUS_BA),
+		.DBUS_WE(DBUS_WE),
+		.DBUS_REQ(DBUS_REQ),
+		.DBUS_WAIT(BSC_BUSY),
+		.DBUS_LOCK(DBUS_LOCK),
+		
+		.BSC_ACK(BSC_ACK),
+		
+		.DMAC0_IRQ(DMAC0_IRQ),
+		.DMAC1_IRQ(DMAC1_IRQ),
+		.DMAC2_IRQ(DMAC2_IRQ),
+		.DMAC3_IRQ(DMAC3_IRQ)
+	);
+	assign DBUS_DI = RAM_ACT ? RAM_DO : 
+	                 ROM_ACT ? ROM_DO : 
+	                           BSC_DO;
+	
+	RAM ram
+	(
+		.CLK(CLK),
+		.RST_N(RST_N),
+		.CE_R(CE_R),
+		.CE_F(CE_F),
+		
+		.IBUS_A(DBUS_A),
+		.IBUS_DI(DBUS_DO),
+		.IBUS_DO(RAM_DO),
+		.IBUS_BA(DBUS_BA),
+		.IBUS_WE(DBUS_WE),
+		.IBUS_REQ(DBUS_REQ),
+		.IBUS_BUSY(),
+		.IBUS_ACT(RAM_ACT)
+	);
+	
+	ROM #(rom_file) rom
+	(
+		.CLK(CLK),
+		.RST_N(RST_N),
+		.CE_R(CE_R),
+		.CE_F(CE_F),
+		
+		.IBUS_A(DBUS_A),
+		.IBUS_DI(DBUS_DO),
+		.IBUS_DO(ROM_DO),
+		.IBUS_BA(DBUS_BA),
+		.IBUS_WE(DBUS_WE),
+		.IBUS_REQ(DBUS_REQ),
+		.IBUS_BUSY(),
+		.IBUS_ACT(ROM_ACT)
+	);
 	
 	bit  [23:0] IA;
 	bit  [15:0] IDI;
@@ -462,9 +526,9 @@ module SH7034
 		.SCI1_RXI_IRQ(RXI1_IRQ),
 		.SCI1_TXI_IRQ(TXI1_IRQ),
 		.SCI1_TEI_IRQ(TEI1_IRQ),
-//		.FRT_ICI_IRQ(ICI_IRQ),
-//		.FRT_OCI_IRQ(OCIA_IRQ | OCIB_IRQ),
-//		.FRT_OVI_IRQ(OVI_IRQ),
+		.ITU_IMIA_IRQ(IMIA_IRQ),
+		.ITU_IMIB_IRQ(IMIB_IRQ),
+		.ITU_OVI_IRQ(OVI_IRQ),
 		
 		.IBUS_A(DBUS_A),
 		.IBUS_DI(DBUS_DO),
@@ -482,10 +546,11 @@ module SH7034
 		bit [12:0] DIV_CNT;
 		
 		if (!RST_N) begin
+			CLK2_CE <= 0;
 			CLK4_CE <= 0;
 			CLK8_CE <= 0;
 			CLK16_CE <= 0;
-			CLK32_CE <= 0;
+			//CLK32_CE <= 0;
 			CLK64_CE <= 0;
 			CLK128_CE <= 0;
 			CLK256_CE <= 0;
@@ -498,11 +563,11 @@ module SH7034
 		end
 		else if (CE_R) begin	
 			DIV_CNT <= DIV_CNT + 13'd1;
-			
+			CLK2_CE    <= (DIV_CNT ==? 13'b????????????1);
 			CLK4_CE    <= (DIV_CNT ==? 13'b???????????11);
 			CLK8_CE    <= (DIV_CNT ==? 13'b??????????111);
 			CLK16_CE   <= (DIV_CNT ==? 13'b?????????1111);
-			CLK32_CE   <= (DIV_CNT ==? 13'b????????11111);
+			//CLK32_CE   <= (DIV_CNT ==? 13'b????????11111);
 			CLK64_CE   <= (DIV_CNT ==? 13'b???????111111);
 			CLK128_CE  <= (DIV_CNT ==? 13'b??????1111111);
 			CLK256_CE  <= (DIV_CNT ==? 13'b?????11111111);
@@ -582,38 +647,43 @@ module SH7034
 		.ERI_IRQ(ERI1_IRQ)
 	);
 	
-//	FRT frt
-//	(
-//		.CLK(CLK),
-//		.RST_N(RST_N),
-//		.CE_R(CE_R),
-//		.CE_F(CE_F),
-//		
-//		.RES_N(RES_N),
-//		
-//		.FTOA(FTOA),
-//		.FTOB(FTOB),
-//		.FTCI(FTCI),
-//		.FTI(FTI),
-//		
-//		.CLK8_CE(CLK8_CE),
-//		.CLK32_CE(CLK32_CE),
-//		.CLK128_CE(CLK128_CE),
-//		
-//		.IBUS_A(DBUS_A),
-//		.IBUS_DI(DBUS_DO),
-//		.IBUS_DO(FRT_DO),
-//		.IBUS_BA(DBUS_BA),
-//		.IBUS_WE(DBUS_WE),
-//		.IBUS_REQ(DBUS_REQ),
-//		.IBUS_BUSY(),
-//		.IBUS_ACT(FRT_ACT),
-//		
-//		.ICI_IRQ(ICI_IRQ),
-//		.OCIA_IRQ(OCIA_IRQ),
-//		.OCIB_IRQ(OCIB_IRQ),
-//		.OVI_IRQ(OVI_IRQ)
-//	);
+	ITU itu
+	(
+		.CLK(CLK),
+		.RST_N(RST_N),
+		.CE_R(CE_R),
+		.CE_F(CE_F),
+		
+		.RES_N(RES_N),
+		
+		.TCLKA(TCLKA),
+		.TCLKB(TCLKB),
+		.TCLKC(TCLKC),
+		.TCLKD(TCLKD),
+		.TIOCAI(TIOCAI),
+		.TIOCBI(TIOCBI),
+		.TIOCAO(TIOCAO),
+		.TIOCBO(TIOCBO),
+		.TOCXA4(TOCXA4),
+		.TOCXB4(TOCXB4),
+		
+		.CLK2_CE(CLK2_CE),
+		.CLK4_CE(CLK4_CE),
+		.CLK8_CE(CLK8_CE),
+		
+		.IBUS_A(DBUS_A),
+		.IBUS_DI(DBUS_DO),
+		.IBUS_DO(ITU_DO),
+		.IBUS_BA(DBUS_BA),
+		.IBUS_WE(DBUS_WE),
+		.IBUS_REQ(DBUS_REQ),
+		.IBUS_BUSY(),
+		.IBUS_ACT(ITU_ACT),
+		
+		.IMIA_IRQ(IMIA_IRQ),
+		.IMIB_IRQ(IMIB_IRQ),
+		.OVI_IRQ(OVI_IRQ)
+	);
 	
 	WDT wdt
 	(
@@ -757,10 +827,10 @@ module SH7034
 		.DPLO(1'b1),
 		.DPHO(1'b1),
 		//DMAC
-		.DACK0(),
-		.DACK1(),
-		.DREQ0_N(),
-		.DREQ1_N(),
+		.DACK0(DACK0),
+		.DACK1(DACK1),
+		.DREQ0_N(DREQ0_N),
+		.DREQ1_N(DREQ1_N),
 		//SCI
 		.RXD0(SCI_RXD0),
 		.TXD0(SCI_TXD0),
@@ -771,10 +841,10 @@ module SH7034
 		.SCK1I(SCI_SCK1I),
 		.SCK1O(SCI_SCK1O),
 		
-		.TIOCAO('0),
-		.TIOCBO('0),
-		.TOCXA4(0),
-		.TOCXB4(0),
+		.TIOCAO(TIOCAO),
+		.TIOCBO(TIOCBO),
+		.TOCXA4(TOCXA4),
+		.TOCXB4(TOCXB4),
 	
 		.TP('0),
 		

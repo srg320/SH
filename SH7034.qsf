@@ -60,9 +60,14 @@ set_global_assignment -name SYSTEMVERILOG_FILE SH7034/SH7034_mem.sv
 set_global_assignment -name SYSTEMVERILOG_FILE SH7034/MULT.sv
 set_global_assignment -name SYSTEMVERILOG_FILE SH7034/INTC.sv
 set_global_assignment -name SYSTEMVERILOG_FILE SH7034/BSC.sv
+set_global_assignment -name SYSTEMVERILOG_FILE SH7034/DMAC.sv
+set_global_assignment -name SYSTEMVERILOG_FILE SH7034/UBC.sv
+set_global_assignment -name SYSTEMVERILOG_FILE SH7034/ITU.sv
 set_global_assignment -name SYSTEMVERILOG_FILE SH7034/WDT.sv
 set_global_assignment -name SYSTEMVERILOG_FILE SH7034/SCI.sv
 set_global_assignment -name SYSTEMVERILOG_FILE SH7034/PFC.sv
+set_global_assignment -name SYSTEMVERILOG_FILE SH7034/RAM.sv
+set_global_assignment -name SYSTEMVERILOG_FILE SH7034/ROM.sv
 set_global_assignment -name SYSTEMVERILOG_FILE SH7034/SH7034.sv
 set_global_assignment -name SYSTEMVERILOG_FILE test/RAM.sv
 set_global_assignment -name SYSTEMVERILOG_FILE test/SH7034_tb.sv

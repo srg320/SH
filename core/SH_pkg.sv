@@ -1011,7 +1011,7 @@ package SH2_PKG;
 								DECI.DP.RSC = RSC_IMM;
 								DECI.IMMT = ZIMM8;
 								DECI.ALU = '{1, 0, ADD, 4'b0000, 3'b000};
-								DECI.MEM = '{ALUB, ALUB, 2'b10, 1, 0};
+								DECI.MEM = '{ALURES, ALUB, 2'b10, 1, 0};
 							end
 							3'd4: begin
 								

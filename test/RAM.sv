@@ -1,4 +1,4 @@
-module RAM
+module RAM_tb
 #(
 	parameter bios_file = "",
 	parameter rom_file = ""
