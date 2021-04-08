@@ -1,6 +1,6 @@
 
 
-module INTC (
+module SH7034_INTC (
 	input             CLK,
 	input             RST_N,
 	input             CE_R,
@@ -120,10 +120,11 @@ module INTC (
 			IRQ_OLD[0] <= ~IRQ_N;
 			IRQ_OLD[1] <= IRQ_OLD[0];
 			IRQ_REQ <= '0;
-			if (IRQ_OLD[0][0] && IRQ_OLD[1][0] && !IRQ_N[0]) begin
-				IRQ_REQ[0] <= 1;
+			for (int i=0; i<8; i++) begin
+				if (IRQ_OLD[0][i] && IRQ_OLD[1][i] && !IRQ_N[i]) begin
+					IRQ_REQ[i] <= 1;
+				end
 			end
-//			IRQ_LVL <= ~IRL_N;
 		end
 	end
 	

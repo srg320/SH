@@ -1,4 +1,4 @@
-module SCI 
+module SH7034_SCI 
 #(parameter bit N=0)
 (
 	input             CLK,
@@ -170,12 +170,12 @@ module SCI
 				end
 			end
 			
+			if (!SSR.TEND && SCE_R) 
+				TX_RUN <= 1;
+			else if (SSR.TEND && LAST_BIT && SCE_F) 
+				TX_RUN <= 0;
+				
 			if (SCE_F) begin
-				if (!SSR.TEND) 
-					TX_RUN <= 1;
-				else if (SSR.TEND && LAST_BIT) 
-					TX_RUN <= 0;
-					
 				if (TX_RUN) begin
 					if (SMR.CA) begin
 						TXD <= TSR[0];
@@ -322,7 +322,7 @@ module SCI
 				case ({IBUS_A[2:1],1'b0})
 					3'h0: begin
 						if (IBUS_BA[3]) SMR <= IBUS_DI[31:24] & SMR_WMASK;;
-						if (IBUS_BA[2]) BRR <= IBUS_DI[23:16] & BRR_WMASK;
+						if (IBUS_BA[2]) BRR <= '0;//IBUS_DI[23:16] & BRR_WMASK;
 					end 
 					3'h2: begin
 						if (IBUS_BA[1]) SCR <= IBUS_DI[15:8] & SCR_WMASK;

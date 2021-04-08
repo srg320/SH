@@ -1,4 +1,4 @@
-module BSC 
+module SH7034_BSC 
 #(parameter bit AREA3=0, bit [1:0] W3=0, bit [1:0] IW3=0, bit [1:0] LW3=0)
 (
 	input             CLK,

@@ -1,4 +1,4 @@
-module WDT (
+module SH7034_WDT (
 	input             CLK,
 	input             RST_N,
 	input             CE_R,

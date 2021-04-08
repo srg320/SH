@@ -286,7 +286,7 @@ module SH7034
 	assign CBUS_WAIT = IBUS_WAIT;
 	
 	wire [31:0] MULT_DI = MAC_SEL && MAC_OP[3:2] == 2'b10 ? IBUS_DI : CBUS_DO;
-	MULT mult
+	SH7034_MULT mult
 	(
 		.CLK(CLK),
 		.RST_N(RST_N),
@@ -326,7 +326,7 @@ module SH7034
 	assign IBUS_WAIT = DMAC_BUSY | INTC_BUSY;
 
 	
-	UBC ubc
+	SH7034_UBC ubc
 	(
 		.CLK(CLK),
 		.RST_N(RST_N),
@@ -355,7 +355,7 @@ module SH7034
 	bit         DBUS_REQ;
 	bit         DBUS_WAIT;
 	bit         DBUS_LOCK;
-	DMAC dmac
+	SH7034_DMAC dmac
 	(
 		.CLK(CLK),
 		.RST_N(RST_N),
@@ -410,7 +410,7 @@ module SH7034
 	                 ROM_ACT ? ROM_DO : 
 	                           BSC_DO;
 	
-	RAM ram
+	SH7034_RAM ram
 	(
 		.CLK(CLK),
 		.RST_N(RST_N),
@@ -427,7 +427,7 @@ module SH7034
 		.IBUS_ACT(RAM_ACT)
 	);
 	
-	ROM #(rom_file) rom
+	SH7034_ROM #(rom_file) rom
 	(
 		.CLK(CLK),
 		.RST_N(RST_N),
@@ -448,7 +448,7 @@ module SH7034
 	bit  [15:0] IDI;
 	bit  [15:0] IDO;
 	bit         BUS_RLS;
-	BSC #(.AREA3(0), .W3(1), .IW3(0), .LW3(0)) bsc
+	SH7034_BSC #(.AREA3(0), .W3(1), .IW3(0), .LW3(0)) bsc
 	(
 		.CLK(CLK),
 		.RST_N(RST_N),
@@ -492,7 +492,7 @@ module SH7034
 //	assign EDI = DI;
 	
 	
-	INTC intc
+	SH7034_INTC intc
 	(
 		.CLK(CLK),
 		.RST_N(RST_N),
@@ -579,7 +579,7 @@ module SH7034
 		end
 	end
 
-	SCI #(0) sci0
+	SH7034_SCI #(0) sci0
 	(
 		.CLK(CLK),
 		.RST_N(RST_N),
@@ -613,7 +613,7 @@ module SH7034
 		.ERI_IRQ(ERI0_IRQ)
 	);
 
-	SCI #(1) sci1
+	SH7034_SCI #(1) sci1
 	(
 		.CLK(CLK),
 		.RST_N(RST_N),
@@ -647,7 +647,7 @@ module SH7034
 		.ERI_IRQ(ERI1_IRQ)
 	);
 	
-	ITU itu
+	SH7034_ITU itu
 	(
 		.CLK(CLK),
 		.RST_N(RST_N),
@@ -685,7 +685,7 @@ module SH7034
 		.OVI_IRQ(OVI_IRQ)
 	);
 	
-	WDT wdt
+	SH7034_WDT wdt
 	(
 		.CLK(CLK),
 		.RST_N(RST_N),
@@ -718,10 +718,8 @@ module SH7034
 		.PRES(WDT_PRES),
 		.MRES(WDT_MRES)
 	);
-	
-	
-	
-	PFC pfc
+
+	SH7034_PFC pfc
 	(
 		.CLK(CLK),
 		.RST_N(RST_N),
@@ -841,6 +839,12 @@ module SH7034
 		.SCK1I(SCI_SCK1I),
 		.SCK1O(SCI_SCK1O),
 		
+		.TCLKA(TCLKA),
+		.TCLKB(TCLKB),
+		.TCLKC(TCLKC),
+		.TCLKD(TCLKD),
+		.TIOCAI(TIOCAI),
+		.TIOCBI(TIOCBI),
 		.TIOCAO(TIOCAO),
 		.TIOCBO(TIOCBO),
 		.TOCXA4(TOCXA4),

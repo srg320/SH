@@ -1,4 +1,4 @@
-module DMAC (
+module SH7034_DMAC (
 	input             CLK,
 	input             RST_N,
 	input             CE_R,

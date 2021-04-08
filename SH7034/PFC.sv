@@ -1,4 +1,4 @@
-module PFC 
+module SH7034_PFC 
 (
 	input             CLK,
 	input             RST_N,
@@ -118,6 +118,12 @@ module PFC
 	output            SCK1I,
 	input             SCK1O,
 	
+	output            TCLKA,
+	output            TCLKB,
+	output            TCLKC,
+	output            TCLKD,
+	output      [4:0] TIOCAI,
+	output      [4:0] TIOCBI,
 	input       [4:0] TIOCAO,
 	input       [4:0] TIOCBO,
 	input             TOCXA4,
@@ -318,25 +324,40 @@ module PFC
 	                          CASCR.CASLMD  ==? 2'b10 ? CASL_N   : 
 						           1'b1;
 						 
-	assign WAIT_N   = PACR2.PA3MD  ==? 2'b10 ? PA3I_WAITN               : 1'b1;
-	assign BREQ_N   = PACR1.PA8MD  ==? 2'b?1 ? PA8I_BREQN               : 1'b1;
+	assign WAIT_N   = PA3I_WAITN;//PACR2.PA3MD  ==? 2'b10 ? PA3I_WAITN                 : 1'b1;
+	assign BREQ_N   = PACR1.PA8MD  ==? 2'b?1 ? PA8I_BREQN                 : 1'b1;
 	
-	assign DREQ0_N  = PACR1.PA13MD ==? 2'b11 ? PA13I_IRQ1N_TCLKB_DREQ0N : 1'b1;
-	assign DREQ1_N  = PACR1.PA15MD ==? 2'b11 ? PA15I_IRQ3N_DREQ1N       : 1'b1;
+	assign DREQ0_N  = PACR1.PA13MD ==? 2'b11 ? PA13I_IRQ1N_TCLKB_DREQ0N   : 1'b1;
+	assign DREQ1_N  = PACR1.PA15MD ==? 2'b11 ? PA15I_IRQ3N_DREQ1N         : 1'b1;
 	
-	assign IRQ_N[0] = PACR1.PA12MD ==? 2'b01 ? PA12I_IRQ0N_TCLKA        : 1'b1;
-	assign IRQ_N[1] = PACR1.PA13MD ==? 2'b01 ? PA13I_IRQ1N_TCLKB_DREQ0N : 1'b1;
-	assign IRQ_N[2] = PACR1.PA14MD ==? 2'b01 ? PA14I_IRQ2N              : 1'b1;
-	assign IRQ_N[3] = PACR1.PA15MD ==? 2'b01 ? PA15I_IRQ3N_DREQ1N       : 1'b1;
-	assign IRQ_N[4] = PBCR1.PB12MD ==? 2'b01 ? PB12I_IRQ4N_SCK0I        : 1'b1;
-	assign IRQ_N[5] = PBCR1.PB13MD ==? 2'b01 ? PB13I_IRQ5N_SCK1I        : 1'b1;
-	assign IRQ_N[6] = PBCR1.PB14MD ==? 2'b01 ? PB14I_IRQ6N              : 1'b1;
-	assign IRQ_N[7] = PBCR1.PB15MD ==? 2'b01 ? PB15I_IRQ7N              : 1'b1;
+	assign IRQ_N[0] = PACR1.PA12MD ==? 2'b01 ? PA12I_IRQ0N_TCLKA          : 1'b1;
+	assign IRQ_N[1] = PACR1.PA13MD ==? 2'b01 ? PA13I_IRQ1N_TCLKB_DREQ0N   : 1'b1;
+	assign IRQ_N[2] = PACR1.PA14MD ==? 2'b01 ? PA14I_IRQ2N                : 1'b1;
+	assign IRQ_N[3] = PACR1.PA15MD ==? 2'b01 ? PA15I_IRQ3N_DREQ1N         : 1'b1;
+	assign IRQ_N[4] = PBCR1.PB12MD ==? 2'b01 ? PB12I_IRQ4N_SCK0I          : 1'b1;
+	assign IRQ_N[5] = PBCR1.PB13MD ==? 2'b01 ? PB13I_IRQ5N_SCK1I          : 1'b1;
+	assign IRQ_N[6] = PBCR1.PB14MD ==? 2'b01 ? PB14I_IRQ6N                : 1'b1;
+	assign IRQ_N[7] = PBCR1.PB15MD ==? 2'b01 ? PB15I_IRQ7N                : 1'b1;
 	
-	assign RXD0     = PBCR1.PB8MD  ==? 2'b10 ? PB8I_RXD0                : 1'b1;
-	assign SCK0I    = PBCR1.PB12MD ==? 2'b10 ? PB12I_IRQ4N_SCK0I        : 1'b1;
-	assign RXD1     = PBCR1.PB10MD ==? 2'b10 ? PB10I_RXD1               : 1'b1;
-	assign SCK1I    = PBCR1.PB13MD ==? 2'b10 ? PB13I_IRQ5N_SCK1I        : 1'b1;
+	assign TCLKA      = PACR1.PA12MD ==? 2'b10 ? PA12I_IRQ0N_TCLKA        : 1'b0;
+	assign TCLKB      = PACR1.PA13MD ==? 2'b10 ? PA13I_IRQ1N_TCLKB_DREQ0N : 1'b0;
+	assign TCLKC      = PBCR2.PB6MD  ==? 2'b00 ? PB6I_TCLKC               : 1'b0;
+	assign TCLKD      = PBCR2.PB7MD  ==? 2'b00 ? PB7I_TCLKD               : 1'b0;
+	assign TIOCAI[0]  = PACR2.PA0MD  ==? 2'b10 ? PA0I_TIOCA0              : 1'b0;
+	assign TIOCBI[0]  = PACR2.PA2MD  ==? 2'b10 ? PA2I_TIOCB0              : 1'b0;
+	assign TIOCAI[1]  = PACR1.PA10MD ==? 2'b10 ? PA10I_DPL_TIOCA1         : 1'b0;
+	assign TIOCBI[1]  = PACR1.PA11MD ==? 2'b10 ? PA11I_DPH_TIOCB1         : 1'b0;
+	assign TIOCAI[2]  = PBCR2.PB0MD  ==? 2'b10 ? PB0I_TIOCA2              : 1'b0;
+	assign TIOCBI[2]  = PBCR2.PB1MD  ==? 2'b10 ? PB1I_TIOCB2              : 1'b0;
+	assign TIOCAI[3]  = PBCR2.PB2MD  ==? 2'b10 ? PB2I_TIOCA3              : 1'b0;
+	assign TIOCBI[3]  = PBCR2.PB3MD  ==? 2'b10 ? PB3I_TIOCB3              : 1'b0;
+	assign TIOCAI[4]  = PBCR2.PB4MD  ==? 2'b10 ? PB4I_TIOCA4              : 1'b0;
+	assign TIOCBI[4]  = PBCR2.PB5MD  ==? 2'b10 ? PB5I_TIOCB4              : 1'b0;
+	
+	assign RXD0     = PBCR1.PB8MD  ==? 2'b10 ? PB8I_RXD0                  : 1'b1;
+	assign SCK0I    = PBCR1.PB12MD ==? 2'b10 ? PB12I_IRQ4N_SCK0I          : 1'b1;
+	assign RXD1     = PBCR1.PB10MD ==? 2'b10 ? PB10I_RXD1                 : 1'b1;
+	assign SCK1I    = PBCR1.PB13MD ==? 2'b10 ? PB13I_IRQ5N_SCK1I          : 1'b1;
 	
 	
 	//Registers

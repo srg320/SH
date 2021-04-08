@@ -1,4 +1,4 @@
-module ROM 
+module SH7034_ROM 
 #(
 	parameter rom_file = ""
 )

@@ -1,4 +1,4 @@
-module ITU (
+module SH7034_ITU (
 	input             CLK,
 	input             RST_N,
 	input             CE_R,

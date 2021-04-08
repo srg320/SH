@@ -1,4 +1,4 @@
-module UBC (
+module SH7034_UBC (
 	input             CLK,
 	input             RST_N,
 	input             CE_R,

@@ -1,4 +1,4 @@
-module RAM 
+module SH7034_RAM 
 (
 	input             CLK,
 	input             RST_N,

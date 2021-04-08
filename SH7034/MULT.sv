@@ -1,4 +1,4 @@
-module MULT (
+module SH7034_MULT (
 	input             CLK,
 	input             RST_N,
 	input             CE_R,
