@@ -306,7 +306,7 @@ module SH7034_INTC (
 						if (IBUS_BA[3]) IPRA[15: 8] = IBUS_DI[31:24] & IPRA_WMASK[15:8];
 						if (IBUS_BA[2]) IPRA[ 7: 0] = IBUS_DI[23:16] & IPRA_WMASK[ 7:0];
 						if (IBUS_BA[1]) IPRB[15: 8] = IBUS_DI[15: 8] & IPRB_WMASK[15:8];
-						if (IBUS_BA[0]) IPRB[ 7: 0] = IBUS_DI[15: 8] & IPRB_WMASK[ 7:0];
+						if (IBUS_BA[0]) IPRB[ 7: 0] = IBUS_DI[ 7: 0] & IPRB_WMASK[ 7:0];
 					end
 					4'h8: begin
 						if (IBUS_BA[3]) IPRC[15: 8] = IBUS_DI[31:24] & IPRC_WMASK[15:8];

@@ -118,7 +118,6 @@ module SH_core
 	wire LOAD_ISSUE = (PIPE.EX.DI.MEM.R | PIPE.EX.DI.MAC.R) & ((PIPE.EX.DI.RA.N == ID_DECI.RA.N & ID_DECI.RA.R) |
 	                                                           (PIPE.EX.DI.RA.N == ID_DECI.RB.N & ID_DECI.RB.R) |
 	                                                           (PIPE.EX.DI.RA.N ==         5'd0 & ID_DECI.R0R));
-//	wire INST_ISSUE = ~PIPE.ID.PC[1] & (PIPE.EX.DI.MEM.R | PIPE.EX.DI.MEM.W | PIPE.EX.DI.MAC.R | PIPE.EX.DI.MAC.W);
 	wire INST_ISSUE = ((IFID_STALL & ~PC[1]) | ~PIPE.ID.PC[1]) & (PIPE.EX.DI.MEM.R | PIPE.EX.DI.MEM.W | PIPE.EX.DI.MAC.R | PIPE.EX.DI.MAC.W);
 	
 	always @(posedge CLK or negedge RST_N) begin
@@ -186,11 +185,10 @@ module SH_core
 	//**********************************************************
 	assign IF_STALL = (MA_ACTIVE & BUS_WAIT) | (IF_ACTIVE & BUS_WAIT) | (VECT_ACTIVE & VECT_WAIT) | INST_SPLIT | IFID_STALL;
 	
-	bit        NEED_FETCH;
+	IFtoID_t   SAVE_ID;
 	always @(posedge CLK or negedge RST_N) begin
 		bit [15:0] SAVE_IR;
 		bit [15:0] NEW_IR;
-		IFtoID_t   SAVE_ID;
 		
 		if (!RST_N) begin
 			PIPE.ID.IR <= 16'h0009;
@@ -203,7 +201,7 @@ module SH_core
 			SAVE_IR <= '0;
 		end
 		else if (CE) begin
-			if (!PC[1] || NEED_FETCH) begin
+			if (!PC[1] || PIPE.MA.BC) begin
 				NEW_IR = PC[1] ? BUS_DI[15:0] : BUS_DI[31:16];
 			end
 			else begin
@@ -215,7 +213,7 @@ module SH_core
 			end
 				
 			if (!IF_STALL) begin
-				if (!PC[1] || NEED_FETCH) begin
+				if (!PC[1] || PIPE.MA.BC) begin
 					SAVE_IR <= BUS_DI[15:0];
 				end
 				
@@ -433,6 +431,7 @@ module SH_core
 		case (PIPE.EX.DI.DP.RSB)
 			GRX: REG_B = BP_B;
 			BPC: REG_B = {PC[31:2],PC[1:0] & {2{~PIPE.EX.DI.DP.PCM}}};
+			TPC: REG_B = SAVE_ID.PC;
 			IPC: REG_B = PIPE.EX.PC;
 			SCR: REG_B = SCR_VAL;
 			default: REG_B = 32'h0;
@@ -561,28 +560,27 @@ module SH_core
 		if (!RST_N) begin
 			PIPE.MA.IR <= '0;
 			PIPE.MA.DI <= DECI_RESET;
+			PIPE.MA.BC <= 0;
 			PIPE.MA.RES <= '0;
 			PIPE.MA.ADDR <= '0;
 			PIPE.MA.WD <= '0;
-			NEED_FETCH <= 0;
 		end
 		else if (!RES_N) begin
 			PIPE.MA.IR <= '0;
 			PIPE.MA.DI <= DECI_RESET;
+			PIPE.MA.BC <= 0;
 			PIPE.MA.RES <= '0;
 			PIPE.MA.ADDR <= '0;
 			PIPE.MA.WD <= '0;
-			NEED_FETCH <= 0;
 		end
 		else if (CE) begin
 			if (!EX_STALL) begin
 				PIPE.MA.IR <= PIPE.EX.IR;
 				PIPE.MA.DI <= PIPE.EX.DI;
+				PIPE.MA.BC <= PIPE.EX.BC;
 				PIPE.MA.RES <= PIPE.EX.DI.BR.BI ? REG_B : ALU_RES;
 				PIPE.MA.ADDR <= MA_ADDR;
 				PIPE.MA.WD <= MA_WD;
-				
-				NEED_FETCH <= PIPE.EX.BC;
 			end
 		end
 	end

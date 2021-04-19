@@ -134,6 +134,7 @@ module SH7034_SCI
 		bit       LAST_BIT;
 		bit       PRELAST_BIT;
 		bit       PB;
+		bit       TX_PRERUN;
 		
 		if (!RST_N) begin
 			TXD <= 1;
@@ -150,12 +151,12 @@ module SH7034_SCI
 			LAST_BIT    = SMR.CA ? TBIT_CNT == 4'd7 : TBIT_CNT == 4'd11;
 			PRELAST_BIT = SMR.CA ? TBIT_CNT == 4'd6 : TBIT_CNT == 4'd9;
 			
-			if (!SSR.TDRE && LAST_BIT /*&& SCE_R*/) begin
+			if (!SSR.TDRE && LAST_BIT && SCE_R) begin
 				TSR <= TDR;
 				SSR.TDRE <= 1;
 				TXI <= 1;
 			end
-			else if (SSR.TDRE && PRELAST_BIT && SCE_F) begin
+			else if (SSR.TDRE && LAST_BIT && SCE_R) begin
 				SSR.TEND <= 1;
 				TEI <= 1;
 			end
@@ -169,14 +170,17 @@ module SH7034_SCI
 					TXI <= 0;
 				end
 			end
-			
-			if (!SSR.TEND && SCE_R) 
-				TX_RUN <= 1;
-			else if (SSR.TEND && LAST_BIT && SCE_F) 
-				TX_RUN <= 0;
-				
+
 			if (SCE_F) begin
-				if (TX_RUN) begin
+				TX_PRERUN <= 0;
+				if (!SSR.TEND && !TX_PRERUN && !TX_RUN) 
+					TX_PRERUN <= 1;
+				else if (TX_PRERUN) 
+					TX_RUN <= 1;
+				else if (SSR.TEND && LAST_BIT) 
+					TX_RUN <= 0;
+					
+				if (TX_PRERUN || TX_RUN) begin
 					if (SMR.CA) begin
 						TXD <= TSR[0];
 						TSR <= {1'b0,TSR[7:1]};
@@ -226,14 +230,14 @@ module SH7034_SCI
 			REC_END <= 0;
 		end
 		else if (CE_R) begin
-			LAST_BIT    = SMR.CA ? RBIT_CNT == 4'd7 : RBIT_CNT == 4'd11;
+			LAST_BIT = SMR.CA ? RBIT_CNT == 4'd7 : RBIT_CNT == 4'd11;
 			
 			if (SCE_R) begin
 				if (SMR.CA) begin
-//					if (TX_RUN) begin
+					if (TX_RUN) begin
 						RSR <= {RXD,RSR[7:1]};
 						RBIT_CNT <= !LAST_BIT ? RBIT_CNT + 4'd1 : 4'd0;
-//					end
+					end
 				end else begin
 					if (RBIT_CNT == 4'd0) begin
 						if (!RXD) begin
@@ -292,7 +296,7 @@ module SH7034_SCI
 		end
 	end
 	
-	assign SCKO = (INT_SCK & TX_RUN) | SCR.CKE[1];
+	assign SCKO = INT_SCK | ~TX_RUN | SCR.CKE[1];
 	
 	assign TEI_IRQ = TEI & SCR.TEIE;
 	assign TXI_IRQ = TXI & SCR.TIE;

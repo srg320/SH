@@ -1,10 +1,11 @@
 package SH2_PKG;
 
-	typedef enum bit[1:0] {
-		GRX = 2'b00,  
-		BPC = 2'b01,
-		IPC = 2'b10,
-		SCR = 2'b11
+	typedef enum bit[2:0] {
+		GRX = 3'b000,
+		SCR = 3'b001,  
+		BPC = 3'b010,
+		IPC = 3'b011,
+		TPC = 3'b100
 	} RegSource_t;
 	
 	typedef enum bit[1:0] {
@@ -73,8 +74,8 @@ package SH2_PKG;
 	
 	typedef struct packed
 	{
-		RegSource_t  RSA;		//REGA source (0-R0, 1-IMM)
-		RegSource_t  RSB;		//REGB source (0-R0, 1-IMM)
+		RegSource_t  RSA;		//REGA source
+		RegSource_t  RSB;		//REGB source
 		bit          RSC;		//REGC source (0-R0, 1-IMM)
 		bit          PCM;		//PC masked
 		bit          BPWBA;	//Bypass register A from WB.RES
@@ -999,7 +1000,7 @@ package SH2_PKG;
 							end
 							3'd2: begin
 								DECI.RA = '{SP, 1, 1};
-								DECI.DP.RSB = BPC;///////////////////////////////
+								DECI.DP.RSB = TPC;
 								DECI.DP.RSC = RSC_IMM;
 								DECI.IMMT = ONE;
 								DECI.ALU = '{0, 1, ADD, 4'b0001, 3'b000};
@@ -1239,16 +1240,17 @@ package SH2_PKG;
 		bit [15:0] IR;
 		DecInstr_t DI;			//Decoded instruction
 		bit [31:0] PC;
+		bit        BC;			//Branch condition
 		bit [31:0] RA;
 		bit [31:0] RB;
 		bit [31:0] R0;
-		bit        BC;			//Branch condition
 	} IDtoEX_t;
 
 	typedef struct
 	{
 		bit [15:0] IR;
 		DecInstr_t DI;			//Decoded instruction
+		bit        BC;			//Branch condition
 		bit [31:0] RES;		//ALU output
 		bit [31:0] ADDR;		//Data memory address
 		bit [31:0] WD;			//Write data
