@@ -1,6 +1,4 @@
-import SH7604_PKG::*;
-
-module DMAC (
+module SH7604_DMAC (
 	input             CLK,
 	input             RST_N,
 	input             CE_R,
@@ -44,6 +42,8 @@ module DMAC (
 	output      [7:0] DMAC1_VEC
 	
 );
+
+	import SH7604_PKG::*;
 
 	SARx_t      SAR[2];
 	DARx_t      DAR[2];
@@ -364,8 +364,8 @@ module DMAC (
 	assign DBUS_REQ = DMA_RD | DMA_WR | IBUS_REQ;
 	assign DBUS_LOCK = ((DMA_RD | DMA_WR) & DMA_LOCK) | IBUS_LOCK;
 	
-	assign DACK0 = (BSC_ACK & !DMA_CH & ((DMA_RD & ~CHCR[0].AM) | (DMA_WR & CHCR[0].AM) | CHCR[0].TA)) ^ ~CHCR[0].AL;
-	assign DACK1 = (BSC_ACK &  DMA_CH & ((DMA_RD & ~CHCR[1].AM) | (DMA_WR & CHCR[1].AM) | CHCR[1].TA)) ^ ~CHCR[1].AL;
+	assign DACK0 = (BSC_ACK & !DMA_CH & ((DMA_RD & (~CHCR[0].AM | CHCR[0].TA)) | (DMA_WR & (CHCR[0].AM | CHCR[0].TA)))) ^ ~CHCR[0].AL;
+	assign DACK1 = (BSC_ACK &  DMA_CH & ((DMA_RD & (~CHCR[1].AM | CHCR[1].TA)) | (DMA_WR & (CHCR[1].AM | CHCR[1].TA)))) ^ ~CHCR[1].AL;
 	
 	assign DMAC0_IRQ = CHCR[0].TE & CHCR[0].IE;
 	assign DMAC0_VEC = VCRDMA0.VC;

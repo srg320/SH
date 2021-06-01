@@ -13,8 +13,8 @@ module INTC (
 	input       [3:0] INT_MASK,
 	input             INT_ACK,
 	input             INT_ACP,
-	output      [3:0] INT_LVL,
-	output      [7:0] INT_VEC,
+	output reg  [3:0] INT_LVL,
+	output reg  [7:0] INT_VEC,
 	output            INT_REQ,
 	
 	input             VECT_REQ,
@@ -180,6 +180,7 @@ module INTC (
 	end
 	
 	always_comb begin
+//	always @(posedge CLK /*or negedge RST_N*/) begin
 		if      (NMI_PEND)     begin INT_LVL <= 4'hF;        INT_VEC <= 8'd11;              end
 		else if (UBC_PEND)     begin INT_LVL <= 4'hF;        INT_VEC <= 8'd12;              end
 		else if (IRL_PEND)     begin INT_LVL <= IRL_LVL;     INT_VEC <= IRL_VEC;            end

@@ -12,7 +12,15 @@ module SH7034_RAM
 	input             IBUS_WE,
 	input             IBUS_REQ,
 	output            IBUS_BUSY,
-	output            IBUS_ACT
+	output            IBUS_ACT,
+	
+	
+	output     [7:0] DBG_CD_STATE,
+	output     [7:0] DBG_CD_FLAGS,
+	output     [7:0] DBG_CD_STATUS,
+	output     [7:0] DBG_CDD_RX_STAT,
+	output     [7:0] DBG_CDD_COMM0,
+	output     [7:0] DBG_CDD_COMM11
 );
 	
 	wire RAM_SEL = (IBUS_A[27:24] == 4'hF);
@@ -35,5 +43,33 @@ module SH7034_RAM
 	assign IBUS_DO = RAM_Q;
 	assign IBUS_BUSY = 0;
 	assign IBUS_ACT = RAM_SEL;
+	
+	always @(posedge CLK or negedge RST_N) begin
+		if (!RST_N) begin
+			
+		end else begin
+			if (IBUS_WE & RAM_SEL & CE_R) begin
+				case ({IBUS_A[11:2],2'b00})
+					12'h288:  begin
+						if (IBUS_BA[1]) DBG_CD_STATUS <= IBUS_DI[15: 8];
+					end
+					12'h2A4: begin
+						if (IBUS_BA[2]) DBG_CD_STATE <= IBUS_DI[23:16];
+						if (IBUS_BA[1]) DBG_CD_FLAGS <= IBUS_DI[15:8];
+					end
+					12'h2C4: begin
+						if (IBUS_BA[3]) DBG_CDD_COMM0 <= IBUS_DI[31:24];
+					end
+					12'h2CC: begin
+						if (IBUS_BA[0]) DBG_CDD_COMM11 <= IBUS_DI[7:0];
+					end
+					12'h2D0: begin
+						if (IBUS_BA[3]) DBG_CDD_RX_STAT <= IBUS_DI[31:24];
+					end
+					default;
+				endcase
+			end
+		end
+	end
 	
 endmodule

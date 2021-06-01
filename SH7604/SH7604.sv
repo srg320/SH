@@ -117,12 +117,9 @@ module SH7604 (
 	bit  [7:0] DMAC1_VEC;
 	
 	//INTC
-	
 	bit [31:0] INTC_DO;
 	bit        INTC_ACT;
 	bit        INTC_BUSY;
-//	IntReq_t   INTC_INTO;
-//	IntAck_t   CPU_INTO;
 	
 	//MULT
 	bit  [1:0] MAC_SEL;
@@ -212,9 +209,9 @@ module SH7604 (
 		.VECT_WAIT(VECT_WAIT)
 	);
 	
-	assign CBUS_DI = MAC_SEL ? MULT_DO : CACHE_DO;
+	assign CBUS_DI = |MAC_SEL ? MULT_DO : CACHE_DO;
 	
-	wire [31:0] MULT_DI = MAC_SEL && MAC_OP[3:2] == 2'b10 ? CACHE_DO : CBUS_DO;
+	wire [31:0] MULT_DI = |MAC_SEL && MAC_OP[3:2] == 2'b10 ? CACHE_DO : CBUS_DO;
 	MULT mult
 	(
 		.CLK(CLK),
@@ -248,7 +245,7 @@ module SH7604 (
 		end
 	end
 	
-	assign CACHE_DI = MAC_SEL && !MAC_OP && !MAC_WE ? MULT_DO : CBUS_DO;
+	assign CACHE_DI = |MAC_SEL && MAC_OP == 4'b0000 && !MAC_WE ? MULT_DO : CBUS_DO;
 	CACHE cache
 	(
 		.CLK(CLK),
@@ -316,7 +313,7 @@ module SH7604 (
 	bit         DBUS_REQ;
 	bit         DBUS_WAIT;
 	bit         DBUS_LOCK;
-	DMAC dmac
+	SH7604_DMAC dmac
 	(
 		.CLK(CLK),
 		.RST_N(RST_N),
@@ -543,7 +540,7 @@ module SH7604 (
 		end
 	end
 
-	SCI sci
+	SH7604_SCI sci
 	(
 		.CLK(CLK),
 		.RST_N(RST_N),
@@ -643,26 +640,5 @@ module SH7604 (
 		.PRES(WDT_PRES),
 		.MRES(WDT_MRES)
 	);
-	
-//	always @(posedge CLK or negedge RST_N) begin
-//		bit RES_N_OLD;
-//		
-//		if (!RST_N) begin
-//			INTI <= INT_REQ_RESET;
-//			RES_N_OLD <= 0;
-//		end
-//		else begin	
-//			RES_N_OLD <= RES_N;
-//			if (!RES_N && RES_N_OLD) begin
-//				INTI.REQ <= 1;
-//				INTI.RES <= 1;
-//			end
-//			
-//			if (INTO.ACK && INTI.REQ) begin
-//				INTI.REQ <= 0;
-//				INTI.RES <= 0;
-//			end
-//		end
-//	end
 	
 endmodule

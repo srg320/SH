@@ -132,7 +132,6 @@ module SH7034_SCI
 	always @(posedge CLK or negedge RST_N) begin
 		bit [3:0] TBIT_CNT;
 		bit       LAST_BIT;
-		bit       PRELAST_BIT;
 		bit       PB;
 		bit       TX_PRERUN;
 		
@@ -149,7 +148,6 @@ module SH7034_SCI
 		end
 		else if (CE_R) begin
 			LAST_BIT    = SMR.CA ? TBIT_CNT == 4'd7 : TBIT_CNT == 4'd11;
-			PRELAST_BIT = SMR.CA ? TBIT_CNT == 4'd6 : TBIT_CNT == 4'd9;
 			
 			if (!SSR.TDRE && LAST_BIT && SCE_R) begin
 				TSR <= TDR;

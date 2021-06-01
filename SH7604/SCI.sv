@@ -1,6 +1,4 @@
-import SH7604_PKG::*;
-
-module SCI (
+module SH7604_SCI (
 	input             CLK,
 	input             RST_N,
 	input             CE_R,
@@ -32,6 +30,8 @@ module SCI (
 	output            RXI_IRQ,
 	output            ERI_IRQ
 );
+
+	import SH7604_PKG::*;
 
 	RDR_t       RDR;
 	TDR_t       TDR;
@@ -131,8 +131,8 @@ module SCI (
 	always @(posedge CLK or negedge RST_N) begin
 		bit [3:0] TBIT_CNT;
 		bit       LAST_BIT;
-		bit       PRELAST_BIT;
 		bit       PB;
+		bit       TX_PRERUN;
 		
 		if (!RST_N) begin
 			TXD <= 1;
@@ -147,14 +147,13 @@ module SCI (
 		end
 		else if (CE_R) begin
 			LAST_BIT    = SMR.CA ? TBIT_CNT == 4'd7 : TBIT_CNT == 4'd11;
-			PRELAST_BIT = SMR.CA ? TBIT_CNT == 4'd6 : TBIT_CNT == 4'd9;
 			
-			if (!SSR.TDRE && LAST_BIT /*&& SCE_R*/) begin
+			if (!SSR.TDRE && LAST_BIT && SCE_R) begin
 				TSR <= TDR;
 				SSR.TDRE <= 1;
 				TXI <= 1;
 			end
-			else if (SSR.TDRE && PRELAST_BIT && SCE_F) begin
+			else if (SSR.TDRE && LAST_BIT && SCE_R) begin
 				SSR.TEND <= 1;
 				TEI <= 1;
 			end
@@ -170,12 +169,15 @@ module SCI (
 			end
 			
 			if (SCE_F) begin
-				if (!SSR.TEND) 
+				TX_PRERUN <= 0;
+				if (!SSR.TEND && !TX_PRERUN && !TX_RUN) 
+					TX_PRERUN <= 1;
+				else if (TX_PRERUN) 
 					TX_RUN <= 1;
 				else if (SSR.TEND && LAST_BIT) 
 					TX_RUN <= 0;
 					
-				if (TX_RUN) begin
+				if (TX_PRERUN || TX_RUN) begin
 					if (SMR.CA) begin
 						TXD <= TSR[0];
 						TSR <= {1'b0,TSR[7:1]};
@@ -225,14 +227,14 @@ module SCI (
 			REC_END <= 0;
 		end
 		else if (CE_R) begin
-			LAST_BIT    = SMR.CA ? RBIT_CNT == 4'd7 : RBIT_CNT == 4'd11;
+			LAST_BIT = SMR.CA ? RBIT_CNT == 4'd7 : RBIT_CNT == 4'd11;
 			
 			if (SCE_R) begin
 				if (SMR.CA) begin
-//					if (TX_RUN) begin
+					if (TX_RUN) begin
 						RSR <= {RXD,RSR[7:1]};
 						RBIT_CNT <= !LAST_BIT ? RBIT_CNT + 4'd1 : 4'd0;
-//					end
+					end
 				end else begin
 					if (RBIT_CNT == 4'd0) begin
 						if (!RXD) begin
@@ -291,7 +293,7 @@ module SCI (
 		end
 	end
 	
-	assign SCKO = (INT_SCK & TX_RUN) | SCR.CKE[1];
+	assign SCKO = INT_SCK | ~TX_RUN | SCR.CKE[1];
 	
 	assign TEI_IRQ = TEI & SCR.TEIE;
 	assign TXI_IRQ = TXI & SCR.TIE;
@@ -305,7 +307,7 @@ module SCI (
 			TDR <= TDR_INIT;
 			SMR <= SMR_INIT;
 			SCR <= SCR_INIT;
-			BRR <= '0;//BRR_INIT;
+			BRR <= BRR_INIT;
 			// synopsys translate_off
 			
 			// synopsys translate_on
@@ -315,12 +317,13 @@ module SCI (
 				TDR <= TDR_INIT;
 				SMR <= SMR_INIT;
 				SCR <= SCR_INIT;
-				BRR <= '0;//BRR_INIT;
+				BRR <= BRR_INIT;
+//				BRR <= '0;
 			end
 			else if (REG_SEL && IBUS_WE && IBUS_REQ) begin
 				case (IBUS_A[2:0])
 					3'h0: SMR <= IBUS_DI[31:24] & SMR_WMASK;
-//					3'h1: BRR <= IBUS_DI[23:16] & BRR_WMASK;
+					3'h1: BRR <= IBUS_DI[23:16] & BRR_WMASK;
 					3'h2: SCR <= IBUS_DI[15:8] & SCR_WMASK;
 					3'h3: TDR <= IBUS_DI[7:0] & TDR_WMASK;
 					default:;

@@ -58,7 +58,6 @@ module CACHE (
 	bit         CACHE_WRITE;
 	bit         CACHE_READ;
 	bit         CACHE_LINE_PURGE;
-//	bit         CACHE_DATA_READ;
 	bit         CACHE_DATA_WRITE;
 	bit         CACHE_ADDR_WRITE;
 	bit         CACHE_PURGE;
@@ -389,25 +388,11 @@ module CACHE (
 		LRU_DATA = LRU_Q & {6{~&DIRTY}};
 	end
 	
-//	always @(posedge CLK or negedge RST_N) begin
-//		if (!RST_N) begin
-//			LRU <= '{64{'0}};
-//		end
-//		else if (CE_R) begin
-//			if (CACHE_UPDATE || CACHE_WRITE || CACHE_READ) begin
-//				LRU[CACHE_WR_ADDR[9:4]] <= LRUSelect(CACHE_WR_WAY, LRU[CACHE_WR_ADDR[9:4]]); 
-//			end
-//			else if (CACHE_ADDR_WRITE) begin
-//				LRU[CACHE_WR_ADDR[9:4]] <= CBUS_DI[9:4];
-//			end
-//		end
-//	end
 `endif
 	
 	
 	wire HIT = WAY_HIT[0] | WAY_HIT[1] | WAY_HIT[2] | WAY_HIT[3];
 	
-//	wire CACHE_ACCESSIBLE = CACHE_AREA && CCR.CE;
 	
 	bit         READ_BUSY;
 	bit         WRITE_BUSY;
@@ -434,7 +419,6 @@ module CACHE (
 			CACHE_WRITE <= 0;
 			CACHE_READ <= 0;
 			CACHE_LINE_PURGE <= 0;
-//			CACHE_DATA_READ <= 0;
 			CACHE_DATA_WRITE <= 0;
 			CACHE_ADDR_WRITE <= 0;
 			
@@ -451,12 +435,11 @@ module CACHE (
 			CACHE_WRITE <= 0;
 			CACHE_READ <= 0;
 			CACHE_LINE_PURGE <= 0;
-//			CACHE_DATA_READ <= 0;
 			CACHE_DATA_WRITE <= 0;
 			CACHE_ADDR_WRITE <= 0;
 			if (CBUS_REQ) begin
 				if (CBUS_WR) begin
-					if (CACHE_AREA || NOCACHE_AREA || IO_AREA) begin
+					if ((CACHE_AREA || NOCACHE_AREA || IO_AREA) && !IBUS_WAIT) begin
 						IBADDR <= CBUS_A;
 						IBDATA <= CBUS_DI;
 						IBBA <= CBUS_BA;
@@ -492,19 +475,14 @@ module CACHE (
 				end
 				else begin
 					if ((CACHE_AREA && !CCR.CE) || NOCACHE_AREA || IO_AREA) begin
-//						if (!IBUS_WRITE_PEND) begin
-							IBADDR <= CBUS_A;
-							IBBA <= CBUS_BA;
-							IBWE <= 0;
-							IBREQ <= 1;
-							IBLOCK <= 0;
-							IBUS_READ <= 1;
-//						end	
+						IBADDR <= CBUS_A;
+						IBBA <= CBUS_BA;
+						IBWE <= 0;
+						IBREQ <= 1;
+						IBLOCK <= 0;
+						IBUS_READ <= 1;
 						READ_BUSY <= 1;
 					end
-//					else if (CACHE_DATA_AREA) begin
-//						CACHE_DATA_READ <= 1;
-//					end
 					else if (CACHE_AREA && CCR.CE && !IBUS_READARRAY) begin
 						if (HIT) begin
 							CACHE_WR_ADDR <= CBUS_A[28:2];
@@ -512,37 +490,22 @@ module CACHE (
 							CACHE_READ <= 1;
 						end
 						else begin
+							IBADDR <= {CBUS_A[31:4],CBUS_A[3:2] + 2'd1,2'b00};
+							IBBA <= 4'b1111;
+							IBWE <= 0;
+							IBREQ <= 1;
+							IBLOCK <= 1;
+							ARRAY_POS <= CBUS_A[3:2];
+							CACHE_WR_WAY <= WayFromLRU(LRU_DATA, CCR.TW);
+							IBUS_READARRAY <= 1;
 							READ_BUSY <= 1;
-//							if (!IBUS_WRITE_PEND) begin
-								IBADDR <= {CBUS_A[31:4],CBUS_A[3:2] + 2'd1,2'b00};
-								IBBA <= 4'b1111;
-								IBWE <= 0;
-								IBREQ <= 1;
-								IBLOCK <= 1;
-								ARRAY_POS <= CBUS_A[3:2];
-								CACHE_WR_WAY <= WayFromLRU(LRU_DATA, CCR.TW);
-								IBUS_READARRAY <= 1;
-//							end
 						end
 					end
 				end
 			end
 			
-//			if (IBUS_WRITE && !IBUS_WAIT) begin
-//				IBUS_WRITE <= 0;
-//				WRITE_BUSY <= 0;
-//				IBREQ <= 0;
-//			end
-			
 			IBDATA_RDY <= 0;
-			if (IBUS_WRITE_PEND) begin
-//				IBREQ <= 0;
-//				if (!IBUS_WRITE) begin
-					IBUS_WRITE <= 1;
-					IBUS_WRITE_PEND <= 0;
-//				end
-			end
-			else if (IBUS_WRITE) begin
+			if (IBUS_WRITE) begin
 				if (!IBUS_WAIT) begin
 					IBREQ <= 0;
 					WRITE_BUSY <= 0;

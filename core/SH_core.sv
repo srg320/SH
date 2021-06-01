@@ -372,7 +372,7 @@ module SH_core
 			case (PIPE.EX.DI.MEM.SZ)
 				2'b00:   IMM_VAL = temp;
 				2'b01:   IMM_VAL = {temp[30:0],1'b0};
-				default: IMM_VAL= {temp[29:0],2'b00};
+				default: IMM_VAL = {temp[29:0],2'b00};
 			endcase
 		end
 		

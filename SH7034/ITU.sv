@@ -141,11 +141,11 @@ module SH7034_ITU (
 		end
 	end
 	
-	wire [4:0] TSR_WRITE = {REG_SEL && IBUS_A[5:0] == 6'h35 && IBUS_WE && IBUS_REQ,
-	                        REG_SEL && IBUS_A[5:0] == 6'h25 && IBUS_WE && IBUS_REQ,
-									REG_SEL && IBUS_A[5:0] == 6'h1B && IBUS_WE && IBUS_REQ,
-									REG_SEL && IBUS_A[5:0] == 6'h11 && IBUS_WE && IBUS_REQ,
-									REG_SEL && IBUS_A[5:0] == 6'h07 && IBUS_WE && IBUS_REQ};
+	wire [4:0] TSR_WRITE = {REG_SEL && IBUS_A[5:2] == 6'h35>>2 && IBUS_BA[2] && IBUS_WE && IBUS_REQ,
+	                        REG_SEL && IBUS_A[5:2] == 6'h25>>2 && IBUS_BA[2] && IBUS_WE && IBUS_REQ,
+									REG_SEL && IBUS_A[5:2] == 6'h1B>>2 && IBUS_BA[0] && IBUS_WE && IBUS_REQ,
+									REG_SEL && IBUS_A[5:2] == 6'h11>>2 && IBUS_BA[2] && IBUS_WE && IBUS_REQ,
+									REG_SEL && IBUS_A[5:2] == 6'h07>>2 && IBUS_BA[0] && IBUS_WE && IBUS_REQ};
 	always @(posedge CLK or negedge RST_N) begin
 		if (!RST_N) begin
 			TSR <= '{5{TSR_INIT}};
@@ -156,6 +156,7 @@ module SH7034_ITU (
 			for (int i=0; i<5; i++) begin
 				if (TCNT_CE[i]) begin
 					casex (TIOR[i].IOA)
+						3'b000: begin                                          TSR[i].IMFA <= TSR[i].IMFA | TCNT_COMPA[i]; end
 						3'b001: begin TIOCAO[i] <= ~TCNT_COMPA[i];             TSR[i].IMFA <= TSR[i].IMFA | TCNT_COMPA[i]; end
 						3'b010: begin TIOCAO[i] <=  TCNT_COMPA[i];             TSR[i].IMFA <= TSR[i].IMFA | TCNT_COMPA[i]; end
 						3'b011: begin TIOCAO[i] <=  TCNT_COMPA[i] ^ TIOCAO[i]; TSR[i].IMFA <= TSR[i].IMFA | TCNT_COMPA[i]; end
@@ -163,6 +164,7 @@ module SH7034_ITU (
 						default:;
 					endcase
 					casex (TIOR[i].IOB)
+						3'b000: begin                                          TSR[i].IMFB <= TSR[i].IMFB | TCNT_COMPB[i]; end
 						3'b001: begin TIOCBO[i] <= ~TCNT_COMPB[i];             TSR[i].IMFB <= TSR[i].IMFB | TCNT_COMPB[i]; end
 						3'b010: begin TIOCBO[i] <=  TCNT_COMPB[i];             TSR[i].IMFB <= TSR[i].IMFB | TCNT_COMPB[i]; end
 						3'b011: begin TIOCBO[i] <=  TCNT_COMPB[i] ^ TIOCBO[i]; TSR[i].IMFB <= TSR[i].IMFB | TCNT_COMPB[i]; end
@@ -257,87 +259,87 @@ module SH7034_ITU (
 						if (IBUS_BA[0]) TFCR <= IBUS_DI[ 7: 0] & TFCR_WMASK;
 					end 
 					6'h04: begin
-						if (IBUS_BA[3]) TCR[0] <= IBUS_DI[31:24] & TCR_WMASK;
-						if (IBUS_BA[2]) TIOR[0] <= IBUS_DI[23:16] & TIOR_WMASK;
-						if (IBUS_BA[1]) TIER[0] <= IBUS_DI[15: 8] & TIER_WMASK;
+						if (IBUS_BA[3]) TCR[0]         <= IBUS_DI[31:24] & TCR_WMASK;
+						if (IBUS_BA[2]) TIOR[0]        <= IBUS_DI[23:16] & TIOR_WMASK;
+						if (IBUS_BA[1]) TIER[0]        <= IBUS_DI[15: 8] & TIER_WMASK;
 					end 
 					6'h08: begin
 						if (IBUS_BA[3]) TCNT[0][15: 8] <= IBUS_DI[31:24] & TCNT_WMASK[15: 8];
 						if (IBUS_BA[2]) TCNT[0][ 7: 0] <= IBUS_DI[23:16] & TCNT_WMASK[ 7: 0];
-						if (IBUS_BA[1]) GRA[0][15: 8] <= IBUS_DI[15: 8] & GRx_WMASK[15: 8];
-						if (IBUS_BA[0]) GRA[0][ 7: 0] <= IBUS_DI[ 7: 0] & GRx_WMASK[ 7: 0];
+						if (IBUS_BA[1]) GRA[0][15: 8]  <= IBUS_DI[15: 8] & GRx_WMASK[15: 8];
+						if (IBUS_BA[0]) GRA[0][ 7: 0]  <= IBUS_DI[ 7: 0] & GRx_WMASK[ 7: 0];
 					end 
 					6'h0C: begin
-						if (IBUS_BA[3]) GRB[0][15: 8] <= IBUS_DI[31:24] & GRx_WMASK[15: 8];
-						if (IBUS_BA[2]) GRB[0][ 7: 0] <= IBUS_DI[23:16] & GRx_WMASK[ 7: 0];
-						if (IBUS_BA[1]) TCR[1] <= IBUS_DI[15: 8] & TCR_WMASK;
-						if (IBUS_BA[0]) TIOR[1] <= IBUS_DI[ 7: 0] & TIOR_WMASK;
+						if (IBUS_BA[3]) GRB[0][15: 8]  <= IBUS_DI[31:24] & GRx_WMASK[15: 8];
+						if (IBUS_BA[2]) GRB[0][ 7: 0]  <= IBUS_DI[23:16] & GRx_WMASK[ 7: 0];
+						if (IBUS_BA[1]) TCR[1]         <= IBUS_DI[15: 8] & TCR_WMASK;
+						if (IBUS_BA[0]) TIOR[1]        <= IBUS_DI[ 7: 0] & TIOR_WMASK;
 					end 
 					6'h10: begin
-						if (IBUS_BA[3]) TIER[1] <= IBUS_DI[31:24] & TIER_WMASK;
+						if (IBUS_BA[3]) TIER[1]        <= IBUS_DI[31:24] & TIER_WMASK;
 						if (IBUS_BA[1]) TCNT[1][15: 8] <= IBUS_DI[15: 8] & TCNT_WMASK[15: 8];
 						if (IBUS_BA[0]) TCNT[1][ 7: 0] <= IBUS_DI[ 7: 0] & TCNT_WMASK[ 7: 0];
 					end 
 					6'h14: begin
-						if (IBUS_BA[3]) GRA[1][15: 8] <= IBUS_DI[31:24] & GRx_WMASK[15: 8];
-						if (IBUS_BA[2]) GRA[1][15: 8] <= IBUS_DI[23:16] & GRx_WMASK[ 7: 0];
-						if (IBUS_BA[1]) GRB[1][15: 8] <= IBUS_DI[15: 8] & GRx_WMASK[15: 8];
-						if (IBUS_BA[0]) GRB[1][ 7: 0] <= IBUS_DI[ 7: 0] & GRx_WMASK[ 7: 0];
+						if (IBUS_BA[3]) GRA[1][15: 8]  <= IBUS_DI[31:24] & GRx_WMASK[15: 8];
+						if (IBUS_BA[2]) GRA[1][ 7: 0]  <= IBUS_DI[23:16] & GRx_WMASK[ 7: 0];
+						if (IBUS_BA[1]) GRB[1][15: 8]  <= IBUS_DI[15: 8] & GRx_WMASK[15: 8];
+						if (IBUS_BA[0]) GRB[1][ 7: 0]  <= IBUS_DI[ 7: 0] & GRx_WMASK[ 7: 0];
 					end 
 					6'h18: begin
-						if (IBUS_BA[3]) TCR[2] <= IBUS_DI[31:24] & TCR_WMASK;
-						if (IBUS_BA[2]) TIOR[2] <= IBUS_DI[23:16] & TIOR_WMASK;
-						if (IBUS_BA[1]) TIER[2] <= IBUS_DI[15: 8] & TIER_WMASK;
+						if (IBUS_BA[3]) TCR[2]         <= IBUS_DI[31:24] & TCR_WMASK;
+						if (IBUS_BA[2]) TIOR[2]        <= IBUS_DI[23:16] & TIOR_WMASK;
+						if (IBUS_BA[1]) TIER[2]        <= IBUS_DI[15: 8] & TIER_WMASK;
 					end 
 					6'h1C: begin
 						if (IBUS_BA[3]) TCNT[2][15: 8] <= IBUS_DI[31:24] & TCNT_WMASK[15: 8];
 						if (IBUS_BA[2]) TCNT[2][ 7: 0] <= IBUS_DI[23:16] & TCNT_WMASK[ 7: 0];
-						if (IBUS_BA[1]) GRA[2][15: 8] <= IBUS_DI[15: 8] & GRx_WMASK[15: 8];
-						if (IBUS_BA[0]) GRA[2][ 7: 0] <= IBUS_DI[ 7: 0] & GRx_WMASK[ 7: 0];
+						if (IBUS_BA[1]) GRA[2][15: 8]  <= IBUS_DI[15: 8] & GRx_WMASK[15: 8];
+						if (IBUS_BA[0]) GRA[2][ 7: 0]  <= IBUS_DI[ 7: 0] & GRx_WMASK[ 7: 0];
 					end 
 					6'h20: begin
-						if (IBUS_BA[3]) GRB[2][15: 8] <= IBUS_DI[31:24] & GRx_WMASK[15: 8];
-						if (IBUS_BA[2]) GRB[2][ 7: 0] <= IBUS_DI[23:16] & GRx_WMASK[ 7: 0];
-						if (IBUS_BA[1]) TCR[3] <= IBUS_DI[15: 8] & TCR_WMASK;
-						if (IBUS_BA[0]) TIOR[3] <= IBUS_DI[ 7: 0] & TIOR_WMASK;
+						if (IBUS_BA[3]) GRB[2][15: 8]  <= IBUS_DI[31:24] & GRx_WMASK[15: 8];
+						if (IBUS_BA[2]) GRB[2][ 7: 0]  <= IBUS_DI[23:16] & GRx_WMASK[ 7: 0];
+						if (IBUS_BA[1]) TCR[3]         <= IBUS_DI[15: 8] & TCR_WMASK;
+						if (IBUS_BA[0]) TIOR[3]        <= IBUS_DI[ 7: 0] & TIOR_WMASK;
 					end 
 					6'h24: begin
-						if (IBUS_BA[3]) TIER[3] <= IBUS_DI[31:24] & TIER_WMASK;
+						if (IBUS_BA[3]) TIER[3]        <= IBUS_DI[31:24] & TIER_WMASK;
 						if (IBUS_BA[1]) TCNT[3][15: 8] <= IBUS_DI[15: 8] & TCNT_WMASK[15: 8];
 						if (IBUS_BA[0]) TCNT[3][ 7: 0] <= IBUS_DI[ 7: 0] & TCNT_WMASK[ 7: 0];
 					end 
 					6'h28: begin
-						if (IBUS_BA[3]) GRA[3][15: 8] <= IBUS_DI[31:24] & GRx_WMASK[15: 8];
-						if (IBUS_BA[2]) GRA[3][15: 8] <= IBUS_DI[23:16] & GRx_WMASK[ 7: 0];
-						if (IBUS_BA[1]) GRB[3][15: 8] <= IBUS_DI[15: 8] & GRx_WMASK[15: 8];
-						if (IBUS_BA[0]) GRB[3][ 7: 0] <= IBUS_DI[ 7: 0] & GRx_WMASK[ 7: 0];
+						if (IBUS_BA[3]) GRA[3][15: 8]  <= IBUS_DI[31:24] & GRx_WMASK[15: 8];
+						if (IBUS_BA[2]) GRA[3][ 7: 0]  <= IBUS_DI[23:16] & GRx_WMASK[ 7: 0];
+						if (IBUS_BA[1]) GRB[3][15: 8]  <= IBUS_DI[15: 8] & GRx_WMASK[15: 8];
+						if (IBUS_BA[0]) GRB[3][ 7: 0]  <= IBUS_DI[ 7: 0] & GRx_WMASK[ 7: 0];
 					end 
 					6'h2C: begin
-						if (IBUS_BA[3]) BRA[0][15: 8] <= IBUS_DI[31:24] & BRx_WMASK[15: 8];
-						if (IBUS_BA[2]) BRA[0][15: 8] <= IBUS_DI[23:16] & BRx_WMASK[ 7: 0];
-						if (IBUS_BA[1]) BRB[0][15: 8] <= IBUS_DI[15: 8] & BRx_WMASK[15: 8];
-						if (IBUS_BA[0]) BRB[0][ 7: 0] <= IBUS_DI[ 7: 0] & BRx_WMASK[ 7: 0];
+						if (IBUS_BA[3]) BRA[0][15: 8]  <= IBUS_DI[31:24] & BRx_WMASK[15: 8];
+						if (IBUS_BA[2]) BRA[0][ 7: 0]  <= IBUS_DI[23:16] & BRx_WMASK[ 7: 0];
+						if (IBUS_BA[1]) BRB[0][15: 8]  <= IBUS_DI[15: 8] & BRx_WMASK[15: 8];
+						if (IBUS_BA[0]) BRB[0][ 7: 0]  <= IBUS_DI[ 7: 0] & BRx_WMASK[ 7: 0];
 					end 
 					6'h30: begin
-						if (IBUS_BA[1]) TCR[4] <= IBUS_DI[15: 8] & TCR_WMASK;
-						if (IBUS_BA[0]) TIOR[4] <= IBUS_DI[ 7: 0] & TIOR_WMASK;
+						if (IBUS_BA[1]) TCR[4]         <= IBUS_DI[15: 8] & TCR_WMASK;
+						if (IBUS_BA[0]) TIOR[4]        <= IBUS_DI[ 7: 0] & TIOR_WMASK;
 					end 
 					6'h34: begin
-						if (IBUS_BA[3]) TIER[4] <= IBUS_DI[31:24] & TIER_WMASK;
+						if (IBUS_BA[3]) TIER[4]        <= IBUS_DI[31:24] & TIER_WMASK;
 						if (IBUS_BA[1]) TCNT[4][15: 8] <= IBUS_DI[15: 8] & TCNT_WMASK[15: 8];
 						if (IBUS_BA[0]) TCNT[4][ 7: 0] <= IBUS_DI[ 7: 0] & TCNT_WMASK[ 7: 0];
 					end 
 					6'h38: begin
-						if (IBUS_BA[3]) GRA[4][15: 8] <= IBUS_DI[31:24] & GRx_WMASK[15: 8];
-						if (IBUS_BA[2]) GRA[4][15: 8] <= IBUS_DI[23:16] & GRx_WMASK[ 7: 0];
-						if (IBUS_BA[1]) GRB[4][15: 8] <= IBUS_DI[15: 8] & GRx_WMASK[15: 8];
-						if (IBUS_BA[0]) GRB[4][ 7: 0] <= IBUS_DI[ 7: 0] & GRx_WMASK[ 7: 0];
+						if (IBUS_BA[3]) GRA[4][15: 8]  <= IBUS_DI[31:24] & GRx_WMASK[15: 8];
+						if (IBUS_BA[2]) GRA[4][ 7: 0]  <= IBUS_DI[23:16] & GRx_WMASK[ 7: 0];
+						if (IBUS_BA[1]) GRB[4][15: 8]  <= IBUS_DI[15: 8] & GRx_WMASK[15: 8];
+						if (IBUS_BA[0]) GRB[4][ 7: 0]  <= IBUS_DI[ 7: 0] & GRx_WMASK[ 7: 0];
 					end 
 					6'h3C: begin
-						if (IBUS_BA[3]) BRA[1][15: 8] <= IBUS_DI[31:24] & BRx_WMASK[15: 8];
-						if (IBUS_BA[2]) BRA[1][15: 8] <= IBUS_DI[23:16] & BRx_WMASK[ 7: 0];
-						if (IBUS_BA[1]) BRB[1][15: 8] <= IBUS_DI[15: 8] & BRx_WMASK[15: 8];
-						if (IBUS_BA[0]) BRB[1][ 7: 0] <= IBUS_DI[ 7: 0] & BRx_WMASK[ 7: 0];
+						if (IBUS_BA[3]) BRA[1][15: 8]  <= IBUS_DI[31:24] & BRx_WMASK[15: 8];
+						if (IBUS_BA[2]) BRA[1][ 7: 0]  <= IBUS_DI[23:16] & BRx_WMASK[ 7: 0];
+						if (IBUS_BA[1]) BRB[1][15: 8]  <= IBUS_DI[15: 8] & BRx_WMASK[15: 8];
+						if (IBUS_BA[0]) BRB[1][ 7: 0]  <= IBUS_DI[ 7: 0] & BRx_WMASK[ 7: 0];
 					end 
 					default:;
 				endcase

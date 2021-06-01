@@ -150,7 +150,7 @@ module SH7034_BSC
 								if (!NEXT_BA) begin
 									BUSY <= 0;
 								end
-								CACK <= 1;
+//								CACK <= 1;
 								STATE_NEXT = T2;
 							end
 							2'b01: begin
@@ -172,7 +172,7 @@ module SH7034_BSC
 				
 				TW: begin
 					if (CE_F) begin
-						CACK <= 1;
+//						CACK <= 1;
 					end else if (CE_R) begin
 						if (WAIT_CNT) begin
 							WAIT_CNT <= WAIT_CNT - 3'd1;
@@ -271,7 +271,7 @@ module SH7034_BSC
 							default: ;
 						endcase
 						RD_N <= IBUS_WE_SAVE;
-//						CACK <= 1;
+						CACK <= 1;
 						STATE_NEXT = T1;
 					end
 					else if (BUS_ACCESS_REQ && !BUS_RLS && !BACK && !BUSY && CE_F) begin
@@ -334,7 +334,7 @@ module SH7034_BSC
 						CS_N[6] <= ~(IBUS_A[26:24] == 3'b110);
 						CS_N[7] <= ~(IBUS_A[26:24] == 3'b111);
 						RD_N <= IBUS_WE;
-//						CACK <= 1;
+						CACK <= 1;
 						
 						IBUS_WE_SAVE <= IBUS_WE;
 						IBUS_DI_SAVE <= IBUS_DI; 
