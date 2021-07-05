@@ -16,7 +16,6 @@ module SH7034_SCI
 	input             CLK4_CE,
 	input             CLK16_CE,
 	input             CLK64_CE,
-	input             CLK256_CE,
 	
 	input      [27:0] IBUS_A,
 	input      [31:0] IBUS_DI,
@@ -62,7 +61,7 @@ module SH7034_SCI
 	bit         EXT_CE_R;
 	bit         EXT_CE_F;
 	always @(posedge CLK or negedge RST_N) begin
-		bit   [12:0] CNT;
+		bit   [10:0] CNT;
 		bit         CS_CE;
 		bit         SCKI_OLD;
 		
@@ -76,29 +75,29 @@ module SH7034_SCI
 		end
 		else if (CE_R) begin
 			case (SMR.CKS)
-				2'b00: CS_CE = CLK4_CE;
-				2'b01: CS_CE = CLK16_CE;
-				2'b10: CS_CE = CLK64_CE;
-				2'b11: CS_CE = CLK256_CE;
+				2'b00: CS_CE = 1;
+				2'b01: CS_CE = CLK4_CE;
+				2'b10: CS_CE = CLK16_CE;
+				2'b11: CS_CE = CLK64_CE;
 			endcase
 				
 			INT_CE_R <= 0;
 			INT_CE_F <= 0;
 			if (CS_CE) begin
-				CNT <= CNT + 13'd1;
+				CNT <= CNT + 11'd1;
 				if (SMR.CA)  begin
-					if (CNT[9:0] == {1'b0,BRR,1'b1}) begin
+					if (CNT[7:0] == {1'b0,BRR[7:1]}) begin
 						INT_CE_R <= 1;
 					end
-					else if (CNT[9:0] == {BRR,2'b11}) begin
+					else if (CNT[7:0] == {BRR}) begin
 						CNT <= '0;
 						INT_CE_F <= 1;
 					end
 				end else begin
-					if (CNT == {1'b0,BRR,4'b1111}) begin
+					if (CNT == {1'b0,BRR,4'b11}) begin
 						INT_CE_R <= 1;
 					end
-					else if (CNT == {BRR,5'b11111}) begin
+					else if (CNT == {BRR,5'b111}) begin
 						CNT <= '0;
 						INT_CE_F <= 1;
 					end
@@ -323,8 +322,8 @@ module SH7034_SCI
 			else if (REG_SEL && IBUS_WE && IBUS_REQ) begin
 				case ({IBUS_A[2:1],1'b0})
 					3'h0: begin
-						if (IBUS_BA[3]) SMR <= IBUS_DI[31:24] & SMR_WMASK;;
-						if (IBUS_BA[2]) BRR <= '0;//IBUS_DI[23:16] & BRR_WMASK;
+						if (IBUS_BA[3]) SMR <= IBUS_DI[31:24] & SMR_WMASK;
+						if (IBUS_BA[2]) BRR <= IBUS_DI[23:16] & BRR_WMASK;
 					end 
 					3'h2: begin
 						if (IBUS_BA[1]) SCR <= IBUS_DI[15:8] & SCR_WMASK;

@@ -395,7 +395,6 @@ module CACHE (
 	
 	bit         IBDATA_RDY;
 	bit         IBUS_WRITE;
-	bit         IBUS_WRITE_PEND;
 	bit         IBUS_READ;
 	bit         IBUS_READARRAY;
 	always @(posedge CLK or negedge RST_N) begin
@@ -421,7 +420,6 @@ module CACHE (
 			
 			IBDATA_RDY <= 0;
 			IBUS_WRITE <= 0;
-			IBUS_WRITE_PEND <= 0;
 			IBUS_READ <= 0;
 			IBUS_READARRAY <= 0;
 		end
