@@ -31,7 +31,6 @@ module SH_core
 	output            VECT_REQ,
 	input             VECT_WAIT,
 	
-	output     [15:0] WB_IR,
 	output			   ILI,
 	output			   REG_HOOK
 );
@@ -588,29 +587,29 @@ module SH_core
 	always_comb begin
 		SR_NEW = SR & 32'h000003F3;
 		case (PIPE.EX.DI.CTRL.SRS)
-			LOAD: SR_NEW <= ALU_RES;
+			LOAD: SR_NEW = ALU_RES;
 			ALU:case (PIPE.EX.DI.ALU.OP)
-					ADD: SR_NEW.T <= ALU_T;
-					LOG: SR_NEW.T <= ALU_T;
-					SHIFT: SR_NEW.T <= ALU_T;
+					ADD: SR_NEW.T = ALU_T;
+					LOG: SR_NEW.T = ALU_T;
+					SHIFT: SR_NEW.T = ALU_T;
 					DIV: begin
-						SR_NEW.Q <= REG_A[31] ^ SR.M ^ ALU_T;
-						SR_NEW.T <= (REG_A[31] ^ SR.M ^ ALU_T) ~^ SR.M;
+						SR_NEW.Q = REG_A[31] ^ SR.M ^ ALU_T;
+						SR_NEW.T = (REG_A[31] ^ SR.M ^ ALU_T) ~^ SR.M;
 					end
-					NOP: SR_NEW.T <= ALU_RES[0];
+					NOP: SR_NEW.T = ALU_RES[0];
 					default:;
 				endcase
 			DIV0S: begin
-				SR_NEW.Q <= REG_A[31];
-				SR_NEW.M <= REG_B[31];
-				SR_NEW.T <= REG_A[31] ^ REG_B[31];
+				SR_NEW.Q = REG_A[31];
+				SR_NEW.M = REG_B[31];
+				SR_NEW.T = REG_A[31] ^ REG_B[31];
 			end
 			DIV0U: begin
-				SR_NEW.Q <= 0;
-				SR_NEW.M <= 0;
-				SR_NEW.T <= 0;
+				SR_NEW.Q = 0;
+				SR_NEW.M = 0;
+				SR_NEW.T = 0;
 			end
-			IMSK: SR_NEW.I <= INT_LVL;
+			IMSK: SR_NEW.I = INT_LVL;
 		endcase
 	end
 	
@@ -649,16 +648,16 @@ module SH_core
 		bit [31:0] temp;
 
 		case (PIPE.MA.DI.MEM.SZ)
-			2'b00:    mask = 2'b11;
-			2'b01:    mask = 2'b10;
+			2'b00:   mask = 2'b11;
+			2'b01:   mask = 2'b10;
 			default: mask = 2'b00;
 		endcase
 		
 		temp = ByteShiftRigth(BUS_DI, (~PIPE.MA.ADDR[1:0] & mask));
 		
 		case (PIPE.MA.DI.MEM.SZ)
-			2'b00:    MA_RDATA = {{24{temp[ 7]}},temp[ 7:0]};
-			2'b01:    MA_RDATA = {{16{temp[15]}},temp[15:0]};
+			2'b00:   MA_RDATA = {{24{temp[ 7]}},temp[ 7:0]};
+			2'b01:   MA_RDATA = {{16{temp[15]}},temp[15:0]};
 			default: MA_RDATA = temp;
 		endcase
 	end
@@ -696,8 +695,6 @@ module SH_core
 			end
 		end
 	end
-	
-	assign WB_IR = PIPE.WB.IR;
 	
 	bit [31:0] MA_WDATA;
 	bit [3:0] MA_BA;
@@ -760,7 +757,7 @@ module SH_core
 	assign REGS_WBD = PIPE.WB.RES;
 	assign REGS_WBE = PIPE.WB.DI.RB.W & (!PIPE.WB.DI.RA.W | PIPE.WB.DI.RA.N != PIPE.WB.DI.RB.N) & !WB_STALL;
 	
-	
+	//Ports
 	assign BUS_A = MA_ACTIVE ? PIPE.MA.ADDR : PC;
 	assign BUS_DO = MA_WDATA;
 	assign BUS_WR = PIPE.MA.DI.MEM.W & MA_ACTIVE;
@@ -777,6 +774,7 @@ module SH_core
 	assign INT_ACP = PIPE.MA.DI.VECR;
 	assign VECT_REQ = VECT_ACTIVE;
 	
+	//Debug
 	assign ILI = ID_DECI.ILI & ~ID_STALL;
 	
 endmodule

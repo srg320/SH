@@ -30,12 +30,6 @@ package SH2_PKG;
 		ALURES = 2'b10
 	} AddrSrc_t;
 	
-//	typedef enum {
-//		REGA_, 
-//		REGB_,
-//		ALU_
-//	} WDSource_t;
-	
 	typedef enum bit[2:0] {
 		ADD = 3'b000, 
 		LOG = 3'b001, 

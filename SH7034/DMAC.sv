@@ -78,6 +78,9 @@ module SH7034_DMAC (
 		return res;
 	endfunction
 	
+	bit         DACK0_EN;
+	bit         DACK1_EN;
+	
 	wire REG_SEL = (IBUS_A >= 28'h5FFFF40 && IBUS_A <= 28'h5FFFF7F);
 
 	wire CH_EN[4] = '{DMAOR.DME & CHCR[0].DE, 
@@ -94,23 +97,33 @@ module SH7034_DMAC (
 	always @(posedge CLK or negedge RST_N) begin
 		bit         DREQ0_OLD;
 		bit         DREQ1_OLD;
+		bit         DREQ0_PAUSE;
+		bit         DREQ1_PAUSE;
+		bit         DREQ0_DET;
+		bit         DREQ1_DET;
+		bit         DACK0_OLD;
+		bit         DACK1_OLD;
 		
 		if (!RST_N) begin
 			DREQ0_OLD <= 0;
 			DREQ1_OLD <= 0;
+			DACK0_OLD <= 0;
+			DACK1_OLD <= 0;
 			CH_REQ <= '{0,0,0,0};
 		end
 		else if (CE_R) begin
-			if (CH_EN[0] && CH_AVAIL[0] && !DBUS_WAIT) begin
+			//CH0
+			if (CH_REQ_CLR[0] && CHCR[0].DS) begin
+				CH_REQ[0] <= 0;
+			end else if (CH_EN[0] && CH_AVAIL[0] && !DBUS_WAIT) begin
 				if (!CHCR[0].DS && CHCR[0].RS[3:2] == 2'b00) begin
 					CH_REQ[0] <= ~DREQ0_N;
 				end else begin
-					DREQ0_OLD <= DREQ0_N;
 					if (!CH_REQ[0]) begin
 						case(CHCR[0].RS)
 							4'b0000,
 							4'b0010,
-							4'b0011: CH_REQ[0] <= ~DREQ0_N & DREQ0_OLD;
+							4'b0011: CH_REQ[0] <= DREQ0_DET;
 							4'b0100: CH_REQ[0] <= RXI0_IRQ;
 							4'b0101: CH_REQ[0] <= TXI0_IRQ;
 							4'b0110: CH_REQ[0] <= RXI1_IRQ;
@@ -123,23 +136,39 @@ module SH7034_DMAC (
 							4'b1101: CH_REQ[0] <= ADI_IRQ;
 							default: CH_REQ[0] <= 0;
 						endcase
-					end
-					else if (CH_REQ_CLR[0] || !CHCR[0].TM) begin
-						CH_REQ[0] <= 0;
+						DREQ0_DET <= 0;
+//					end
+//					else if (CH_REQ_CLR[0] /*|| !CHCR[0].TM*/) begin
+//						CH_REQ[0] <= 0;
 					end
 				end
+			end else if (!CH_EN[0] || !CH_AVAIL[0]) begin
+				CH_REQ[0] <= 0;
+				DREQ0_DET <= 0;
+				DREQ0_PAUSE <= 0;
 			end
 			
+			DREQ0_OLD <= DREQ0_N;
+			if (!DREQ0_N && (DREQ0_OLD || !CHCR[0].DS) && !DREQ0_PAUSE) begin
+				DREQ0_DET <= 1;
+				DREQ0_PAUSE <= 1;
+			end
+			
+			DACK0_OLD <= BSC_ACK & DACK0_EN;
+			if (DACK0_EN && BSC_ACK && !DACK0_OLD) begin
+				DREQ0_PAUSE <= 0;
+			end
+			
+			//CH1
 			if (CH_EN[1] && CH_AVAIL[1] && !DBUS_WAIT) begin
 				if (!CHCR[1].DS && CHCR[1].RS[3:2] == 2'b00) begin
 					CH_REQ[1] <= ~DREQ1_N;
 				end else begin
-					DREQ1_OLD <= DREQ1_N;
 					if (!CH_REQ[1]) begin
 						case(CHCR[1].RS)
 							4'b0000,
 							4'b0010,
-							4'b0011: CH_REQ[1] <= ~DREQ1_N & DREQ1_OLD;
+							4'b0011: CH_REQ[1] <= DREQ1_DET;
 							4'b0100: CH_REQ[1] <= RXI0_IRQ;
 							4'b0101: CH_REQ[1] <= TXI0_IRQ;
 							4'b0110: CH_REQ[1] <= RXI1_IRQ;
@@ -152,13 +181,30 @@ module SH7034_DMAC (
 							4'b1101: CH_REQ[1] <= ADI_IRQ;
 							default: CH_REQ[1] <= 0;
 						endcase
+						DREQ1_DET <= 0;
 					end
-					else if (CH_REQ_CLR[1]) begin
+					else if (CH_REQ_CLR[1] /*|| !CHCR[1].TM*/) begin
 						CH_REQ[1] <= 0;
 					end
 				end
+				
+				DREQ1_OLD <= DREQ1_N;
+				if (!DREQ1_N && (DREQ1_OLD || !CHCR[1].DS) && !DREQ1_PAUSE) begin
+					DREQ1_DET <= 1;
+					DREQ1_PAUSE <= 1;
+				end
+			end else if (!CH_EN[1] || !CH_AVAIL[1]) begin
+				CH_REQ[1] <= 0;
+				DREQ1_DET <= 0;
+				DREQ1_PAUSE <= 0;
+			end
+
+			DACK1_OLD <= BSC_ACK & DACK1_EN;
+			if (DACK1_EN && BSC_ACK && !DACK1_OLD) begin
+				DREQ1_PAUSE <= 0;
 			end
 			
+			//CH2
 			if (!CH_REQ[2] && CH_EN[2] && CH_AVAIL[2]) begin
 				case(CHCR[2].RS)
 					4'b0000,
@@ -181,6 +227,7 @@ module SH7034_DMAC (
 				CH_REQ[2] <= 0;
 			end
 			
+			//CH3
 			if (!CH_REQ[3] && CH_EN[3] && CH_AVAIL[3]) begin
 				case(CHCR[3].RS)
 					4'b0000,
@@ -208,15 +255,18 @@ module SH7034_DMAC (
 	
 	bit         DMA_REQ;
 	bit         DMA_REQ_CLR;
+	bit   [1:0] DMA_CH_NEXT;
 	bit   [1:0] DMA_CH;
 	bit   [1:0] RB_PRIO;
 	always @(posedge CLK or negedge RST_N) begin
 		bit  [3:0] DMA_CH_REQ;
+		bit  [3:0] DMA_CH_REQ_OLD;
 		
 		if (!RST_N) begin
 			DMA_REQ <= 0;
-			DMA_CH <= 0;
-			RB_PRIO <= 0;
+			DMA_CH_REQ <= '0;
+			DMA_CH_REQ_OLD <= '0;
+			RB_PRIO <= '0;
 		end
 		else if (CE_R) begin
 			DMA_CH_REQ[0] = CH_REQ[0] && CH_EN[0] && CH_AVAIL[0];
@@ -224,21 +274,26 @@ module SH7034_DMAC (
 			DMA_CH_REQ[2] = CH_REQ[2] && CH_EN[2] && CH_AVAIL[2];
 			DMA_CH_REQ[3] = CH_REQ[3] && CH_EN[3] && CH_AVAIL[3];
 			if (!DMA_REQ && DMA_CH_REQ != 4'b0000 && !DBUS_WAIT) begin
-				if (DMA_CH_REQ != 4'b0001 && DMA_CH_REQ != 4'b0010 && DMA_CH_REQ != 4'b0100 && DMA_CH_REQ != 4'b1000) begin
+				/*if (DMA_CH_REQ != 4'b0001 && DMA_CH_REQ != 4'b0010 && DMA_CH_REQ != 4'b0100 && DMA_CH_REQ != 4'b1000) begin
 					DMA_REQ <= 1;
-					DMA_CH <= 2'd0;//DMAOR.PR & RB_PRIO;
-				end else if (DMA_CH_REQ[0]) begin
+					DMA_CH_NEXT <= 2'd0;//DMAOR.PR & RB_PRIO;
+				end else*/ 
+				if (DMA_CH_REQ[0] && !DMA_CH_REQ_OLD[0]) begin
+					DMA_CH_REQ_OLD <= 4'b0001;
 					DMA_REQ <= 1;
-					DMA_CH <= 2'd0;
-				end else if (DMA_CH_REQ[1]) begin
+					DMA_CH_NEXT <= 2'd0;
+				end else if (DMA_CH_REQ[1] && !DMA_CH_REQ_OLD[1]) begin
+					DMA_CH_REQ_OLD <= 4'b0010;
 					DMA_REQ <= 1;
-					DMA_CH <= 2'd1;
-				end else if (DMA_CH_REQ[2]) begin
+					DMA_CH_NEXT <= 2'd1;
+				end else if (DMA_CH_REQ[2] && !DMA_CH_REQ_OLD[2]) begin
+					DMA_CH_REQ_OLD <= 4'b0100;
 					DMA_REQ <= 1;
-					DMA_CH <= 2'd2;
-				end else if (DMA_CH_REQ[3]) begin
+					DMA_CH_NEXT <= 2'd2;
+				end else if (DMA_CH_REQ[3] && !DMA_CH_REQ_OLD[3]) begin
+					DMA_CH_REQ_OLD <= 4'b1000;
 					DMA_REQ <= 1;
-					DMA_CH <= 2'd3;
+					DMA_CH_NEXT <= 2'd3;
 				end
 			end
 //			else if (DMA_REQ_CLR) begin
@@ -246,6 +301,11 @@ module SH7034_DMAC (
 				DMA_REQ <= 0;
 //				RB_PRIO <= ~RB_PRIO;
 			end
+			
+			if (!DMA_CH_REQ[0] && DMA_CH_REQ_OLD[0]) DMA_CH_REQ_OLD[0] <= 0;
+			if (!DMA_CH_REQ[1] && DMA_CH_REQ_OLD[1]) DMA_CH_REQ_OLD[1] <= 0;
+			if (!DMA_CH_REQ[2] && DMA_CH_REQ_OLD[2]) DMA_CH_REQ_OLD[2] <= 0;
+			if (!DMA_CH_REQ[3] && DMA_CH_REQ_OLD[3]) DMA_CH_REQ_OLD[3] <= 0;
 		end
 	end
 	
@@ -257,7 +317,8 @@ module SH7034_DMAC (
 	always @(posedge CLK or negedge RST_N) begin
 		bit  [31:0] AR_INC;
 		bit  [15:0] TCR_NEXT;
-		bit         SAM;
+		bit         SAM, SAM_NEXT;
+		bit         LAST_CYCLE;
 		
 		if (!RST_N) begin
 			SAR <= '{4{SARx_INIT}};
@@ -269,16 +330,6 @@ module SH7034_DMAC (
 			SAR[0] <= 32'h000000E0;
 			DAR[0] <= 32'h000000F0;
 			TCR[0] <= 4;
-//			CHCR[0].DM <= 2'b01;
-//			CHCR[0].SM <= 2'b01;
-//			CHCR[0].TS <= 2'b10;
-//			CHCR[0].AR <= 1'b0;
-//			CHCR[0].DS <= 1'b0;
-//			CHCR[0].TB <= 1'b0;
-//			CHCR[0].TA <= 1'b0;
-//			CHCR[0].DE <= 1'b1;
-//			CHCR[0].TB <= 1'b0;
-//			DMAOR.DME <= 1;
 			// synopsys translate_on
 			
 			DMA_WR <= 0;
@@ -292,70 +343,78 @@ module SH7034_DMAC (
 			TCR_NEXT = TCR[DMA_CH] - 16'd1;
 			SAM = ~DMA_CH[1] & (CHCR[DMA_CH].RS[3:1] == 3'b001);//single address mode
 			
+			LAST_CYCLE = 0;
 			if (CE_R) begin
 				CH_REQ_CLR <= '{0,0,0,0};
 				DMA_REQ_CLR <= 0;
-				if (DMA_REQ && !DMA_RD && !DMA_WR && !DBUS_WAIT && !IBUS_LOCK) begin
-					if (!SAM || (SAM && !CHCR[DMA_CH].RS[0])) begin
-						DMA_RD <= 1;
-						CH_REQ_CLR[DMA_CH] <= SAM & ~CHCR[DMA_CH].AM;
-						DMA_LOCK <= ~SAM;
-					end
-					else begin
+				
+				if (DMA_RD && !DBUS_WAIT) begin
+					if      (CHCR[DMA_CH].SM == 2'b01) SAR[DMA_CH] <= SAR[DMA_CH] + AR_INC;
+					else if (CHCR[DMA_CH].SM == 2'b10) SAR[DMA_CH] <= SAR[DMA_CH] - AR_INC;
+					
+					if (!SAM) begin
+						DMA_RD <= 0;
 						DMA_WR <= 1;
-						CH_REQ_CLR[DMA_CH] <= 1;
 						DMA_LOCK <= 0;
+						CH_REQ_CLR[DMA_CH] <= 1;
 					end
-				end
-				else if ((DMA_RD || DMA_WR) && !DBUS_WAIT) begin
-					if (DMA_RD) begin
-						if      (CHCR[DMA_CH].SM == 2'b01) SAR[DMA_CH] <= SAR[DMA_CH] + AR_INC;
-						else if (CHCR[DMA_CH].SM == 2'b10) SAR[DMA_CH] <= SAR[DMA_CH] - AR_INC;
-						
-						if (!SAM) begin
-							DMA_RD <= 0;
-							DMA_WR <= 1;
-							DMA_LOCK <= 0;
-							CH_REQ_CLR[DMA_CH] <= 1;
-						end
-						else if (SAM && !CHCR[DMA_CH].RS[0]) begin
-							CH_REQ_CLR[DMA_CH] <= 1;
-							DMA_REQ_CLR <= 1;
-							
-							if (!CHCR[DMA_CH].TM || !CH_REQ[DMA_CH]) DMA_RD <= 0;
-							
-							TCR[DMA_CH] <= TCR_NEXT;
-							if (!TCR_NEXT) begin
-								CHCR[DMA_CH].TE <= 1;
-								DMA_RD <= 0;
-							end
-						end
-						SA_BA <= SAR[DMA_CH][1:0];
-					end
-					else if (DMA_WR) begin
-						if      (CHCR[DMA_CH].DM == 2'b01) DAR[DMA_CH] <= DAR[DMA_CH] + AR_INC;
-						else if (CHCR[DMA_CH].DM == 2'b10) DAR[DMA_CH] <= DAR[DMA_CH] - AR_INC;
-						
-						if (!SAM) begin
-							DMA_WR <= 0;
-							DMA_RD <= 1;
-							
-							if (!CHCR[DMA_CH].TM || !CH_REQ[DMA_CH]) DMA_RD <= 0;
-						end 
-						else if (SAM && CHCR[DMA_CH].RS[0]) begin
-							CH_REQ_CLR[DMA_CH] <= 1;
-							
-							if (!CHCR[DMA_CH].TM || !CH_REQ[DMA_CH]) DMA_WR <= 0;
-						end
-						DMA_REQ_CLR <= 1;
+					else if (SAM && !CHCR[DMA_CH].RS[0]) begin
+						if (!CHCR[DMA_CH].TM || !CH_REQ[DMA_CH]) DMA_RD <= 0;
 						
 						TCR[DMA_CH] <= TCR_NEXT;
 						if (!TCR_NEXT) begin
 							CHCR[DMA_CH].TE <= 1;
 							DMA_RD <= 0;
-							DMA_WR <= 0;
 						end
+						else CH_REQ_CLR[DMA_CH] <= 1;
+						
+						DMA_REQ_CLR <= 1;
 					end
+					SA_BA <= SAR[DMA_CH][1:0];
+					
+					LAST_CYCLE = SAM;
+				end
+				else if (DMA_WR && !DBUS_WAIT) begin
+					if      (CHCR[DMA_CH].DM == 2'b01) DAR[DMA_CH] <= DAR[DMA_CH] + AR_INC;
+					else if (CHCR[DMA_CH].DM == 2'b10) DAR[DMA_CH] <= DAR[DMA_CH] - AR_INC;
+					
+					if (!SAM) begin
+						DMA_WR <= 0;
+						DMA_RD <= 1;
+						
+						if (!CHCR[DMA_CH].TM || !CH_REQ[DMA_CH]) DMA_RD <= 0;
+					end 
+					else if (SAM && CHCR[DMA_CH].RS[0]) begin
+						if (!CHCR[DMA_CH].TM || !CH_REQ[DMA_CH]) DMA_WR <= 0;
+						else CH_REQ_CLR[DMA_CH] <= 1;
+					end
+					DMA_REQ_CLR <= 1;
+					
+					TCR[DMA_CH] <= TCR_NEXT;
+					if (!TCR_NEXT) begin
+						CHCR[DMA_CH].TE <= 1;
+						DMA_RD <= 0;
+						DMA_WR <= 0;
+					end
+					
+					LAST_CYCLE = 1;
+				end
+				
+				SAM_NEXT = ~DMA_CH_NEXT[1] & (CHCR[DMA_CH_NEXT].RS[3:1] == 3'b001);//single address mode
+				if (DMA_REQ && (LAST_CYCLE || (!DMA_RD && !DMA_WR)) && !DBUS_WAIT && !IBUS_LOCK) begin
+					DMA_RD <= 0;
+					DMA_WR <= 0;
+					if (!SAM_NEXT || (SAM_NEXT && !CHCR[DMA_CH_NEXT].RS[0])) begin
+						DMA_RD <= 1;
+						CH_REQ_CLR[DMA_CH_NEXT] <= SAM_NEXT & ~CHCR[DMA_CH_NEXT].AM;
+						DMA_LOCK <= ~SAM_NEXT;
+					end
+					else begin
+						DMA_WR <= 1;
+						CH_REQ_CLR[DMA_CH_NEXT] <= 1;
+						DMA_LOCK <= 0;
+					end
+					DMA_CH <= DMA_CH_NEXT;
 				end
 			end
 			
@@ -433,6 +492,9 @@ module SH7034_DMAC (
 		end
 	end
 	
+	assign DACK0_EN = (DMA_CH == 2'd0 & DMA_RD & (~CHCR[0].AM | CHCR[0].RS[3:1] == 3'b001)) | (DMA_CH == 2'd0 & DMA_WR & (CHCR[0].AM | CHCR[0].RS[3:1] == 3'b001));
+	assign DACK1_EN = (DMA_CH == 2'd1 & DMA_RD & (~CHCR[1].AM | CHCR[1].RS[3:1] == 3'b001)) | (DMA_CH == 2'd1 & DMA_WR & (CHCR[1].AM | CHCR[1].RS[3:1] == 3'b001));
+	
 	bit [31:0] DBUS_DO_TEMP;
 	always_comb begin
 		case (CHCR[DMA_CH].TS)
@@ -464,8 +526,8 @@ module SH7034_DMAC (
 	assign DBUS_REQ = DMA_RD | DMA_WR | IBUS_REQ;
 	assign DBUS_LOCK = ((DMA_RD | DMA_WR) & DMA_LOCK) | IBUS_LOCK;
 	
-	assign DACK0 = (BSC_ACK & DMA_CH==2'd0 & ((DMA_RD & (~CHCR[0].AM | CHCR[0].RS[3:1] == 3'b001)) | (DMA_WR & (CHCR[0].AM | CHCR[0].RS[3:1] == 3'b001)))) ^ CHCR[0].AL;
-	assign DACK1 = (BSC_ACK & DMA_CH==2'd1 & ((DMA_RD & (~CHCR[1].AM | CHCR[1].RS[3:1] == 3'b001)) | (DMA_WR & (CHCR[1].AM | CHCR[1].RS[3:1] == 3'b001)))) ^ CHCR[1].AL;
+	assign DACK0 = (BSC_ACK & DACK0_EN) ^ CHCR[0].AL;
+	assign DACK1 = (BSC_ACK & DACK1_EN) ^ CHCR[1].AL;
 	
 	assign DMAC0_IRQ = CHCR[0].TE & CHCR[0].IE;
 	assign DMAC1_IRQ = CHCR[1].TE & CHCR[1].IE;

@@ -61,7 +61,7 @@ module SH7034_SCI
 	bit         EXT_CE_R;
 	bit         EXT_CE_F;
 	always @(posedge CLK or negedge RST_N) begin
-		bit   [10:0] CNT;
+		bit   [12:0] CNT;
 		bit         CS_CE;
 		bit         SCKI_OLD;
 		
@@ -84,31 +84,29 @@ module SH7034_SCI
 			INT_CE_R <= 0;
 			INT_CE_F <= 0;
 			if (CS_CE) begin
-				CNT <= CNT + 11'd1;
+				CNT <= CNT + 13'd1;
 				if (SMR.CA)  begin
-					if (CNT[7:0] == {1'b0,BRR[7:1]}) begin
+					if (CNT[9:0] == {1'b0,BRR,1'b1}) begin
 						INT_CE_R <= 1;
 					end
-					else if (CNT[7:0] == {BRR}) begin
+					else if (CNT[9:0] == {BRR,2'b11}) begin
 						CNT <= '0;
 						INT_CE_F <= 1;
 					end
 				end else begin
-					if (CNT == {1'b0,BRR,4'b11}) begin
+					if (CNT == {1'b0,BRR,4'b1111}) begin
 						INT_CE_R <= 1;
 					end
-					else if (CNT == {BRR,5'b111}) begin
+					else if (CNT == {BRR,5'b11111}) begin
 						CNT <= '0;
 						INT_CE_F <= 1;
 					end
 				end
 			end
 			
-			EXT_CE_R <= 0;
-			EXT_CE_F <= 0;
 			SCKI_OLD <= SCKI;
-			if (!SCKI && SCKI_OLD) EXT_CE_F <= 1;
-			else if (SCKI && !SCKI_OLD) EXT_CE_R <= 1;
+			EXT_CE_F <= ~SCKI & SCKI_OLD;
+			EXT_CE_R <= SCKI & ~SCKI_OLD;
 		end
 	end
 	
