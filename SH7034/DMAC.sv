@@ -254,7 +254,7 @@ module SH7034_DMAC (
 	
 	
 	bit         DMA_REQ;
-	bit         DMA_REQ_CLR;
+//	bit         DMA_REQ_CLR;
 	bit   [1:0] DMA_CH_NEXT;
 	bit   [1:0] DMA_CH;
 	bit   [1:0] RB_PRIO;
@@ -336,7 +336,7 @@ module SH7034_DMAC (
 			DMA_RD <= 0;
 			DMA_LOCK <= 0;
 			CH_REQ_CLR <= '{0,0,0,0};
-			DMA_REQ_CLR <= 0;
+//			DMA_REQ_CLR <= 0;
 		end
 		else begin
 			AR_INC = GetAddrInc(CHCR[DMA_CH].TS);
@@ -346,7 +346,7 @@ module SH7034_DMAC (
 			LAST_CYCLE = 0;
 			if (CE_R) begin
 				CH_REQ_CLR <= '{0,0,0,0};
-				DMA_REQ_CLR <= 0;
+//				DMA_REQ_CLR <= 0;
 				
 				if (DMA_RD && !DBUS_WAIT) begin
 					if      (CHCR[DMA_CH].SM == 2'b01) SAR[DMA_CH] <= SAR[DMA_CH] + AR_INC;
@@ -368,7 +368,7 @@ module SH7034_DMAC (
 						end
 						else CH_REQ_CLR[DMA_CH] <= 1;
 						
-						DMA_REQ_CLR <= 1;
+//						DMA_REQ_CLR <= 1;
 					end
 					SA_BA <= SAR[DMA_CH][1:0];
 					
@@ -388,7 +388,7 @@ module SH7034_DMAC (
 						if (!CHCR[DMA_CH].TM || !CH_REQ[DMA_CH]) DMA_WR <= 0;
 						else CH_REQ_CLR[DMA_CH] <= 1;
 					end
-					DMA_REQ_CLR <= 1;
+//					DMA_REQ_CLR <= 1;
 					
 					TCR[DMA_CH] <= TCR_NEXT;
 					if (!TCR_NEXT) begin

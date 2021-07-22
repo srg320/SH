@@ -104,33 +104,6 @@ module SH7034_INTC (
 	bit        NMI_REQ;
 	bit [ 7:0] IRQ_REQ;
 	bit [38:0] INT_PEND;
-	bit        NMI_PEND;
-	bit        IRQ0_PEND;
-	bit        IRQ1_PEND;
-	bit        IRQ2_PEND;
-	bit        IRQ3_PEND;
-	bit        IRQ4_PEND;
-	bit        IRQ5_PEND;
-	bit        IRQ6_PEND;
-	bit        IRQ7_PEND;
-	bit        UBC_PEND;
-	bit        DMAC0_PEND;
-	bit        DMAC1_PEND;
-	bit        DMAC2_PEND;
-	bit        DMAC3_PEND;
-	bit        WDT_PEND;
-	bit        BSC_PEND;
-	bit        SCI0_ERI_PEND;
-	bit        SCI0_RXI_PEND;
-	bit        SCI0_TXI_PEND;
-	bit        SCI0_TEI_PEND;
-	bit        SCI1_ERI_PEND;
-	bit        SCI1_RXI_PEND;
-	bit        SCI1_TXI_PEND;
-	bit        SCI1_TEI_PEND;
-	bit [ 4:0] ITU_IMIA_PEND;
-	bit [ 4:0] ITU_IMIB_PEND;
-	bit [ 4:0] ITU_OVI_PEND;
 	bit        VBREQ;
 	
 	always @(posedge CLK or negedge RST_N) begin
@@ -144,7 +117,7 @@ module SH7034_INTC (
 			if ((~NMI_N ^ ICR.NMIE) && (NMI_N_OLD ^ ICR.NMIE) && !NMI_REQ) begin
 				NMI_REQ <= 1;
 			end
-			else if (INT_ACK && NMI_PEND) begin
+			else if (INT_ACK && INT_PEND[NMI_INT]) begin
 				NMI_REQ <= 0;
 			end
 		end
@@ -173,87 +146,51 @@ module SH7034_INTC (
 		bit INT_CLR;
 		if (!RST_N) begin
 			INT_REQ <= 0;
-			NMI_PEND <= 0;
-			IRQ0_PEND <= 0;
-			IRQ1_PEND <= 0;
-			IRQ2_PEND <= 0;
-			IRQ3_PEND <= 0;
-			IRQ4_PEND <= 0;
-			IRQ5_PEND <= 0;
-			IRQ6_PEND <= 0;
-			IRQ7_PEND <= 0;
 			INT_PEND <= '0;
 		end else if (CE_R) begin	
 			if (!INT_REQ) begin
-				if (NMI_REQ)                                        begin INT_REQ <= 1'b1; NMI_PEND <= 1; INT_PEND[NMI_INT] <= 1; end
-				else if (UBC_IRQ         && 4'hF        > INT_MASK) begin INT_REQ <= 1'b1; UBC_PEND <= 1; INT_PEND[UBC_INT] <= 1; end
-				else if (IRQ_REQ[0]      && IPRA.IRQ0   > INT_MASK) begin INT_REQ <= 1'b1; IRQ0_PEND <= 1; INT_PEND[IRQ0_INT] <= 1; end
-				else if (IRQ_REQ[1]      && IPRA.IRQ1   > INT_MASK) begin INT_REQ <= 1'b1; IRQ1_PEND <= 1; INT_PEND[IRQ1_INT] <= 1; end
-				else if (IRQ_REQ[2]      && IPRA.IRQ2   > INT_MASK) begin INT_REQ <= 1'b1; IRQ2_PEND <= 1; INT_PEND[IRQ2_INT] <= 1; end
-				else if (IRQ_REQ[3]      && IPRA.IRQ3   > INT_MASK) begin INT_REQ <= 1'b1; IRQ3_PEND <= 1; INT_PEND[IRQ3_INT] <= 1; end
-				else if (IRQ_REQ[4]      && IPRB.IRQ4   > INT_MASK) begin INT_REQ <= 1'b1; IRQ4_PEND <= 1; INT_PEND[IRQ4_INT] <= 1; end
-				else if (IRQ_REQ[5]      && IPRB.IRQ5   > INT_MASK) begin INT_REQ <= 1'b1; IRQ5_PEND <= 1; INT_PEND[IRQ5_INT] <= 1; end
-				else if (IRQ_REQ[6]      && IPRB.IRQ6   > INT_MASK) begin INT_REQ <= 1'b1; IRQ6_PEND <= 1; INT_PEND[IRQ6_INT] <= 1; end
-				else if (IRQ_REQ[7]      && IPRB.IRQ7   > INT_MASK) begin INT_REQ <= 1'b1; IRQ7_PEND <= 1; INT_PEND[IRQ7_INT] <= 1; end
-				else if (DMAC0_IRQ       && IPRC.DMAC01 > INT_MASK) begin INT_REQ <= 1'b1; DMAC0_PEND <= 1; INT_PEND[DMAC0_INT] <= 1; end
-				else if (DMAC1_IRQ       && IPRC.DMAC01 > INT_MASK) begin INT_REQ <= 1'b1; DMAC1_PEND <= 1; INT_PEND[DMAC1_INT] <= 1; end
-				else if (DMAC2_IRQ       && IPRC.DMAC23 > INT_MASK) begin INT_REQ <= 1'b1; DMAC2_PEND <= 1; INT_PEND[DMAC2_INT] <= 1; end
-				else if (DMAC3_IRQ       && IPRC.DMAC23 > INT_MASK) begin INT_REQ <= 1'b1; DMAC3_PEND <= 1; INT_PEND[DMAC3_INT] <= 1; end
-				else if (WDT_IRQ         && IPRE.WDT    > INT_MASK) begin INT_REQ <= 1'b1; WDT_PEND <= 1; INT_PEND[WDT_INT] <= 1; end
-				else if (BSC_IRQ         && IPRE.WDT    > INT_MASK) begin INT_REQ <= 1'b1; BSC_PEND <= 1; INT_PEND[BSC_INT] <= 1; end
-				else if (SCI0_ERI_IRQ    && IPRD.SCI0   > INT_MASK) begin INT_REQ <= 1'b1; SCI0_ERI_PEND <= 1; INT_PEND[SCI0_ERI_INT] <= 1; end
-				else if (SCI0_RXI_IRQ    && IPRD.SCI0   > INT_MASK) begin INT_REQ <= 1'b1; SCI0_RXI_PEND <= 1; INT_PEND[SCI0_RXI_INT] <= 1; end
-				else if (SCI0_TXI_IRQ    && IPRD.SCI0   > INT_MASK) begin INT_REQ <= 1'b1; SCI0_TXI_PEND <= 1; INT_PEND[SCI0_TXI_INT] <= 1; end
-				else if (SCI0_TEI_IRQ    && IPRD.SCI0   > INT_MASK) begin INT_REQ <= 1'b1; SCI0_TEI_PEND <= 1; INT_PEND[SCI0_TEI_INT] <= 1; end
-				else if (SCI1_ERI_IRQ    && IPRE.SCI1   > INT_MASK) begin INT_REQ <= 1'b1; SCI1_ERI_PEND <= 1; INT_PEND[SCI1_ERI_INT] <= 1; end
-				else if (SCI1_RXI_IRQ    && IPRE.SCI1   > INT_MASK) begin INT_REQ <= 1'b1; SCI1_RXI_PEND <= 1; INT_PEND[SCI1_RXI_INT] <= 1; end
-				else if (SCI1_TXI_IRQ    && IPRE.SCI1   > INT_MASK) begin INT_REQ <= 1'b1; SCI1_TXI_PEND <= 1; INT_PEND[SCI1_TXI_INT] <= 1; end
-				else if (SCI1_TEI_IRQ    && IPRE.SCI1   > INT_MASK) begin INT_REQ <= 1'b1; SCI1_TEI_PEND <= 1; INT_PEND[SCI1_TEI_INT] <= 1; end
-				else if (ITU_IMIA_IRQ[0] && IPRC.ITU0   > INT_MASK) begin INT_REQ <= 1'b1; ITU_IMIA_PEND[0] <= 1; INT_PEND[ITU0_IMIA_INT] <= 1; end
-				else if (ITU_IMIB_IRQ[0] && IPRC.ITU0   > INT_MASK) begin INT_REQ <= 1'b1; ITU_IMIB_PEND[0] <= 1; INT_PEND[ITU0_IMIB_INT] <= 1; end
-				else if (ITU_OVI_IRQ[0]  && IPRC.ITU0   > INT_MASK) begin INT_REQ <= 1'b1; ITU_OVI_PEND[0] <= 1; INT_PEND[ITU0_OVI_INT] <= 1; end
-				else if (ITU_IMIA_IRQ[1] && IPRC.ITU1   > INT_MASK) begin INT_REQ <= 1'b1; ITU_IMIA_PEND[1] <= 1; INT_PEND[ITU1_IMIA_INT] <= 1; end
-				else if (ITU_IMIB_IRQ[1] && IPRC.ITU1   > INT_MASK) begin INT_REQ <= 1'b1; ITU_IMIB_PEND[1] <= 1; INT_PEND[ITU1_IMIB_INT] <= 1; end
-				else if (ITU_OVI_IRQ[1]  && IPRC.ITU1   > INT_MASK) begin INT_REQ <= 1'b1; ITU_OVI_PEND[1] <= 1; INT_PEND[ITU1_OVI_INT] <= 1; end
-				else if (ITU_IMIA_IRQ[2] && IPRD.ITU2   > INT_MASK) begin INT_REQ <= 1'b1; ITU_IMIA_PEND[2] <= 1; INT_PEND[ITU2_IMIA_INT] <= 1; end
-				else if (ITU_IMIB_IRQ[2] && IPRD.ITU2   > INT_MASK) begin INT_REQ <= 1'b1; ITU_IMIB_PEND[2] <= 1; INT_PEND[ITU2_IMIB_INT] <= 1; end
-				else if (ITU_OVI_IRQ[2]  && IPRD.ITU2   > INT_MASK) begin INT_REQ <= 1'b1; ITU_OVI_PEND[2] <= 1; INT_PEND[ITU2_OVI_INT] <= 1; end
-				else if (ITU_IMIA_IRQ[3] && IPRD.ITU3   > INT_MASK) begin INT_REQ <= 1'b1; ITU_IMIA_PEND[3] <= 1; INT_PEND[ITU3_IMIA_INT] <= 1; end
-				else if (ITU_IMIB_IRQ[3] && IPRD.ITU3   > INT_MASK) begin INT_REQ <= 1'b1; ITU_IMIB_PEND[3] <= 1; INT_PEND[ITU3_IMIB_INT] <= 1; end
-				else if (ITU_OVI_IRQ[3]  && IPRD.ITU3   > INT_MASK) begin INT_REQ <= 1'b1; ITU_OVI_PEND[3] <= 1; INT_PEND[ITU3_OVI_INT] <= 1; end
-				else if (ITU_IMIA_IRQ[4] && IPRD.ITU4   > INT_MASK) begin INT_REQ <= 1'b1; ITU_IMIA_PEND[4] <= 1; INT_PEND[ITU4_IMIA_INT] <= 1; end
-				else if (ITU_IMIB_IRQ[4] && IPRD.ITU4   > INT_MASK) begin INT_REQ <= 1'b1; ITU_IMIB_PEND[4] <= 1; INT_PEND[ITU4_IMIB_INT] <= 1; end
-				else if (ITU_OVI_IRQ[4]  && IPRD.ITU4   > INT_MASK) begin INT_REQ <= 1'b1; ITU_OVI_PEND[4] <= 1; INT_PEND[ITU4_OVI_INT] <= 1; end
+				if (NMI_REQ)                                        begin INT_REQ <= 1'b1; INT_PEND[NMI_INT] <= 1; end
+				else if (UBC_IRQ         && 4'hF        > INT_MASK) begin INT_REQ <= 1'b1; INT_PEND[UBC_INT] <= 1; end
+				else if (IRQ_REQ[0]      && IPRA.IRQ0   > INT_MASK) begin INT_REQ <= 1'b1; INT_PEND[IRQ0_INT] <= 1; end
+				else if (IRQ_REQ[1]      && IPRA.IRQ1   > INT_MASK) begin INT_REQ <= 1'b1; INT_PEND[IRQ1_INT] <= 1; end
+				else if (IRQ_REQ[2]      && IPRA.IRQ2   > INT_MASK) begin INT_REQ <= 1'b1; INT_PEND[IRQ2_INT] <= 1; end
+				else if (IRQ_REQ[3]      && IPRA.IRQ3   > INT_MASK) begin INT_REQ <= 1'b1; INT_PEND[IRQ3_INT] <= 1; end
+				else if (IRQ_REQ[4]      && IPRB.IRQ4   > INT_MASK) begin INT_REQ <= 1'b1; INT_PEND[IRQ4_INT] <= 1; end
+				else if (IRQ_REQ[5]      && IPRB.IRQ5   > INT_MASK) begin INT_REQ <= 1'b1; INT_PEND[IRQ5_INT] <= 1; end
+				else if (IRQ_REQ[6]      && IPRB.IRQ6   > INT_MASK) begin INT_REQ <= 1'b1; INT_PEND[IRQ6_INT] <= 1; end
+				else if (IRQ_REQ[7]      && IPRB.IRQ7   > INT_MASK) begin INT_REQ <= 1'b1; INT_PEND[IRQ7_INT] <= 1; end
+				else if (DMAC0_IRQ       && IPRC.DMAC01 > INT_MASK) begin INT_REQ <= 1'b1; INT_PEND[DMAC0_INT] <= 1; end
+				else if (DMAC1_IRQ       && IPRC.DMAC01 > INT_MASK) begin INT_REQ <= 1'b1; INT_PEND[DMAC1_INT] <= 1; end
+				else if (DMAC2_IRQ       && IPRC.DMAC23 > INT_MASK) begin INT_REQ <= 1'b1; INT_PEND[DMAC2_INT] <= 1; end
+				else if (DMAC3_IRQ       && IPRC.DMAC23 > INT_MASK) begin INT_REQ <= 1'b1; INT_PEND[DMAC3_INT] <= 1; end
+				else if (WDT_IRQ         && IPRE.WDT    > INT_MASK) begin INT_REQ <= 1'b1; INT_PEND[WDT_INT] <= 1; end
+				else if (BSC_IRQ         && IPRE.WDT    > INT_MASK) begin INT_REQ <= 1'b1; INT_PEND[BSC_INT] <= 1; end
+				else if (SCI0_ERI_IRQ    && IPRD.SCI0   > INT_MASK) begin INT_REQ <= 1'b1; INT_PEND[SCI0_ERI_INT] <= 1; end
+				else if (SCI0_RXI_IRQ    && IPRD.SCI0   > INT_MASK) begin INT_REQ <= 1'b1; INT_PEND[SCI0_RXI_INT] <= 1; end
+				else if (SCI0_TXI_IRQ    && IPRD.SCI0   > INT_MASK) begin INT_REQ <= 1'b1; INT_PEND[SCI0_TXI_INT] <= 1; end
+				else if (SCI0_TEI_IRQ    && IPRD.SCI0   > INT_MASK) begin INT_REQ <= 1'b1; INT_PEND[SCI0_TEI_INT] <= 1; end
+				else if (SCI1_ERI_IRQ    && IPRE.SCI1   > INT_MASK) begin INT_REQ <= 1'b1; INT_PEND[SCI1_ERI_INT] <= 1; end
+				else if (SCI1_RXI_IRQ    && IPRE.SCI1   > INT_MASK) begin INT_REQ <= 1'b1; INT_PEND[SCI1_RXI_INT] <= 1; end
+				else if (SCI1_TXI_IRQ    && IPRE.SCI1   > INT_MASK) begin INT_REQ <= 1'b1; INT_PEND[SCI1_TXI_INT] <= 1; end
+				else if (SCI1_TEI_IRQ    && IPRE.SCI1   > INT_MASK) begin INT_REQ <= 1'b1; INT_PEND[SCI1_TEI_INT] <= 1; end
+				else if (ITU_IMIA_IRQ[0] && IPRC.ITU0   > INT_MASK) begin INT_REQ <= 1'b1; INT_PEND[ITU0_IMIA_INT] <= 1; end
+				else if (ITU_IMIB_IRQ[0] && IPRC.ITU0   > INT_MASK) begin INT_REQ <= 1'b1; INT_PEND[ITU0_IMIB_INT] <= 1; end
+				else if (ITU_OVI_IRQ[0]  && IPRC.ITU0   > INT_MASK) begin INT_REQ <= 1'b1; INT_PEND[ITU0_OVI_INT] <= 1; end
+				else if (ITU_IMIA_IRQ[1] && IPRC.ITU1   > INT_MASK) begin INT_REQ <= 1'b1; INT_PEND[ITU1_IMIA_INT] <= 1; end
+				else if (ITU_IMIB_IRQ[1] && IPRC.ITU1   > INT_MASK) begin INT_REQ <= 1'b1; INT_PEND[ITU1_IMIB_INT] <= 1; end
+				else if (ITU_OVI_IRQ[1]  && IPRC.ITU1   > INT_MASK) begin INT_REQ <= 1'b1; INT_PEND[ITU1_OVI_INT] <= 1; end
+				else if (ITU_IMIA_IRQ[2] && IPRD.ITU2   > INT_MASK) begin INT_REQ <= 1'b1; INT_PEND[ITU2_IMIA_INT] <= 1; end
+				else if (ITU_IMIB_IRQ[2] && IPRD.ITU2   > INT_MASK) begin INT_REQ <= 1'b1; INT_PEND[ITU2_IMIB_INT] <= 1; end
+				else if (ITU_OVI_IRQ[2]  && IPRD.ITU2   > INT_MASK) begin INT_REQ <= 1'b1; INT_PEND[ITU2_OVI_INT] <= 1; end
+				else if (ITU_IMIA_IRQ[3] && IPRD.ITU3   > INT_MASK) begin INT_REQ <= 1'b1; INT_PEND[ITU3_IMIA_INT] <= 1; end
+				else if (ITU_IMIB_IRQ[3] && IPRD.ITU3   > INT_MASK) begin INT_REQ <= 1'b1; INT_PEND[ITU3_IMIB_INT] <= 1; end
+				else if (ITU_OVI_IRQ[3]  && IPRD.ITU3   > INT_MASK) begin INT_REQ <= 1'b1; INT_PEND[ITU3_OVI_INT] <= 1; end
+				else if (ITU_IMIA_IRQ[4] && IPRD.ITU4   > INT_MASK) begin INT_REQ <= 1'b1; INT_PEND[ITU4_IMIA_INT] <= 1; end
+				else if (ITU_IMIB_IRQ[4] && IPRD.ITU4   > INT_MASK) begin INT_REQ <= 1'b1; INT_PEND[ITU4_IMIB_INT] <= 1; end
+				else if (ITU_OVI_IRQ[4]  && IPRD.ITU4   > INT_MASK) begin INT_REQ <= 1'b1; INT_PEND[ITU4_OVI_INT] <= 1; end
 				else                                                begin INT_REQ <= 1'b0; end
 			end else if (INT_CLR) begin
 				INT_REQ <= 0;
-				NMI_PEND <= 0;
-				UBC_PEND <= 0;
-				IRQ0_PEND <= 0;
-				IRQ1_PEND <= 0;
-				IRQ2_PEND <= 0;
-				IRQ3_PEND <= 0;
-				IRQ4_PEND <= 0;
-				IRQ5_PEND <= 0;
-				IRQ6_PEND <= 0;
-				IRQ7_PEND <= 0;
-				DMAC0_PEND <= 0;
-				DMAC1_PEND <= 0;
-				DMAC2_PEND <= 0;
-				DMAC3_PEND <= 0;
-				WDT_PEND <= 0;
-				BSC_PEND <= 0;
-				SCI0_ERI_PEND <= 0;
-				SCI0_RXI_PEND <= 0;
-				SCI0_TXI_PEND <= 0;
-				SCI0_TEI_PEND <= 0;
-				SCI1_ERI_PEND <= 0;
-				SCI1_RXI_PEND <= 0;
-				SCI1_TXI_PEND <= 0;
-				SCI1_TEI_PEND <= 0;
-				ITU_IMIA_PEND <= '0;
-				ITU_IMIB_PEND <= '0;
-				ITU_OVI_PEND <= '0;
 				INT_PEND <= '0;
 			end
 		end else if (CE_F) begin
