@@ -104,17 +104,15 @@ module FRT (
 			CAPT <= 0;
 		end
 		else if (CE_R) begin
-			if (FRC_CE) begin
-				FTI_OLD <= FTI;
-				CAPT <= (FTI ^ TCR.IEDG) & (~FTI_OLD ^ TCR.IEDG);
-				
-				if (ICR_READ && CAPT) begin
-					CAPT <= 1;
-				end
-				else if (CAPT) begin
-					ICR <= FRC;
-					FTCSR.ICF <= 1;
-				end
+			FTI_OLD <= FTI;
+			CAPT <= (FTI ^ TCR.IEDG) & (~FTI_OLD ^ TCR.IEDG);
+			
+			if (ICR_READ && CAPT) begin
+				CAPT <= 1;
+			end
+			else if (CAPT) begin
+				ICR <= FRC;
+				FTCSR.ICF <= 1;
 			end
 			
 			if (FTCSR_WRITE) begin

@@ -257,7 +257,7 @@ module SH7034_DMAC (
 //	bit         DMA_REQ_CLR;
 	bit   [1:0] DMA_CH_NEXT;
 	bit   [1:0] DMA_CH;
-	bit   [1:0] RB_PRIO;
+//	bit   [1:0] RB_PRIO;
 	always @(posedge CLK or negedge RST_N) begin
 		bit  [3:0] DMA_CH_REQ;
 		bit  [3:0] DMA_CH_REQ_OLD;
@@ -266,7 +266,7 @@ module SH7034_DMAC (
 			DMA_REQ <= 0;
 			DMA_CH_REQ <= '0;
 			DMA_CH_REQ_OLD <= '0;
-			RB_PRIO <= '0;
+//			RB_PRIO <= '0;
 		end
 		else if (CE_R) begin
 			DMA_CH_REQ[0] = CH_REQ[0] && CH_EN[0] && CH_AVAIL[0];
@@ -274,10 +274,6 @@ module SH7034_DMAC (
 			DMA_CH_REQ[2] = CH_REQ[2] && CH_EN[2] && CH_AVAIL[2];
 			DMA_CH_REQ[3] = CH_REQ[3] && CH_EN[3] && CH_AVAIL[3];
 			if (!DMA_REQ && DMA_CH_REQ != 4'b0000 && !DBUS_WAIT) begin
-				/*if (DMA_CH_REQ != 4'b0001 && DMA_CH_REQ != 4'b0010 && DMA_CH_REQ != 4'b0100 && DMA_CH_REQ != 4'b1000) begin
-					DMA_REQ <= 1;
-					DMA_CH_NEXT <= 2'd0;//DMAOR.PR & RB_PRIO;
-				end else*/ 
 				if (DMA_CH_REQ[0] && !DMA_CH_REQ_OLD[0]) begin
 					DMA_CH_REQ_OLD <= 4'b0001;
 					DMA_REQ <= 1;

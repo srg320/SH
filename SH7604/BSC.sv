@@ -521,15 +521,16 @@ module BSC
 		end
 		else if (CE_F) begin
 			if (REG_SEL && !IBUS_WE && IBUS_REQ) begin
-				case ({IBUS_A[4:1],1'b0})
-					5'h02: REG_DO <= {MD[5],BCR1[14:0]} & BCR1_RMASK;
-					5'h06: REG_DO <= BCR2 & BCR2_RMASK;
-					5'h0A: REG_DO <= WCR & WCR_RMASK;
-					5'h0E: REG_DO <= MCR & MCR_RMASK;
-					5'h12: REG_DO <= RTCSR & RTCSR_RMASK;
-					5'h16: REG_DO <= {8'h00,RTCNT} & RTCNT_RMASK;
-					5'h1A: REG_DO <= {8'h00,RTCOR} & RTCOR_RMASK;
-					default:REG_DO <= '0;
+				REG_DO[31:16] <= 16'h0000;
+				case ({IBUS_A[4:2],2'b00})
+					5'h00: REG_DO[15:0] <= {MD[5],BCR1[14:0]} & BCR1_RMASK;
+					5'h04: REG_DO[15:0] <= BCR2 & BCR2_RMASK;
+					5'h08: REG_DO[15:0] <= WCR & WCR_RMASK;
+					5'h0C: REG_DO[15:0] <= MCR & MCR_RMASK;
+					5'h10: REG_DO[15:0] <= RTCSR & RTCSR_RMASK;
+					5'h14: REG_DO[15:0] <= {8'h00,RTCNT} & RTCNT_RMASK;
+					5'h18: REG_DO[15:0] <= {8'h00,RTCOR} & RTCOR_RMASK;
+					default:REG_DO[15:0] <= '0;
 				endcase
 			end
 		end

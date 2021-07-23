@@ -91,9 +91,12 @@ module INTC (
 		if (!RST_N) begin
 			NMI_REQ <= 0;
 		end
+		else if (!RES_N) begin	
+			NMI_REQ <= 0;
+		end
 		else if (CE_R) begin	
 			NMI_N_OLD <= NMI_N;
-			if ((~NMI_N ^ ICR.NMIE) && (NMI_N_OLD ^ ICR.NMIE) && RES_N && !NMI_REQ) begin
+			if ((~NMI_N ^ ICR.NMIE) && (NMI_N_OLD ^ ICR.NMIE) && !NMI_REQ) begin
 				NMI_REQ <= 1;
 			end
 			else if (INT_ACK && INT_PEND[NMI_INT]) begin
@@ -106,6 +109,10 @@ module INTC (
 		bit [3:0] IRL_OLD[4];
 		
 		if (!RST_N) begin
+			IRL_OLD <= '{4{'1}};
+			IRL_REQ <= 0;
+		end
+		else if (!RES_N) begin	
 			IRL_OLD <= '{4{'1}};
 			IRL_REQ <= 0;
 		end

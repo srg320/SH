@@ -775,6 +775,6 @@ module SH_core
 	assign VECT_REQ = VECT_ACTIVE;
 	
 	//Debug
-	assign ILI = ID_DECI.ILI & ~ID_STALL;
+	assign ILI = ID_DECI.ILI & ~ID_STALL & ~IFID_STALL;
 	
 endmodule
