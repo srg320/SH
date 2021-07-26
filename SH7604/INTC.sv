@@ -96,7 +96,7 @@ module INTC (
 		end
 		else if (CE_R) begin	
 			NMI_N_OLD <= NMI_N;
-			if ((~NMI_N ^ ICR.NMIE) && (NMI_N_OLD ^ ICR.NMIE) && !NMI_REQ) begin
+			if (!(NMI_N ^ ICR.NMIE) && (NMI_N_OLD ^ ICR.NMIE) && !NMI_REQ) begin
 				NMI_REQ <= 1;
 			end
 			else if (INT_ACK && INT_PEND[NMI_INT]) begin

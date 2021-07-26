@@ -100,12 +100,13 @@ module FRT (
 		
 		if (!RST_N) begin
 			ICR <= 16'h0000;
-			FTI_OLD <= 0;
+			FTCSR.ICF <= 0;
 			CAPT <= 0;
+			FTI_OLD <= 0;
 		end
 		else if (CE_R) begin
 			FTI_OLD <= FTI;
-			CAPT <= (FTI ^ TCR.IEDG) & (~FTI_OLD ^ TCR.IEDG);
+			CAPT <= ~(FTI ^ TCR.IEDG) & (FTI_OLD ^ TCR.IEDG);
 			
 			if (ICR_READ && CAPT) begin
 				CAPT <= 1;
