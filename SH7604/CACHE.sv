@@ -14,6 +14,7 @@ module CACHE (
 	input             CBUS_WR,
 	input       [3:0] CBUS_BA,
 	input             CBUS_REQ,
+	input             CBUS_TAS,
 	output            CBUS_BUSY,
 	
 	output     [31:0] IBUS_A,
@@ -395,7 +396,9 @@ module CACHE (
 	
 	bit         IBDATA_RDY;
 	bit         IBUS_WRITE;
+	bit         IBUS_WRITE_PEND;
 	bit         IBUS_READ;
+	bit         IBUS_READ_PEND;
 	bit         IBUS_READARRAY;
 	always @(posedge CLK or negedge RST_N) begin
 		bit [ 1:0] ARRAY_POS;
@@ -420,8 +423,10 @@ module CACHE (
 			
 			IBDATA_RDY <= 0;
 			IBUS_WRITE <= 0;
+			IBUS_WRITE_PEND <= 0;
 			IBUS_READ <= 0;
 			IBUS_READARRAY <= 0;
+			IBUS_READ_PEND <= 0;
 		end
 		else if (CE_F) begin
 			CACHE_UPDATE <= 0;
@@ -432,17 +437,22 @@ module CACHE (
 			CACHE_ADDR_WRITE <= 0;
 			if (CBUS_REQ) begin
 				if (CBUS_WR) begin
-					if ((CACHE_AREA || NOCACHE_AREA || IO_AREA) && !IBUS_WRITE) begin
-						IBADDR <= CBUS_A;
-						IBDATA <= CBUS_DI;
-						IBBA <= CBUS_BA;
-						IBWE <= 1;
-						IBREQ <= 1;
-						IBLOCK <= 0;
-						IBUS_WRITE <= 1;
+					if ((CACHE_AREA || NOCACHE_AREA || IO_AREA)) begin
+						if (!IBREQ) begin
+							IBADDR <= CBUS_A;
+							IBDATA <= CBUS_DI;
+							IBBA <= CBUS_BA;
+							IBWE <= 1;
+							IBREQ <= 1;
+							IBLOCK <= 0;
+							IBUS_WRITE <= 1;
+							IBUS_WRITE_PEND <= 0;
+						end else if (!IBUS_WRITE_PEND) begin
+							IBUS_WRITE_PEND <= 1;
+						end
 					end
 					
-					if (CACHE_AREA && HIT && CCR.CE) begin
+					if (CACHE_AREA && HIT && CCR.CE && !IBREQ) begin
 						CACHE_WR_ADDR <= CBUS_A[28:2];
 						CACHE_WR_BA <= CBUS_BA;
 						CACHE_WR_WAY <= WAY_HIT;
@@ -466,57 +476,63 @@ module CACHE (
 					end
 				end
 				else begin
-					if ((CACHE_AREA && !CCR.CE) || NOCACHE_AREA || IO_AREA) begin
-						IBADDR <= CBUS_A;
-						IBBA <= CBUS_BA;
-						IBWE <= 0;
-						IBREQ <= 1;
-						IBLOCK <= 0;
-						IBUS_READ <= 1;
+					if (((CACHE_AREA && (!CCR.CE || CBUS_TAS)) || NOCACHE_AREA || IO_AREA) && !IBUS_READ) begin
+						if (!IBREQ) begin
+							IBADDR <= CBUS_A;
+							IBBA <= CBUS_BA;
+							IBWE <= 0;
+							IBREQ <= 1;
+							IBLOCK <= CBUS_TAS;
+							IBUS_READ <= 1;
+							IBUS_READ_PEND <= 0;
+						end else if (!IBUS_READ_PEND) begin
+							IBUS_READ_PEND <= 1;
+						end
 					end
-					else if (CACHE_AREA && CCR.CE && !IBUS_READARRAY) begin
+					else if (CACHE_AREA && CCR.CE && !CBUS_TAS && !IBUS_READARRAY) begin
 						if (HIT) begin
 							CACHE_WR_ADDR <= CBUS_A[28:2];
 							CACHE_WR_WAY <= WAY_HIT;
 							CACHE_READ <= 1;
 						end
 						else begin
-							IBADDR <= {CBUS_A[31:4],CBUS_A[3:2] + 2'd1,2'b00};
-							IBBA <= 4'b1111;
-							IBWE <= 0;
-							IBREQ <= 1;
-							IBLOCK <= 1;
-							ARRAY_POS <= CBUS_A[3:2];
-							CACHE_WR_WAY <= WayFromLRU(LRU_DATA, CCR.TW);
-							IBUS_READARRAY <= 1;
+							if (!IBREQ) begin
+								IBADDR <= {CBUS_A[31:4],CBUS_A[3:2] + 2'd1,2'b00};
+								IBBA <= 4'b1111;
+								IBWE <= 0;
+								IBREQ <= 1;
+								IBLOCK <= 1;
+								ARRAY_POS <= CBUS_A[3:2];
+								CACHE_WR_WAY <= WayFromLRU(LRU_DATA, CCR.TW);
+								IBUS_READARRAY <= 1;
+								IBUS_READ_PEND <= 0;
+							end else if (!IBUS_READ_PEND) begin
+								IBUS_READ_PEND <= 1;
+							end
 						end
 					end
 				end
 			end
 			
 			IBDATA_RDY <= 0;
-			if (IBUS_WRITE) begin
-				if (!IBUS_WAIT) begin
+			if (!IBUS_WAIT) begin
+				if (IBUS_WRITE) begin
 					IBREQ <= 0;
 					IBUS_WRITE <= 0;
 				end
-			end
-			else if (IBUS_READ) begin
-				if (!IBUS_WAIT) begin
+				else if (IBUS_READ) begin
 					IBREQ <= 0;
 					IBDATA_RDY <= 1;
 					IBUS_READ <= 0;
 				end
-			end
-			else if (IBUS_READARRAY) begin
-				if (!IBUS_WAIT) begin
+				else if (IBUS_READARRAY) begin
 					IBADDR <= {IBADDR[31:4],IBADDR[3:2] + 2'd1,2'b00};
 					if (IBADDR[3:2] == ARRAY_POS) begin
 						IBREQ <= 0;
 						IBDATA_RDY <= 1;
 						IBUS_READARRAY <= 0;
 					end
-					if (IBADDR[3:2] == ARRAY_POS-2'd1) begin
+					if (IBADDR[3:2] == ARRAY_POS - 2'd1) begin
 						IBLOCK <= 0;
 					end
 					CACHE_WR_ADDR <= IBADDR[28:2];
@@ -524,11 +540,10 @@ module CACHE (
 					CACHE_UPDATE <= 1;
 				end
 			end
-			
 		end
 	end
 	
-	assign CBUS_BUSY = CBUS_REQ & (IBUS_READ | IBUS_READARRAY | IBUS_WRITE);
+	assign CBUS_BUSY = CBUS_REQ & (IBUS_READ | IBUS_READARRAY | IBUS_READ_PEND | IBUS_WRITE_PEND);
 	
 	
 	wire CCR_SEL = IBADDR == 32'hFFFFFE92 && IBBA[1];

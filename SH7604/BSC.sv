@@ -129,6 +129,7 @@ module BSC
 	bit         BUSY;
 	bit         DBUSY;
 	bit         VBUSY;
+	bit         VBUS_ACTIVE;
 	bit  [31:0] DAT_BUF;
 	bit  [ 7:0] VEC_BUF;
 	bit   [3:0] NEXT_BA;
@@ -155,6 +156,7 @@ module BSC
 			CACK <= 0;
 			DBUSY <= 0;
 			VBUSY <= 0;
+			VBUS_ACTIVE <= 0;
 			BUS_STATE <= T0;
 			WAIT_CNT <= '0;
 			NEXT_BA <= '0;
@@ -175,7 +177,7 @@ module BSC
 						case (GetAreaW(A[26:25],WCR))
 							2'b00: begin
 								if (!NEXT_BA) begin
-									if (VBUSY) VBUSY <= 0;
+									if (VBUSY && VBUS_ACTIVE) VBUSY <= 0;
 									else if (DBUSY) DBUSY <= 0;
 									BUSY <= 0;
 								end
@@ -209,7 +211,7 @@ module BSC
 						end
 						else if (WAIT_N) begin
 							if (!NEXT_BA) begin
-								if (VBUSY) VBUSY <= 0;
+								if (VBUSY && VBUS_ACTIVE) VBUSY <= 0;
 								else if (DBUSY) DBUSY <= 0;
 								BUSY <= 0;
 							end
@@ -299,6 +301,7 @@ module BSC
 						DBUSY <= DBUS_REQ;
 						VBUSY <= VBUS_REQ;
 					end
+					
 					if (BUS_STATE == T2 && BUSY && DBUSY) begin
 						case (AREA_SZ)
 							2'b01: begin 
@@ -344,6 +347,7 @@ module BSC
 						DBUSY <= DBUS_REQ;
 						VBUSY <= VBUS_REQ;
 						
+						VBUS_ACTIVE <= 0;
 						if (!VBUS_REQ) begin
 							case (GetAreaSZ(IBUS_A[26:25],BCR2,A0_SZ))
 								2'b01: begin 
@@ -421,6 +425,7 @@ module BSC
 							NEXT_BA <= 4'b0000;
 							IBUS_WE_SAVE <= '0;
 							IBUS_DI_SAVE <= '0;
+							VBUS_ACTIVE <= 1;
 						end
 						
 						if (BUS_STATE == T0 || (BUS_STATE == T2 /*&& NO_IDLE*/) /*|| (BUS_STATE == TI && !WAIT_CNT)*/) begin
@@ -428,13 +433,16 @@ module BSC
 						end
 					end
 				end
+				else if ((BUS_STATE == T1 || BUS_STATE == TW) && BUS_ACCESS_REQ && !BUS_RLS) begin
+					if (!VBUSY && VBUS_REQ) VBUSY <= 1;
+				end
 			end
 			BUS_STATE <= STATE_NEXT;
 		end
 	end
 	
 	assign VBUS_DO = VEC_BUF;
-	assign VBUS_BUSY = VBUSY | ((BUS_RLS | BGR) & VBUS_REQ);
+	assign VBUS_BUSY = VBUSY | ((BUS_RLS | BGR /*| (~VBUSY & DBUSY)*/) & VBUS_REQ);
 		
 	bit MST_BUS_RLS;
 	bit SLV_BUS_RLS;

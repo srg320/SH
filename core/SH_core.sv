@@ -14,6 +14,7 @@ module SH_core
 	output            BUS_WR,
 	output      [3:0] BUS_BA,
 	output            BUS_REQ,
+	output            BUS_TAS,
 	input             BUS_WAIT,
 	
 	output      [1:0] MAC_SEL,
@@ -763,6 +764,7 @@ module SH_core
 	assign BUS_WR = PIPE.MA.DI.MEM.W & MA_ACTIVE;
 	assign BUS_BA = MA_BA | {4{IF_ACTIVE & ~INST_SPLIT & ~IFID_STALL}};
 	assign BUS_REQ = ((PIPE.MA.DI.MEM.R | PIPE.MA.DI.MEM.W) & MA_ACTIVE & ~MAWB_STALL) | (IF_ACTIVE & ~INST_SPLIT & ~IFID_STALL);
+	assign BUS_TAS = PIPE.MA.DI.TAS & MA_ACTIVE & ~MAWB_STALL;
 	
 	assign MAC_SEL = PIPE.MA.DI.MAC.S & {2{MA_ACTIVE & ~MA_STALL}};
 	assign MAC_OP = PIPE.MA.DI.MAC.OP;

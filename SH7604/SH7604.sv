@@ -72,6 +72,7 @@ module SH7604 (
 	bit        CBUS_WR;
 	bit  [3:0] CBUS_BA;
 	bit        CBUS_REQ;
+	bit        CBUS_TAS;
 	
 	bit [31:0] IBUS_A;
 	bit [31:0] IBUS_DO;
@@ -192,6 +193,7 @@ module SH7604 (
 		.BUS_WR(CBUS_WR),
 		.BUS_BA(CBUS_BA),
 		.BUS_REQ(CBUS_REQ),
+		.BUS_TAS(CBUS_TAS),
 		.BUS_WAIT(CACHE_BUSY),
 		
 		.MAC_SEL(MAC_SEL),
@@ -261,6 +263,7 @@ module SH7604 (
 		.CBUS_WR(CBUS_WR),
 		.CBUS_BA(CBUS_BA),
 		.CBUS_REQ(CBUS_REQ),
+		.CBUS_TAS(CBUS_TAS),
 		.CBUS_BUSY(CACHE_BUSY),
 		
 		.IBUS_A(IBUS_A),

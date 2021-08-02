@@ -90,7 +90,7 @@ module SH7034_DMAC (
 	wire CH_AVAIL[4] = '{~CHCR[0].TE & ~DMAOR.NMIF & ~DMAOR.AE, 
 	                     ~CHCR[1].TE & ~DMAOR.NMIF & ~DMAOR.AE, 
 	                     ~CHCR[2].TE & ~DMAOR.NMIF & ~DMAOR.AE, 
-	                     ~CHCR[2].TE & ~DMAOR.NMIF & ~DMAOR.AE};
+	                     ~CHCR[3].TE & ~DMAOR.NMIF & ~DMAOR.AE};
 
 	bit         CH_REQ[4];
 	bit         CH_REQ_CLR[4];
