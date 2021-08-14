@@ -247,7 +247,7 @@ module SH7604 (
 		end
 	end
 	
-	assign CACHE_DI = |MAC_SEL && MAC_OP == 4'b0000 && !MAC_WE ? MULT_DO : CBUS_DO;
+	assign CACHE_DI = MAC_OP == 4'b1111 && !MAC_WE ? MULT_DO : CBUS_DO;
 	CACHE cache
 	(
 		.CLK(CLK),

@@ -569,7 +569,7 @@ package SH2_PKG;
 						DECI.IMMT = ONE;
 						DECI.ALU = '{0, 1, ADD, 4'b0001, 3'b000};
 						DECI.MEM = '{ALURES, ALUB, 2'b10, 0, 1};
-						DECI.MAC = '{{~IR[4],IR[4]}, 1, 0, 4'b0000};
+						DECI.MAC = '{{~IR[4],IR[4]}, 1, 0, 4'b1111};
 					end
 					8'b00100010: begin	//STS.L PR,@-Rn
 						DECI.RA = '{RAN, 1, 1};

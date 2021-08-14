@@ -33,7 +33,8 @@ module SH_core
 	input             VECT_WAIT,
 	
 	output			   ILI,
-	output			   REG_HOOK
+	output			   REG_HOOK,
+	output     [15:0] DBG
 );
 	
 	import SH2_PKG::*;
@@ -243,7 +244,7 @@ module SH_core
 	assign BR_COND = ID_DECI.BR.BI & ((SR_T == ID_DECI.BR.BCV) | (ID_DECI.BR.BT == UCB));
 	wire ID_DELAY_SLOT = ~PIPE.EX.DI.BR.BI & (PIPE.EX.DI.BR.BT == CB | PIPE.EX.DI.BR.BT == UCB);
 	
-	wire [15:0] DEC_IR = INT_REQ2 && !ID_DELAY_SLOT && !IFID_STALL ? {8'hF0,INT_VEC} : 
+	wire [15:0] DEC_IR = INT_REQ2 && !ID_DELAY_SLOT && !ID_STALL && !IFID_STALL ? {8'hF0,INT_VEC} : 
 							   ID_DELAY_SLOT && !PIPE.EX.DI.BR.BD ? 16'h0009 :
 								IFID_STALL ? PIPE.EX.IR : PIPE.ID.IR;
 								
@@ -778,5 +779,6 @@ module SH_core
 	
 	//Debug
 	assign ILI = ID_DECI.ILI & ~ID_STALL & ~IFID_STALL;
+	assign DBG = PIPE.MA.IR^PIPE.WB.IR;
 	
 endmodule
