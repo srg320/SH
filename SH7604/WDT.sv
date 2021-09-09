@@ -1,6 +1,4 @@
-import SH7604_PKG::*;
-
-module WDT (
+module SH7604_WDT (
 	input             CLK,
 	input             RST_N,
 	input             CE_R,
@@ -33,6 +31,8 @@ module WDT (
 	output            MRES
 );
 
+	import SH7604_PKG::*;
+	
 	WTCNT_t     WTCNT;
 	WTCSR_t     WTCSR;
 	RSTCSR_t    RSTCSR;

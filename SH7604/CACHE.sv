@@ -1,6 +1,4 @@
-import SH7604_PKG::*;
-
-module CACHE (
+module SH7604_CACHE (
 	input             CLK,
 	input             RST_N,
 	input             CE_R,
@@ -27,6 +25,8 @@ module CACHE (
 	output            IBUS_LOCK
 );
 
+	import SH7604_PKG::*;
+	
 	// synopsys translate_off
 	`define SIM
 	// synopsys translate_on

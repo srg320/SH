@@ -193,20 +193,6 @@ module SH7604_DMAC (
 			TCR[1] <= TCRx_INIT;
 			CHCR[0] <= CHCRx_INIT;
 			CHCR[1] <= CHCRx_INIT;
-			// synopsys translate_off
-			SAR[0] <= 32'h000000E0;
-			DAR[0] <= 32'h000000F0;
-			TCR[0] <= 4;
-			CHCR[0].DM <= 2'b01;
-			CHCR[0].SM <= 2'b01;
-			CHCR[0].TS <= 2'b10;
-			CHCR[0].AR <= 1'b0;
-			CHCR[0].DS <= 1'b0;
-			CHCR[0].TB <= 1'b0;
-			CHCR[0].TA <= 1'b0;
-			CHCR[0].DE <= 1'b1;
-			CHCR[0].TB <= 1'b0;
-			// synopsys translate_on
 			
 			DMA_WR <= 0;
 			DMA_RD <= 0;
@@ -228,13 +214,13 @@ module SH7604_DMAC (
 					DMA_RD <= 1;
 					LW_CNT <= &CHCR[DMA_CH].TS ? 2'd3 : 2'd0;
 					CH_REQ_CLR[DMA_CH] <= CHCR[DMA_CH].TA & ~CHCR[DMA_CH].AM;
-					DMA_LOCK <= ~CHCR[DMA_CH].TA | &CHCR[DMA_CH].TS;
+					DMA_LOCK <= ~CHCR[DMA_CH].TA | CHCR[DMA_CH].TB | &CHCR[DMA_CH].TS;
 				end
 				else begin
 					DMA_WR <= 1;
 					LW_CNT <= &CHCR[DMA_CH].TS ? 2'd3 : 2'd0;
 					CH_REQ_CLR[DMA_CH] <= 1;
-					DMA_LOCK <= &CHCR[DMA_CH].TS;
+					DMA_LOCK <= CHCR[DMA_CH].TB | &CHCR[DMA_CH].TS;
 				end
 			end
 			else if ((DMA_RD || DMA_WR) && !DBUS_WAIT && CE_F) begin
@@ -245,7 +231,7 @@ module SH7604_DMAC (
 					if (!CHCR[DMA_CH].TA && !LW_CNT) begin
 						DMA_RD <= 0;
 						DMA_WR <= 1;
-						DMA_LOCK <= &CHCR[DMA_CH].TS;
+//						DMA_LOCK <= &CHCR[DMA_CH].TS;
 						LW_CNT <= &CHCR[DMA_CH].TS ? 2'd3 : 2'd0;
 						CH_REQ_CLR[DMA_CH] <= 1;
 					end

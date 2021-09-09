@@ -1,6 +1,4 @@
-import SH7604_PKG::*;
-
-module INTC (
+module SH7604_INTC (
 	input             CLK,
 	input             RST_N,
 	input             CE_R,
@@ -52,6 +50,8 @@ module INTC (
 	input             FRT_OVI_IRQ
 );
 
+	import SH7604_PKG::*;
+	
 	ICR_t      ICR;
 	IPRA_t     IPRA;
 	IPRB_t     IPRB;
@@ -61,21 +61,21 @@ module INTC (
 	VCRC_t     VCRC;
 	VCRD_t     VCRD;
 	
-	const integer NMI_INT     = 0;  const bit [14:0] NMI_INT_MASK     = 15'b000000000000001; 
-	const integer UBC_INT     = 1;  const bit [14:0] UBC_INT_MASK     = 15'b000000000000010; 
-	const integer IRL_INT     = 2;  const bit [14:0] IRL_INT_MASK     = 15'b000000000000100; 
-	const integer DIVU_INT    = 3;  const bit [14:0] DIVU_INT_MASK    = 15'b000000000001000; 
-	const integer DMAC0_INT   = 4;  const bit [14:0] DMAC0_INT_MASK   = 15'b000000000010000; 
-	const integer DMAC1_INT   = 5;  const bit [14:0] DMAC1_INT_MASK   = 15'b000000000100000; 
-	const integer WDT_INT     = 6;  const bit [14:0] WDT_INT_MASK     = 15'b000000001000000; 
-	const integer BSC_INT     = 7;  const bit [14:0] BSC_INT_MASK     = 15'b000000010000000; 
-	const integer SCI_ERI_INT = 8;  const bit [14:0] SCI_ERI_INT_MASK = 15'b000000100000000; 
-	const integer SCI_RXI_INT = 9;  const bit [14:0] SCI_RXI_INT_MASK = 15'b000001000000000; 
-	const integer SCI_TXI_INT = 10; const bit [14:0] SCI_TXI_INT_MASK = 15'b000010000000000; 
-	const integer SCI_TEI_INT = 11; const bit [14:0] SCI_TEI_INT_MASK = 15'b000100000000000; 
-	const integer FRT_ICI_INT = 12; const bit [14:0] FRT_ICI_INT_MASK = 15'b001000000000000; 
-	const integer FRT_OCI_INT = 13; const bit [14:0] FRT_OCI_INT_MASK = 15'b010000000000000; 
-	const integer FRT_OVI_INT = 14; const bit [14:0] FRT_OVI_INT_MASK = 15'b100000000000000; 
+	const integer NMI_INT     = 0;
+	const integer UBC_INT     = 1;
+	const integer IRL_INT     = 2; 
+	const integer DIVU_INT    = 3;
+	const integer DMAC0_INT   = 4;
+	const integer DMAC1_INT   = 5;
+	const integer WDT_INT     = 6;
+	const integer BSC_INT     = 7;
+	const integer SCI_ERI_INT = 8;
+	const integer SCI_RXI_INT = 9;
+	const integer SCI_TXI_INT = 10;
+	const integer SCI_TEI_INT = 11;
+	const integer FRT_ICI_INT = 12;
+	const integer FRT_OCI_INT = 13;
+	const integer FRT_OVI_INT = 14;
 	
 	bit [ 3:0] LVL;
 	bit [ 7:0] VEC;
@@ -166,24 +166,40 @@ module INTC (
 	end
 	
 	always_comb begin
-		case (INT_PEND)
-			NMI_INT_MASK:     begin INT_LVL <= 4'hF;        INT_VEC <= 8'd11;              end
-			UBC_INT_MASK:     begin INT_LVL <= 4'hF;        INT_VEC <= 8'd12;              end
-			IRL_INT_MASK:     begin INT_LVL <= IRL_LVL;     INT_VEC <= IRL_VEC;            end
-			DIVU_INT_MASK:    begin INT_LVL <= IPRA.DIVUIP; INT_VEC <= DIVU_VEC;           end
-			DMAC0_INT_MASK:   begin INT_LVL <= IPRA.DMACIP; INT_VEC <= DMAC0_VEC;          end
-			DMAC1_INT_MASK:   begin INT_LVL <= IPRA.DMACIP; INT_VEC <= DMAC1_VEC;          end
-			WDT_INT_MASK:     begin INT_LVL <= IPRA.WDTIP;  INT_VEC <= {1'b0,VCRWDT.WITV}; end
-			BSC_INT_MASK:     begin INT_LVL <= IPRA.WDTIP;  INT_VEC <= {1'b0,VCRWDT.BCMV}; end
-			SCI_ERI_INT_MASK: begin INT_LVL <= IPRB.SCIIP;  INT_VEC <= {1'b0,VCRA.SERV};   end
-			SCI_RXI_INT_MASK: begin INT_LVL <= IPRB.SCIIP;  INT_VEC <= {1'b0,VCRA.SRXV};   end
-			SCI_TXI_INT_MASK: begin INT_LVL <= IPRB.SCIIP;  INT_VEC <= {1'b0,VCRB.STXV};   end
-			SCI_TEI_INT_MASK: begin INT_LVL <= IPRB.SCIIP;  INT_VEC <= {1'b0,VCRB.STEV};   end
-			FRT_ICI_INT_MASK: begin INT_LVL <= IPRB.FRTIP;  INT_VEC <= {1'b0,VCRC.FICV};   end
-			FRT_OCI_INT_MASK: begin INT_LVL <= IPRB.FRTIP;  INT_VEC <= {1'b0,VCRC.FOCV};   end
-			FRT_OVI_INT_MASK: begin INT_LVL <= IPRB.FRTIP;  INT_VEC <= {1'b0,VCRD.FOVV};   end
-			default:          begin INT_LVL <= 4'hF;        INT_VEC <= 8'd0;               end
-		endcase
+		if      (INT_PEND[NMI_INT])     begin INT_LVL <= 4'hF;        INT_VEC <= 8'd11;              end
+		else if (INT_PEND[UBC_INT])     begin INT_LVL <= 4'hF;        INT_VEC <= 8'd12;              end
+		else if (INT_PEND[IRL_INT])     begin INT_LVL <= IRL_LVL;     INT_VEC <= IRL_VEC;            end
+		else if (INT_PEND[DIVU_INT])    begin INT_LVL <= IPRA.DIVUIP; INT_VEC <= DIVU_VEC;           end
+		else if (INT_PEND[DMAC0_INT])   begin INT_LVL <= IPRA.DMACIP; INT_VEC <= DMAC0_VEC;          end
+		else if (INT_PEND[DMAC1_INT])   begin INT_LVL <= IPRA.DMACIP; INT_VEC <= DMAC1_VEC;          end
+		else if (INT_PEND[WDT_INT])     begin INT_LVL <= IPRA.WDTIP;  INT_VEC <= {1'b0,VCRWDT.WITV}; end
+		else if (INT_PEND[BSC_INT])     begin INT_LVL <= IPRA.WDTIP;  INT_VEC <= {1'b0,VCRWDT.BCMV}; end
+		else if (INT_PEND[SCI_ERI_INT]) begin INT_LVL <= IPRB.SCIIP;  INT_VEC <= {1'b0,VCRA.SERV};   end
+		else if (INT_PEND[SCI_RXI_INT]) begin INT_LVL <= IPRB.SCIIP;  INT_VEC <= {1'b0,VCRA.SRXV};   end
+		else if (INT_PEND[SCI_TXI_INT]) begin INT_LVL <= IPRB.SCIIP;  INT_VEC <= {1'b0,VCRB.STXV};   end
+		else if (INT_PEND[SCI_TEI_INT]) begin INT_LVL <= IPRB.SCIIP;  INT_VEC <= {1'b0,VCRB.STEV};   end
+		else if (INT_PEND[FRT_ICI_INT]) begin INT_LVL <= IPRB.FRTIP;  INT_VEC <= {1'b0,VCRC.FICV};   end
+		else if (INT_PEND[FRT_OCI_INT]) begin INT_LVL <= IPRB.FRTIP;  INT_VEC <= {1'b0,VCRC.FOCV};   end
+		else if (INT_PEND[FRT_OVI_INT]) begin INT_LVL <= IPRB.FRTIP;  INT_VEC <= {1'b0,VCRD.FOVV};   end
+		else                            begin INT_LVL <= 4'hF;        INT_VEC <= 8'd0;               end
+//		case (INT_PEND)
+//			NMI_INT_MASK:     begin INT_LVL <= 4'hF;        INT_VEC <= 8'd11;              end
+//			UBC_INT_MASK:     begin INT_LVL <= 4'hF;        INT_VEC <= 8'd12;              end
+//			IRL_INT_MASK:     begin INT_LVL <= IRL_LVL;     INT_VEC <= IRL_VEC;            end
+//			DIVU_INT_MASK:    begin INT_LVL <= IPRA.DIVUIP; INT_VEC <= DIVU_VEC;           end
+//			DMAC0_INT_MASK:   begin INT_LVL <= IPRA.DMACIP; INT_VEC <= DMAC0_VEC;          end
+//			DMAC1_INT_MASK:   begin INT_LVL <= IPRA.DMACIP; INT_VEC <= DMAC1_VEC;          end
+//			WDT_INT_MASK:     begin INT_LVL <= IPRA.WDTIP;  INT_VEC <= {1'b0,VCRWDT.WITV}; end
+//			BSC_INT_MASK:     begin INT_LVL <= IPRA.WDTIP;  INT_VEC <= {1'b0,VCRWDT.BCMV}; end
+//			SCI_ERI_INT_MASK: begin INT_LVL <= IPRB.SCIIP;  INT_VEC <= {1'b0,VCRA.SERV};   end
+//			SCI_RXI_INT_MASK: begin INT_LVL <= IPRB.SCIIP;  INT_VEC <= {1'b0,VCRA.SRXV};   end
+//			SCI_TXI_INT_MASK: begin INT_LVL <= IPRB.SCIIP;  INT_VEC <= {1'b0,VCRB.STXV};   end
+//			SCI_TEI_INT_MASK: begin INT_LVL <= IPRB.SCIIP;  INT_VEC <= {1'b0,VCRB.STEV};   end
+//			FRT_ICI_INT_MASK: begin INT_LVL <= IPRB.FRTIP;  INT_VEC <= {1'b0,VCRC.FICV};   end
+//			FRT_OCI_INT_MASK: begin INT_LVL <= IPRB.FRTIP;  INT_VEC <= {1'b0,VCRC.FOCV};   end
+//			FRT_OVI_INT_MASK: begin INT_LVL <= IPRB.FRTIP;  INT_VEC <= {1'b0,VCRD.FOVV};   end
+//			default:          begin INT_LVL <= 4'hF;        INT_VEC <= 8'd0;               end
+//		endcase
 	end
 	
 	bit [3:0] VBA;

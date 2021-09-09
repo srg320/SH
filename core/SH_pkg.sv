@@ -302,7 +302,7 @@ package SH2_PKG;
 							4'b0001: begin	//STS MACL,Rn
 								DECI.RA = '{RAN, 0, 1};
 								DECI.MEM.SZ = 2'b10;
-								DECI.MAC = '{{~IR[4],IR[4]}, 1, 0, 4'b0000};
+								DECI.MAC = '{{~IR[4],IR[4]}, 1, 0, 4'b1100};
 							end
 							4'b0010: begin	//STS PR,Rn
 								DECI.RA = '{RAN, 0, 1};
@@ -569,7 +569,7 @@ package SH2_PKG;
 						DECI.IMMT = ONE;
 						DECI.ALU = '{0, 1, ADD, 4'b0001, 3'b000};
 						DECI.MEM = '{ALURES, ALUB, 2'b10, 0, 1};
-						DECI.MAC = '{{~IR[4],IR[4]}, 1, 0, 4'b1111};
+						DECI.MAC = '{{~IR[4],IR[4]}, 1, 0, 4'b1110};
 					end
 					8'b00100010: begin	//STS.L PR,@-Rn
 						DECI.RA = '{RAN, 1, 1};
@@ -660,7 +660,7 @@ package SH2_PKG;
 					8'b00011010: begin	//LDS Rm,MACL
 						DECI.RA = '{RAN, 1, 0};
 						DECI.MEM = '{ALURES, ALUA, 2'b10, 0, 0};
-						DECI.MAC = '{{~IR[4],IR[4]}, 0, 1, 4'b0000};
+						DECI.MAC = '{{~IR[4],IR[4]}, 0, 1, 4'b0100};
 					end
 					8'b00101010: begin	//LDS Rm,PR
 						DECI.RA = '{RAN, 1, 0};

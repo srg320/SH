@@ -1,6 +1,4 @@
-import SH7604_PKG::*;
-
-module MULT (
+module SH7604_MULT (
 	input             CLK,
 	input             RST_N,
 	input             CE_R,
@@ -22,6 +20,8 @@ module MULT (
 	input             MAC_WE
 );
 
+	import SH7604_PKG::*;
+	
 	bit [31:0] MACL;
 	bit [31:0] MACH;
 	bit [31:0] MA;
@@ -58,7 +58,7 @@ module MULT (
 		else begin
 			if (MAC_SEL && MAC_WE && CE_R) begin
 				case (MAC_OP) 
-					4'b0000,			//LDS Rm,MACx
+					4'b0100,			//LDS Rm,MACx
 					4'b1000: begin	//LDS @Rm+,MACx
 						if (MAC_SEL[0]) MACL <= CBUS_DI;
 						if (MAC_SEL[1]) MACH <= CBUS_DI;
@@ -79,14 +79,14 @@ module MULT (
 						MUL_EXEC <= MAC_SEL[1];
 						SIGNED <= MAC_OP[0];
 					end
-					4'b1001: begin		//MAC.L
+					4'b1001: begin		//MAC.L @Rm+,@Rn+
 						if (MAC_SEL[0]) MA <= CBUS_DI;
 						if (MAC_SEL[1]) MB <= CBUS_DI;
 						MACL_EXEC <= MAC_SEL[1];
 						SIGNED <= MAC_OP[0];
 						SAT <= MAC_S;
 					end
-					4'b1011: begin		//MAC.W
+					4'b1011: begin		//MAC.W @Rm+,@Rn+
 						DW = !CBUS_A[1] ? CBUS_DI[31:16] : CBUS_DI[15:0];
 						if (MAC_SEL[0]) MA <= {{16{DW[15]&MAC_OP[0]}},DW};
 						if (MAC_SEL[1]) MB <= {{16{DW[15]&MAC_OP[0]}},DW};

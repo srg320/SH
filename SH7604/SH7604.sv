@@ -62,7 +62,7 @@ module SH7604 (
 	
 	input       [5:0] MD,
 	
-	output reg [15:0] HOOK
+	output reg        UNUSED_REQ
 );
 	import SH7604_PKG::*;
 	
@@ -211,10 +211,10 @@ module SH7604 (
 		.VECT_WAIT(VECT_WAIT)
 	);
 	
-	assign CBUS_DI = |MAC_SEL ? MULT_DO : CACHE_DO;
+	assign CBUS_DI = |MAC_SEL && MAC_OP == 4'b1100 && !MAC_WE ? MULT_DO : CACHE_DO;
 	
 	wire [31:0] MULT_DI = |MAC_SEL && MAC_OP[3:2] == 2'b10 ? CACHE_DO : CBUS_DO;
-	MULT mult
+	SH7604_MULT mult
 	(
 		.CLK(CLK),
 		.RST_N(RST_N),
@@ -237,18 +237,42 @@ module SH7604 (
 		.MAC_WE(MAC_WE)
 	);
 	
+	wire USED_ADDR = (CBUS_A >= 32'h00000000 && CBUS_A < 32'h00080000) || (CBUS_A >= 32'h20000000 && CBUS_A < 32'h20080000) ||
+	                 (CBUS_A >= 32'h00100000 && CBUS_A < 32'h00100080) || (CBUS_A >= 32'h20100000 && CBUS_A < 32'h20100080) ||
+						  (CBUS_A >= 32'h00180000 && CBUS_A < 32'h00190000) || (CBUS_A >= 32'h20180000 && CBUS_A < 32'h20190000) || 
+						  (CBUS_A >= 32'h00200000 && CBUS_A < 32'h00300000) || (CBUS_A >= 32'h20200000 && CBUS_A < 32'h20300000) || 
+						  (CBUS_A >= 32'h01000000 && CBUS_A < 32'h01000004) || (CBUS_A >= 32'h21000000 && CBUS_A < 32'h21000004) || 
+						  (CBUS_A >= 32'h01800000 && CBUS_A < 32'h01800004) || (CBUS_A >= 32'h21800000 && CBUS_A < 32'h21800004) || 
+						  (CBUS_A >= 32'h02000000 && CBUS_A < 32'h04000000) || (CBUS_A >= 32'h22000000 && CBUS_A < 32'h24000000) || 
+//						  (CBUS_A >= 32'h04000000 && CBUS_A < 32'h04000000) || (CBUS_A >= 32'h24000000 && CBUS_A < 32'h24000000) || 
+//						  (CBUS_A >= 32'h02000000 && CBUS_A < 32'h05000000) || (CBUS_A >= 32'h22000000 && CBUS_A < 32'h25000000) || 
+//						  (CBUS_A >= 32'h05000000 && CBUS_A < 32'h05800000) || (CBUS_A >= 32'h25000000 && CBUS_A < 32'h25800000) || 
+						  (CBUS_A >= 32'h05800000 && CBUS_A < 32'h05900000) || (CBUS_A >= 32'h25800000 && CBUS_A < 32'h25900000) || 
+						  (CBUS_A >= 32'h05A00000 && CBUS_A < 32'h05B00EE4) || (CBUS_A >= 32'h25A00000 && CBUS_A < 32'h25B00EE4) || 
+						  (CBUS_A >= 32'h05C00000 && CBUS_A < 32'h05CC0000) || (CBUS_A >= 32'h25C00000 && CBUS_A < 32'h25CC0000) || 
+						  (CBUS_A >= 32'h05D00000 && CBUS_A < 32'h05D00018) || (CBUS_A >= 32'h25D00000 && CBUS_A < 32'h25D00018) || 
+						  (CBUS_A >= 32'h05E00000 && CBUS_A < 32'h05E80000) || (CBUS_A >= 32'h25E00000 && CBUS_A < 32'h25E80000) || 
+						  (CBUS_A >= 32'h05F00000 && CBUS_A < 32'h05F01000) || (CBUS_A >= 32'h25F00000 && CBUS_A < 32'h25F01000) || 
+						  (CBUS_A >= 32'h05F80000 && CBUS_A < 32'h05F80120) || (CBUS_A >= 32'h25F80000 && CBUS_A < 32'h25F80120) || 
+						  (CBUS_A >= 32'h05FE0000 && CBUS_A < 32'h05FE00D0) || (CBUS_A >= 32'h25FE0000 && CBUS_A < 32'h25FE00D0) || 
+						  (CBUS_A >= 32'h06000000 && CBUS_A < 32'h06100000) || (CBUS_A >= 32'h26000000 && CBUS_A < 32'h26100000) || 
+						  (CBUS_A >= 32'h40000000 && CBUS_A < 32'h48000000) || 
+						  (CBUS_A >= 32'h60000000 && CBUS_A < 32'h80000000) || 
+//						  (CBUS_A >= 32'hC0000000 && CBUS_A < 32'hC0001000) || 
+						  (CBUS_A >= 32'hFFFF8000 && CBUS_A < 32'hFFFFC000) || 
+						  (CBUS_A >= 32'hFFFFFE00);
 	always @(posedge CLK or negedge RST_N) begin
 		if (!RST_N) begin
-			HOOK <= '0;
+			UNUSED_REQ <= '0;
 		end
 		else if (CE_F) begin	
-			if (CBUS_A == 32'h060037E8 && CBUS_REQ && !CBUS_WR) HOOK <= '0;
-			else if (CBUS_A == 32'h060037EC && CBUS_REQ && !CBUS_WR) HOOK <= HOOK + 16'd1;
+			if (CBUS_REQ) UNUSED_REQ <= ~USED_ADDR;
+//			else if (CBUS_A == 32'h060037EC && CBUS_REQ && !CBUS_WR) HOOK <= HOOK + 16'd1;
 		end
 	end
 	
-	assign CACHE_DI = MAC_OP == 4'b1111 && !MAC_WE ? MULT_DO : CBUS_DO;
-	CACHE cache
+	assign CACHE_DI = |MAC_SEL && MAC_OP == 4'b1110 && !MAC_WE ? MULT_DO : CBUS_DO;
+	SH7604_CACHE cache
 	(
 		.CLK(CLK),
 		.RST_N(RST_N & RES_N),
@@ -287,7 +311,7 @@ module SH7604 (
 	assign IBUS_WAIT = DMAC_BUSY | INTC_BUSY;
 
 	
-	UBC UBC
+	SH7604_UBC UBC
 	(
 		.CLK(CLK),
 		.RST_N(RST_N),
@@ -376,7 +400,7 @@ module SH7604 (
 	bit         IRD_N;
 	bit         IIVECF_N;
 	bit         BUS_RLS;
-	BSC #(.AREA3(0), .W3(1), .IW3(0), .LW3(0)) bsc
+	SH7604_BSC #(.AREA3(0), .W3(1), .IW3(0), .LW3(0)) bsc
 	(
 		.CLK(CLK),
 		.RST_N(RST_N),
@@ -432,7 +456,7 @@ module SH7604 (
 	assign EDI = DI;
 	
 	
-	INTC intc
+	SH7604_INTC intc
 	(
 		.CLK(CLK),
 		.RST_N(RST_N),
@@ -484,7 +508,7 @@ module SH7604 (
 		.VBUS_WAIT(VBUS_BUSY)
 	);
 	
-	DIVU divu
+	SH7604_DIVU divu
 	(
 		.CLK(CLK),
 		.RST_N(RST_N),
@@ -577,7 +601,7 @@ module SH7604 (
 		.ERI_IRQ(ERI_IRQ)
 	);
 	
-	FRT frt
+	SH7604_FRT frt
 	(
 		.CLK(CLK),
 		.RST_N(RST_N),
@@ -610,7 +634,7 @@ module SH7604 (
 		.OVI_IRQ(OVI_IRQ)
 	);
 	
-	WDT wdt
+	SH7604_WDT wdt
 	(
 		.CLK(CLK),
 		.RST_N(RST_N),

@@ -1,6 +1,4 @@
-import SH7604_PKG::*;
-
-module UBC (
+module SH7604_UBC (
 	input             CLK,
 	input             RST_N,
 	input             CE_R,
@@ -19,6 +17,8 @@ module UBC (
 	
 	output            IRQ
 );
+
+	import SH7604_PKG::*;
 
 	BARx_t      BARAH;
 	BARx_t      BARAL;

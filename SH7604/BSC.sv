@@ -1,6 +1,4 @@
-import SH7604_PKG::*;
-
-module BSC 
+module SH7604_BSC 
 #(parameter bit AREA3=0, bit [1:0] W3=0, bit [1:0] IW3=0, bit [1:0] LW3=0)
 (
 	input             CLK,
@@ -49,6 +47,8 @@ module BSC
 	output reg        CACK,
 	output            BUS_RLS
 );
+
+	import SH7604_PKG::*;
 
 	BCR1_t      BCR1;
 	BCR2_t      BCR2;
@@ -139,9 +139,6 @@ module BSC
 		bit [31:0] IBUS_DI_SAVE;
 		bit        IBUS_WE_SAVE;
 		bit  [1:0] AREA_SZ;
-//		bit        RD_LAST;
-//		bit  [1:0] CS_LAST;
-//		bit        NO_IDLE;
 		
 		if (!RST_N) begin
 			BUSY <= 0;
@@ -160,11 +157,8 @@ module BSC
 			BUS_STATE <= T0;
 			WAIT_CNT <= '0;
 			NEXT_BA <= '0;
-//			RD_LAST <= 0;
-//			CS_LAST <= '0;
 		end
 		else begin
-//			NO_IDLE = 0;
 			AREA_SZ = GetAreaSZ(A[26:25],BCR2,A0_SZ);
 			STATE_NEXT = BUS_STATE;
 			case (BUS_STATE)
@@ -242,8 +236,6 @@ module BSC
 						WE_N <= 4'b1111;
 						RD_N <= 1;
 						CACK <= 0;
-//						RD_LAST <= ~RD_N;
-//						CS_LAST <= A[26:25];
 					end
 					else if (CE_R) begin
 						if (!NEXT_BA) begin
@@ -254,42 +246,20 @@ module BSC
 							IVECF_N <= 1;
 							RD_WR_N <= 1;
 						end
-//						if (IBUS_A[31:27] ==? 5'b00?00 && IBUS_REQ && (IBUS_A[26:25] != CS_LAST || (RD_LAST && IBUS_WE))) begin	
-//							WAIT_CNT <= 3'd0;
-//							case (BSC_GetAreaIW(A[26:25],WCR))
-//								2'b00: begin
-									STATE_NEXT = T0;
-//									NO_IDLE = 1;
-//								end
-//								2'b01: begin
-//									WAIT_CNT <= 3'd0;
-//									STATE_NEXT = TI;
-//								end
-//								2'b10: begin
-//									WAIT_CNT <= 3'd1;
-//									STATE_NEXT = TI;
-//								end
-//								default:;
-//							endcase
-//						end
-//						else begin
-//							STATE_NEXT = T0;
-//							NO_IDLE = 1;
-//						end
+						STATE_NEXT = T0;
 					end
 				end
 				
-				TI: begin
-					if (CE_R) begin
-						if (WAIT_CNT) begin
-							WAIT_CNT <= WAIT_CNT - 3'd1;
-						end
-						else begin
-							STATE_NEXT = T0;
-						end
-//						NO_IDLE = ~(IBUS_A[31:27] ==? 5'b00?00 && IBUS_REQ && (IBUS_A[26:25] != CS_LAST || (RD_LAST && IBUS_WE)));
-					end
-				end
+//				TI: begin
+//					if (CE_R) begin
+//						if (WAIT_CNT) begin
+//							WAIT_CNT <= WAIT_CNT - 3'd1;
+//						end
+//						else begin
+//							STATE_NEXT = T0;
+//						end
+//					end
+//				end
 				
 				default:;
 			endcase
@@ -348,7 +318,7 @@ module BSC
 						VBUSY <= VBUS_REQ;
 						
 						VBUS_ACTIVE <= 0;
-						if (!VBUS_REQ) begin
+						if (!VBUS_REQ || IBUS_LOCK) begin
 							case (GetAreaSZ(IBUS_A[26:25],BCR2,A0_SZ))
 								2'b01: begin 
 									case (IBUS_A[1:0])
@@ -428,7 +398,7 @@ module BSC
 							VBUS_ACTIVE <= 1;
 						end
 						
-						if (BUS_STATE == T0 || (BUS_STATE == T2 /*&& NO_IDLE*/) /*|| (BUS_STATE == TI && !WAIT_CNT)*/) begin
+						if (BUS_STATE == T0 || BUS_STATE == T2 /*|| (BUS_STATE == TI && !WAIT_CNT)*/) begin
 							STATE_NEXT = T1;
 						end
 					end
@@ -442,7 +412,7 @@ module BSC
 	end
 	
 	assign VBUS_DO = VEC_BUF;
-	assign VBUS_BUSY = VBUSY | ((BUS_RLS | BGR /*| (~VBUSY & DBUSY)*/) & VBUS_REQ);
+	assign VBUS_BUSY = VBUSY | ((BUS_RLS | BGR) & VBUS_REQ);
 		
 	bit MST_BUS_RLS;
 	bit SLV_BUS_RLS;
@@ -502,9 +472,6 @@ module BSC
 			RTCSR <= RTCSR_INIT;
 			RTCNT <= RTCNT_INIT;
 			RTCOR <= RTCOR_INIT;
-			// synopsys translate_off
-			WCR <= 16'hA00;
-			// synopsys translate_on
 		end
 		else if (CE_R) begin
 			if (REG_SEL && IBUS_DI[31:16] == 16'hA55A && IBUS_WE && IBUS_REQ) begin

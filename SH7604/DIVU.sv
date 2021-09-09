@@ -1,6 +1,4 @@
-import SH7604_PKG::*;
-
-module DIVU (
+module SH7604_DIVU (
 	input             CLK,
 	input             RST_N,
 	input             CE_R,
@@ -21,6 +19,8 @@ module DIVU (
 	output      [7:0] VEC
 );
 
+	import SH7604_PKG::*;
+	
 	DVSR_t      DVSR;
 	DVDNT_t     DVDNTL;
 	DVDNT_t     DVDNTH;

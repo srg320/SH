@@ -1,6 +1,4 @@
-import SH7604_PKG::*;
-
-module FRT (
+module SH7604_FRT (
 	input             CLK,
 	input             RST_N,
 	input             CE_R,
@@ -32,6 +30,8 @@ module FRT (
 	output            OVI_IRQ
 );
 
+	import SH7604_PKG::*;
+	
 	FRC_t       FRC;
 	OCR_t       OCRA;
 	OCR_t       OCRB;
@@ -63,6 +63,7 @@ module FRT (
 	
 	wire REG_SEL = (IBUS_A >= 32'hFFFFFE10 && IBUS_A <= 32'hFFFFFE19);
 	wire FTCSR_WRITE = REG_SEL && IBUS_A[3:0] == 4'h1 && IBUS_WE && IBUS_REQ;
+	wire FTCSR_READ = REG_SEL && IBUS_A[3:0] == 4'h1 && !IBUS_WE && IBUS_REQ;
 	always @(posedge CLK or negedge RST_N) begin
 		if (!RST_N) begin
 			FTCSR.OCFA <= 0;
@@ -95,20 +96,34 @@ module FRT (
 	
 	wire ICR_READ = REG_SEL && IBUS_A[3:0] == 4'h9 && !IBUS_WE && IBUS_REQ;
 	always @(posedge CLK or negedge RST_N) begin
-		bit         FTI_OLD;
 		bit         CAPT;
+		bit         FTI_OLD;
+		bit         ICF_CLEAR_PEND;
+		bit         ICR_READ_OLD;
+		bit         FTCSR_READ_OLD;
+		bit         FTCSR_WRITE_OLD;
 		
 		if (!RST_N) begin
 			ICR <= 16'h0000;
 			FTCSR.ICF <= 0;
 			CAPT <= 0;
 			FTI_OLD <= 0;
+//			ICF_CLEAR_PEND <= 0;
+//			ICR_READ_OLD <= 0;
+//			FTCSR_WRITE_OLD <= 0;
+		end
+		else if (CE_F) begin
+			FTCSR_READ_OLD <= FTCSR_READ;
+			if (!FTCSR_READ && FTCSR_READ_OLD) begin
+				ICF_CLEAR_PEND <= FTCSR.ICF;
+			end
 		end
 		else if (CE_R) begin
 			FTI_OLD <= FTI;
 			CAPT <= ~(FTI ^ TCR.IEDG) & (FTI_OLD ^ TCR.IEDG);
 			
-			if (ICR_READ && CAPT) begin
+			ICR_READ_OLD <= ICR_READ;
+			if (ICR_READ && !ICR_READ_OLD && CAPT) begin
 				CAPT <= 1;
 			end
 			else if (CAPT) begin
@@ -116,8 +131,10 @@ module FRT (
 				FTCSR.ICF <= 1;
 			end
 			
-			if (FTCSR_WRITE) begin
-				if (!IBUS_DI[23] && FTCSR.ICF) FTCSR.ICF <= 0;
+			FTCSR_WRITE_OLD <= FTCSR_WRITE;
+			if (FTCSR_WRITE && !FTCSR_WRITE_OLD) begin
+				if (!IBUS_DI[23] && ICF_CLEAR_PEND) FTCSR.ICF <= 0;
+				ICF_CLEAR_PEND <= 0;
 			end
 		end
 	end
