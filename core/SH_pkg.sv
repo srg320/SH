@@ -1114,7 +1114,53 @@ package SH2_PKG;
 			
 			4'b1111:	begin	
 				case (IR[11:8])
-					4'b0000:	begin	//Interrupt
+					4'b0000:	begin	//Reset Exeption
+						case (STATE)
+							3'd0: begin
+//								DECI.CTRL = '{1, SR_, IMSK};
+//								DECI.IACK = 1;
+							end
+							3'd1: begin
+								DECI.DP.RSC = RSC_IMM;
+								DECI.IMMT = ZERO;
+								DECI.ALU = '{0, 1, NOP, 4'b0000, 3'b000};
+								DECI.CTRL = '{1, VBR_, LOAD};
+							end
+							3'd2: begin
+								DECI.DP.BPMAB = 1;
+								DECI.DP.RSC = RSC_IMM;
+								DECI.IMMT = VECT;
+								DECI.ALU = '{1, 0, ADD, 4'b0000, 3'b000};
+								DECI.MEM = '{ALURES, ALUB, 2'b10, 1, 0};
+							end
+							3'd3: begin
+								DECI.DP.BPMAB = 1;
+								DECI.DP.RSC = RSC_IMM;
+								DECI.IMMT = ONE;
+								DECI.ALU = '{1, 0, ADD, 4'b0000, 3'b000};
+								DECI.MEM = '{ALURES, ALUB, 2'b10, 1, 0};
+							end
+							3'd4: begin
+								DECI.DP.BPLDA = 1;
+								DECI.DP.RSC = RSC_IMM;
+								DECI.IMMT = ZERO;
+								DECI.ALU = '{0, 1, ADD, 4'b0000, 3'b000};
+								DECI.PCW = 1;
+								DECI.BR = '{1, UCB, 0, 0, 0};
+							end
+							3'd5: begin
+								DECI.RA = '{SP, 0, 1};
+								DECI.DP.BPLDA = 1;
+								DECI.DP.RSC = RSC_IMM;
+								DECI.IMMT = ZERO;
+								DECI.ALU = '{0, 1, ADD, 4'b0000, 3'b000};
+								DECI.BR = '{0, UCB, 0, 0, 0};
+							end
+							default:;
+						endcase
+						DECI.LST = 3'd5;
+					end
+					4'b0001:	begin	//Interrupt Exeption
 						case (STATE)
 							3'd0: begin
 								DECI.IACK = 1;
@@ -1166,33 +1212,40 @@ package SH2_PKG;
 						endcase
 						DECI.LST = 3'd7;
 					end
-					4'b0001:	begin	//RESET
+					4'b0010:	begin	//Illegal Slot/Instruction Exeption
 						case (STATE)
 							3'd0: begin
-//								DECI.CTRL = '{1, SR_, IMSK};
-//								DECI.IACK = 1;
+								DECI.IACK = 1;
 							end
 							3'd1: begin
+								DECI.RA = '{SP, 1, 1};
+								DECI.DP.RSB = SCR;
+								DECI.CTRL.S = SR_;
 								DECI.DP.RSC = RSC_IMM;
-								DECI.IMMT = ZERO;
-								DECI.ALU = '{0, 1, NOP, 4'b0000, 3'b000};
-								DECI.CTRL = '{1, VBR_, LOAD};
+								DECI.IMMT = ONE;
+								DECI.ALU = '{0, 1, ADD, 4'b0001, 3'b000};
+								DECI.MEM = '{ALURES, ALUB, 2'b10, 0, 1};
 							end
 							3'd2: begin
-								DECI.DP.BPMAB = 1;
+								DECI.RA = '{SP, 1, 1};
+								DECI.DP.RSB = IPC;
+								DECI.DP.RSC = RSC_IMM;
+								DECI.IMMT = ONE;
+								DECI.ALU = '{0, 1, ADD, 4'b0001, 3'b000};
+								DECI.MEM = '{ALURES, ALUB, 2'b10, 0, 1};
+							end
+							3'd3: begin
+								DECI.DP.RSB = SCR;
+								DECI.CTRL.S = VBR_;
 								DECI.DP.RSC = RSC_IMM;
 								DECI.IMMT = VECT;
 								DECI.ALU = '{1, 0, ADD, 4'b0000, 3'b000};
 								DECI.MEM = '{ALURES, ALUB, 2'b10, 1, 0};
 							end
-							3'd3: begin
-								DECI.DP.BPMAB = 1;
-								DECI.DP.RSC = RSC_IMM;
-								DECI.IMMT = ONE;
-								DECI.ALU = '{1, 0, ADD, 4'b0000, 3'b000};
-								DECI.MEM = '{ALURES, ALUB, 2'b10, 1, 0};
-							end
 							3'd4: begin
+								
+							end
+							3'd5: begin
 								DECI.DP.BPLDA = 1;
 								DECI.DP.RSC = RSC_IMM;
 								DECI.IMMT = ZERO;
@@ -1200,17 +1253,12 @@ package SH2_PKG;
 								DECI.PCW = 1;
 								DECI.BR = '{1, UCB, 0, 0, 0};
 							end
-							3'd5: begin
-								DECI.RA = '{SP, 0, 1};
-								DECI.DP.BPLDA = 1;
-								DECI.DP.RSC = RSC_IMM;
-								DECI.IMMT = ZERO;
-								DECI.ALU = '{0, 1, ADD, 4'b0000, 3'b000};
+							3'd6: begin
 								DECI.BR = '{0, UCB, 0, 0, 0};
 							end
 							default:;
 						endcase
-						DECI.LST = 3'd5;
+						DECI.LST = 3'd6;
 					end
 					default: DECI.ILI = 1;
 				endcase

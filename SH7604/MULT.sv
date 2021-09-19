@@ -70,7 +70,7 @@ module SH7604_MULT (
 						if (MAC_SEL[1]) MB <= CBUS_DI;
 						MUL_EXEC <= MAC_SEL[1] & ~MAC_OP[1];
 						DMUL_EXEC <= MAC_SEL[1] & MAC_OP[1];
-						SIGNED <= MAC_OP[0];
+						SIGNED <= MAC_OP[0] & MAC_OP[1];
 					end
 					4'b0110,				//MULU.W
 					4'b0111: begin		//MULS.W

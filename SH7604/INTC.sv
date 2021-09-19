@@ -124,12 +124,12 @@ module SH7604_INTC (
 			IRL_REQ <= 0;
 			if (IRL_OLD[0] == ~IRL_N && IRL_OLD[1] == ~IRL_N && IRL_OLD[2] == ~IRL_N && IRL_OLD[3] == ~IRL_N && !(&IRL_N)) begin
 				IRL_REQ <= 1;
-			end
 				IRL_LVL <= ~IRL_N;
+			end
 		end
 	end
 	
-	wire [7:0] IRL_VEC = !ICR.VECMD ? {5'b01000,IRL_LVL[3:1]} : VBUS_DI;
+	bit [3:0] LVL_SAVE;
 	always @(posedge CLK or negedge RST_N) begin
 		bit INT_CLR;
 		if (!RST_N) begin
@@ -137,21 +137,21 @@ module SH7604_INTC (
 			INT_PEND <= '0;
 		end else if (CE_R) begin	
 			if (!INT_REQ) begin
-				if (NMI_REQ)                                    begin INT_REQ <= 1; INT_PEND[NMI_INT]     <= 1; end
-				else if (UBC_IRQ     && 4'hF        > INT_MASK) begin INT_REQ <= 1; INT_PEND[UBC_INT]     <= 1; end
-				else if (IRL_REQ     && IRL_LVL     > INT_MASK) begin INT_REQ <= 1; INT_PEND[IRL_INT]     <= 1; end
-				else if (DIVU_IRQ    && IPRA.DIVUIP > INT_MASK) begin INT_REQ <= 1; INT_PEND[DIVU_INT]    <= 1; end
-				else if (DMAC0_IRQ   && IPRA.DMACIP > INT_MASK) begin INT_REQ <= 1; INT_PEND[DMAC0_INT]   <= 1; end
-				else if (DMAC1_IRQ   && IPRA.DMACIP > INT_MASK) begin INT_REQ <= 1; INT_PEND[DMAC1_INT]   <= 1; end
-				else if (WDT_IRQ     && IPRA.WDTIP  > INT_MASK) begin INT_REQ <= 1; INT_PEND[WDT_INT]     <= 1; end
-				else if (BSC_IRQ     && IPRA.WDTIP  > INT_MASK) begin INT_REQ <= 1; INT_PEND[BSC_INT]     <= 1; end
-				else if (SCI_ERI_IRQ && IPRB.SCIIP  > INT_MASK) begin INT_REQ <= 1; INT_PEND[SCI_ERI_INT] <= 1; end
-				else if (SCI_RXI_IRQ && IPRB.SCIIP  > INT_MASK) begin INT_REQ <= 1; INT_PEND[SCI_RXI_INT] <= 1; end
-				else if (SCI_TXI_IRQ && IPRB.SCIIP  > INT_MASK) begin INT_REQ <= 1; INT_PEND[SCI_TXI_INT] <= 1; end
-				else if (SCI_TEI_IRQ && IPRB.SCIIP  > INT_MASK) begin INT_REQ <= 1; INT_PEND[SCI_TEI_INT] <= 1; end
-				else if (FRT_ICI_IRQ && IPRB.FRTIP  > INT_MASK) begin INT_REQ <= 1; INT_PEND[FRT_ICI_INT] <= 1; end
-				else if (FRT_OCI_IRQ && IPRB.FRTIP  > INT_MASK) begin INT_REQ <= 1; INT_PEND[FRT_OCI_INT] <= 1; end
-				else if (FRT_OVI_IRQ && IPRB.FRTIP  > INT_MASK) begin INT_REQ <= 1; INT_PEND[FRT_OVI_INT] <= 1; end
+				if (NMI_REQ)                                    begin INT_REQ <= 1; INT_PEND[NMI_INT]     <= 1; LVL_SAVE <= 4'hF; end
+				else if (UBC_IRQ     && 4'hF        > INT_MASK) begin INT_REQ <= 1; INT_PEND[UBC_INT]     <= 1; LVL_SAVE <= 4'hF; end
+				else if (IRL_REQ     && IRL_LVL     > INT_MASK) begin INT_REQ <= 1; INT_PEND[IRL_INT]     <= 1; LVL_SAVE <= IRL_LVL; end
+				else if (DIVU_IRQ    && IPRA.DIVUIP > INT_MASK) begin INT_REQ <= 1; INT_PEND[DIVU_INT]    <= 1; LVL_SAVE <= IPRA.DIVUIP; end
+				else if (DMAC0_IRQ   && IPRA.DMACIP > INT_MASK) begin INT_REQ <= 1; INT_PEND[DMAC0_INT]   <= 1; LVL_SAVE <= IPRA.DMACIP; end
+				else if (DMAC1_IRQ   && IPRA.DMACIP > INT_MASK) begin INT_REQ <= 1; INT_PEND[DMAC1_INT]   <= 1; LVL_SAVE <= IPRA.DMACIP; end
+				else if (WDT_IRQ     && IPRA.WDTIP  > INT_MASK) begin INT_REQ <= 1; INT_PEND[WDT_INT]     <= 1; LVL_SAVE <= IPRA.WDTIP; end
+				else if (BSC_IRQ     && IPRA.WDTIP  > INT_MASK) begin INT_REQ <= 1; INT_PEND[BSC_INT]     <= 1; LVL_SAVE <= IPRA.WDTIP; end
+				else if (SCI_ERI_IRQ && IPRB.SCIIP  > INT_MASK) begin INT_REQ <= 1; INT_PEND[SCI_ERI_INT] <= 1; LVL_SAVE <= IPRB.SCIIP; end
+				else if (SCI_RXI_IRQ && IPRB.SCIIP  > INT_MASK) begin INT_REQ <= 1; INT_PEND[SCI_RXI_INT] <= 1; LVL_SAVE <= IPRB.SCIIP; end
+				else if (SCI_TXI_IRQ && IPRB.SCIIP  > INT_MASK) begin INT_REQ <= 1; INT_PEND[SCI_TXI_INT] <= 1; LVL_SAVE <= IPRB.SCIIP; end
+				else if (SCI_TEI_IRQ && IPRB.SCIIP  > INT_MASK) begin INT_REQ <= 1; INT_PEND[SCI_TEI_INT] <= 1; LVL_SAVE <= IPRB.SCIIP; end
+				else if (FRT_ICI_IRQ && IPRB.FRTIP  > INT_MASK) begin INT_REQ <= 1; INT_PEND[FRT_ICI_INT] <= 1; LVL_SAVE <= IPRB.FRTIP; end
+				else if (FRT_OCI_IRQ && IPRB.FRTIP  > INT_MASK) begin INT_REQ <= 1; INT_PEND[FRT_OCI_INT] <= 1; LVL_SAVE <= IPRB.FRTIP; end
+				else if (FRT_OVI_IRQ && IPRB.FRTIP  > INT_MASK) begin INT_REQ <= 1; INT_PEND[FRT_OVI_INT] <= 1; LVL_SAVE <= IPRB.FRTIP; end
 				else                                            begin INT_REQ <= 0; end
 			end else if (INT_CLR) begin
 				INT_REQ <= 0;
@@ -165,23 +165,24 @@ module SH7604_INTC (
 		end
 	end
 	
+	wire [7:0] IRL_VEC = !ICR.VECMD ? {5'b01000,IRL_LVL[3:1]} : VBUS_DI;
 	always_comb begin
-		if      (INT_PEND[NMI_INT])     begin INT_LVL <= 4'hF;        INT_VEC <= 8'd11;              end
-		else if (INT_PEND[UBC_INT])     begin INT_LVL <= 4'hF;        INT_VEC <= 8'd12;              end
-		else if (INT_PEND[IRL_INT])     begin INT_LVL <= IRL_LVL;     INT_VEC <= IRL_VEC;            end
-		else if (INT_PEND[DIVU_INT])    begin INT_LVL <= IPRA.DIVUIP; INT_VEC <= DIVU_VEC;           end
-		else if (INT_PEND[DMAC0_INT])   begin INT_LVL <= IPRA.DMACIP; INT_VEC <= DMAC0_VEC;          end
-		else if (INT_PEND[DMAC1_INT])   begin INT_LVL <= IPRA.DMACIP; INT_VEC <= DMAC1_VEC;          end
-		else if (INT_PEND[WDT_INT])     begin INT_LVL <= IPRA.WDTIP;  INT_VEC <= {1'b0,VCRWDT.WITV}; end
-		else if (INT_PEND[BSC_INT])     begin INT_LVL <= IPRA.WDTIP;  INT_VEC <= {1'b0,VCRWDT.BCMV}; end
-		else if (INT_PEND[SCI_ERI_INT]) begin INT_LVL <= IPRB.SCIIP;  INT_VEC <= {1'b0,VCRA.SERV};   end
-		else if (INT_PEND[SCI_RXI_INT]) begin INT_LVL <= IPRB.SCIIP;  INT_VEC <= {1'b0,VCRA.SRXV};   end
-		else if (INT_PEND[SCI_TXI_INT]) begin INT_LVL <= IPRB.SCIIP;  INT_VEC <= {1'b0,VCRB.STXV};   end
-		else if (INT_PEND[SCI_TEI_INT]) begin INT_LVL <= IPRB.SCIIP;  INT_VEC <= {1'b0,VCRB.STEV};   end
-		else if (INT_PEND[FRT_ICI_INT]) begin INT_LVL <= IPRB.FRTIP;  INT_VEC <= {1'b0,VCRC.FICV};   end
-		else if (INT_PEND[FRT_OCI_INT]) begin INT_LVL <= IPRB.FRTIP;  INT_VEC <= {1'b0,VCRC.FOCV};   end
-		else if (INT_PEND[FRT_OVI_INT]) begin INT_LVL <= IPRB.FRTIP;  INT_VEC <= {1'b0,VCRD.FOVV};   end
-		else                            begin INT_LVL <= 4'hF;        INT_VEC <= 8'd0;               end
+		if      (INT_PEND[NMI_INT])     begin INT_LVL <= LVL_SAVE; INT_VEC <= 8'd11;              end
+		else if (INT_PEND[UBC_INT])     begin INT_LVL <= LVL_SAVE; INT_VEC <= 8'd12;              end
+		else if (INT_PEND[IRL_INT])     begin INT_LVL <= LVL_SAVE; INT_VEC <= IRL_VEC;            end
+		else if (INT_PEND[DIVU_INT])    begin INT_LVL <= LVL_SAVE; INT_VEC <= DIVU_VEC;           end
+		else if (INT_PEND[DMAC0_INT])   begin INT_LVL <= LVL_SAVE; INT_VEC <= DMAC0_VEC;          end
+		else if (INT_PEND[DMAC1_INT])   begin INT_LVL <= LVL_SAVE; INT_VEC <= DMAC1_VEC;          end
+		else if (INT_PEND[WDT_INT])     begin INT_LVL <= LVL_SAVE; INT_VEC <= {1'b0,VCRWDT.WITV}; end
+		else if (INT_PEND[BSC_INT])     begin INT_LVL <= LVL_SAVE; INT_VEC <= {1'b0,VCRWDT.BCMV}; end
+		else if (INT_PEND[SCI_ERI_INT]) begin INT_LVL <= LVL_SAVE; INT_VEC <= {1'b0,VCRA.SERV};   end
+		else if (INT_PEND[SCI_RXI_INT]) begin INT_LVL <= LVL_SAVE; INT_VEC <= {1'b0,VCRA.SRXV};   end
+		else if (INT_PEND[SCI_TXI_INT]) begin INT_LVL <= LVL_SAVE; INT_VEC <= {1'b0,VCRB.STXV};   end
+		else if (INT_PEND[SCI_TEI_INT]) begin INT_LVL <= LVL_SAVE; INT_VEC <= {1'b0,VCRB.STEV};   end
+		else if (INT_PEND[FRT_ICI_INT]) begin INT_LVL <= LVL_SAVE; INT_VEC <= {1'b0,VCRC.FICV};   end
+		else if (INT_PEND[FRT_OCI_INT]) begin INT_LVL <= LVL_SAVE; INT_VEC <= {1'b0,VCRC.FOCV};   end
+		else if (INT_PEND[FRT_OVI_INT]) begin INT_LVL <= LVL_SAVE; INT_VEC <= {1'b0,VCRD.FOVV};   end
+		else                            begin INT_LVL <= 4'hF;     INT_VEC <= 8'd0;               end
 //		case (INT_PEND)
 //			NMI_INT_MASK:     begin INT_LVL <= 4'hF;        INT_VEC <= 8'd11;              end
 //			UBC_INT_MASK:     begin INT_LVL <= 4'hF;        INT_VEC <= 8'd12;              end

@@ -54,7 +54,7 @@ module SH7604_DIVU (
 			if (STEP != 6'h3F) begin
 				STEP <= STEP + 6'd1;
 			end
-			else if (DIV32_START || DIV64_START) begin
+			if (STEP == 6'h3F && (DIV32_START || DIV64_START)) begin
 				STEP <= 6'd0;
 //				DIV64 <= DIV64_START;
 				OVF <= 0;
@@ -145,7 +145,7 @@ module SH7604_DIVU (
 			REG_DO <= '0;
 		end
 		else if (CE_F) begin
-			if (REG_SEL && !IBUS_WE && IBUS_REQ && !OPERATE) begin
+			if (REG_SEL && !IBUS_WE && IBUS_REQ) begin
 				case ({IBUS_A[4:2],2'b00})
 					5'h00: REG_DO <= DVSR & DVSR_RMASK;
 					5'h04: REG_DO <= DVDNTL & DVDNT_RMASK;
@@ -166,8 +166,10 @@ module SH7604_DIVU (
 			BUSY <= 0;
 		end
 		else if (CE_R) begin
-			if (REG_SEL && IBUS_REQ) begin
-				BUSY <= OPERATE;
+			if (REG_SEL && IBUS_REQ && STEP < 6'd38 && !BUSY) begin
+				BUSY <= 1;
+			end else if (STEP == 6'd38 && BUSY) begin
+				BUSY <= 0;
 			end
 		end
 	end

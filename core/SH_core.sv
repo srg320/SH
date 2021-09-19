@@ -42,7 +42,6 @@ module SH_core
 	bit [31:0] PC;
 	bit [31:0] GBR;
 	bit [31:0] VBR;
-	bit [31:0] PR;
 	SR_t       SR;
 	
 	PipelineState_t PIPE;
@@ -196,7 +195,7 @@ module SH_core
 			SAVE_IR <= '0;
 		end
 		else if (!RES_N) begin
-			PIPE.ID.IR <= {8'hF1,6'b000000,NMI_N,1'b0};
+			PIPE.ID.IR <= {8'hF0,6'b000000,NMI_N,1'b0};
 			PIPE.ID.PC <= '0;
 			SAVE_IR <= '0;
 		end
@@ -243,8 +242,9 @@ module SH_core
 	assign BR_COND = ID_DECI.BR.BI & ((SR_T == ID_DECI.BR.BCV) | (ID_DECI.BR.BT == UCB));
 	wire ID_DELAY_SLOT = ~PIPE.EX.DI.BR.BI & (PIPE.EX.DI.BR.BT == CB | PIPE.EX.DI.BR.BT == UCB);
 	
-	wire [15:0] DEC_IR = INT_REQ2 && !ID_DELAY_SLOT && !IFID_STALL ? {8'hF0,INT_VEC} : 
-							   ID_DELAY_SLOT && !PIPE.EX.DI.BR.BD ? 16'h0009 :
+	wire [15:0] DEC_IR = INT_REQ2 && !ID_DELAY_SLOT && !IFID_STALL ? 16'hF100 : 
+							   PIPE.EX.DI.ILI ? 16'hF204 :
+								ID_DELAY_SLOT && !PIPE.EX.DI.BR.BD ? 16'h0009 :
 								IFID_STALL ? PIPE.EX.IR : PIPE.ID.IR;
 								
 	assign ID_DECI = Decode(DEC_IR, STATE, BR_COND, VER);
@@ -351,10 +351,12 @@ module SH_core
 	bit [31:0] REG_C;
 	always_comb begin
 		bit [11:0] ir_imm;
+		bit  [7:0] vec;
 		bit [31:0] temp, IMM_VAL, SCR_VAL;
 		bit [31:0] BP_A, BP_B, BP_C;
 		
 		ir_imm = PIPE.EX.IR[11:0];
+		vec = INT_REQ ? INT_VEC : PIPE.EX.IR[7:0];
 		
 		case (PIPE.EX.DI.IMMT)
 			ZIMM4:  temp = {{28{1'b0}},      ir_imm[ 3:0]};
@@ -363,7 +365,7 @@ module SH_core
 			SIMM12: temp = {{20{ir_imm[11]}},ir_imm[11:0]};
 			ZERO:   temp = 32'h00000000;
 			ONE:    temp = 32'h00000001;
-			VECT:   temp = {{24{1'b0}},      INT_VEC[ 7:0]};
+			VECT:   temp = {{24{1'b0}},      vec};
 		endcase
 		
 		if (PIPE.EX.DI.BR.BI) begin

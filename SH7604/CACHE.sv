@@ -341,10 +341,10 @@ module SH7604_CACHE (
 			TAG_DIRTY <= '{'1,'1,'1,'1};
 		end
 		else if (CE_R) begin
-			if (CTAG_WE[0]) TAG_DIRTY[0][CACHE_WR_ADDR[9:4]] <= 0;
-			if (CTAG_WE[1]) TAG_DIRTY[1][CACHE_WR_ADDR[9:4]] <= 0;
-			if (CTAG_WE[2]) TAG_DIRTY[2][CACHE_WR_ADDR[9:4]] <= 0;
-			if (CTAG_WE[3]) TAG_DIRTY[3][CACHE_WR_ADDR[9:4]] <= 0;
+			if (CTAG_WE[0]) TAG_DIRTY[0][CACHE_WR_ADDR[9:4]] <= CACHE_LINE_PURGE;
+			if (CTAG_WE[1]) TAG_DIRTY[1][CACHE_WR_ADDR[9:4]] <= CACHE_LINE_PURGE;
+			if (CTAG_WE[2]) TAG_DIRTY[2][CACHE_WR_ADDR[9:4]] <= CACHE_LINE_PURGE;
+			if (CTAG_WE[3]) TAG_DIRTY[3][CACHE_WR_ADDR[9:4]] <= CACHE_LINE_PURGE;
 		end
 		else if (CCR.CP) begin
 			TAG_DIRTY <= '{'1,'1,'1,'1};

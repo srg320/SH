@@ -31,7 +31,8 @@ module SH2_regfile (
 	output     [31:0] R12,
 	output     [31:0] R13,
 	output     [31:0] R14,
-	output     [31:0] R15
+	output     [31:0] R15,
+	output     [31:0] PR
 );
 	
 	// synopsys translate_off
@@ -139,10 +140,10 @@ module SH2_regfile (
 
 	assign R0_Q = GR0;
 	
-	reg [31:0] DBG_GR[16];
+	reg [31:0] DBG_GR[17];
 	always @(posedge CLK or negedge RST_N) begin
 		if (!RST_N) begin
-			DBG_GR <= '{16{'0}};
+			DBG_GR <= '{17{'0}};
 		end
 		else  begin
 			if (WAE && CE) begin
@@ -170,6 +171,7 @@ module SH2_regfile (
 	assign R13 = DBG_GR[13];
 	assign R14 = DBG_GR[14];
 	assign R15 = DBG_GR[15];
+	assign PR = DBG_GR[16];
 	
 `endif
 	
