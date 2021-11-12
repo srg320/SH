@@ -2,6 +2,7 @@ module SH2_regfile (
 	input             CLK,
 	input             RST_N,
 	input             CE,
+	input             EN,
 	
 	input       [4:0] WA_ADDR,
 	input      [31:0] WA_D,
@@ -32,7 +33,7 @@ module SH2_regfile (
 	output     [31:0] R13,
 	output     [31:0] R14,
 	output     [31:0] R15,
-	output     [31:0] PR
+	output     [31:0] PR_
 );
 	
 	// synopsys translate_off
@@ -43,21 +44,21 @@ module SH2_regfile (
 
 	reg [31:0]  GR[16+1];
 	
-	bit  [4:0] WB_ADDR_SAVE;
-	bit [31:0] WB_D_SAVE;
-	bit        WBE_SAVE;
+	bit  [4:0] WB_ADDR_LATCH;
+	bit [31:0] WB_D_LATCH;
+	bit        WBE_LATCH;
 	always @(posedge CLK or negedge RST_N) begin
 		if (!RST_N) begin
-			WB_ADDR_SAVE <= '0;
-			WB_D_SAVE <= '0;
-			WBE_SAVE <= 0;
+			WB_ADDR_LATCH <= '0;
+			WB_D_LATCH <= '0;
+			WBE_LATCH <= 0;
 		end
 		else begin
-			WBE_SAVE <= 0;
+			WBE_LATCH <= 0;
 			if (CE) begin
-				WB_ADDR_SAVE <= WB_ADDR;
-				WB_D_SAVE <= WB_D;
-				WBE_SAVE <= WBE;
+				WB_ADDR_LATCH <= WB_ADDR;
+				WB_D_LATCH <= WB_D;
+				WBE_LATCH <= WBE;
 			end
 		end
 	end
@@ -66,12 +67,12 @@ module SH2_regfile (
 		if (!RST_N) begin
 			GR <= '{'h01234567,'h11111111,'h89ABCDEF,'h11111111,'0,'0,'0,'0,'0,'0,'0,'0,'0,'0,'0,'0,'0};
 		end
-		else  begin
+		else if (EN) begin
 			if (WAE && CE) begin
 				GR[WA_ADDR] <= WA_D;
 			end
 			if (WBE_SAVE) begin
-				GR[WB_ADDR_SAVE] <= WB_D_SAVE;
+				GR[WB_ADDR_LATCH] <= WB_D_LATCH;
 			end
 		end
 	end
@@ -84,12 +85,12 @@ module SH2_regfile (
 		if (!RST_N) begin
 			GR0 <= '0;
 		end
-		else if (CE) begin
-			if (WAE && !WA_ADDR) begin
+		else if (EN) begin
+			if (WAE && !WA_ADDR && CE) begin
 				GR0 <= WA_D;
 			end
-			if (WBE && !WB_ADDR) begin
-				GR0 <= WB_D;
+			if (WBE_LATCH && !WB_ADDR_LATCH) begin
+				GR0 <= WB_D_LATCH;
 			end
 		end
 	end
@@ -98,46 +99,63 @@ module SH2_regfile (
 	
 `else
 	
-	bit  [4:0] WB_ADDR_SAVE;
-	bit [31:0] WB_D_SAVE;
-	bit        WBE_SAVE;
+	bit  [4:0] WB_ADDR_LATCH;
+	bit [31:0] WB_D_LATCH;
+	bit        WBE_LATCH;
 	always @(posedge CLK or negedge RST_N) begin
 		if (!RST_N) begin
-			WB_ADDR_SAVE <= '0;
-			WB_D_SAVE <= '0;
-			WBE_SAVE <= 0;
+			WB_ADDR_LATCH <= '0;
+			WB_D_LATCH <= '0;
+			WBE_LATCH <= 0;
 		end
 		else begin
-			WBE_SAVE <= 0;
+			WBE_LATCH <= 0;
 			if (CE) begin
-				WB_ADDR_SAVE <= WB_ADDR;
-				WB_D_SAVE <= WB_D;
-				WBE_SAVE <= WBE;
+				WB_ADDR_LATCH <= WB_ADDR;
+				WB_D_LATCH <= WB_D;
+				WBE_LATCH <= WBE;
 			end
 		end
 	end
 	
-	wire [4:0] REG_WR_A = CE ? WA_ADDR : WB_ADDR_SAVE;
-	wire [31:0] REG_D = CE ? WA_D : WB_D_SAVE;
-	wire REG_WE = (WAE & CE) | WBE_SAVE;
-	SH_regram regramA(.clock(CLK), .wraddress(REG_WR_A), .data(REG_D), .wren(REG_WE), .rdaddress(RA_ADDR), .q(RA_Q));
-	SH_regram regramB(.clock(CLK), .wraddress(REG_WR_A), .data(REG_D), .wren(REG_WE), .rdaddress(RB_ADDR), .q(RB_Q));
+	wire  [4:0] W_ADDR = CE ? WA_ADDR : WB_ADDR_LATCH;
+	wire [31:0] REG_D = CE ? WA_D : WB_D_LATCH;
+	wire        REG_WE = (WAE & ~WA_ADDR[4] & CE) | (WBE_LATCH & ~WB_ADDR_LATCH[4]);
+	bit  [31:0] RAMA_Q, RAMB_Q;
+	SH_regram regramA(.clock(CLK), .wraddress(W_ADDR[3:0]), .data(REG_D), .wren(REG_WE & EN), .rdaddress(RA_ADDR[3:0]), .q(RAMA_Q));
+	SH_regram regramB(.clock(CLK), .wraddress(W_ADDR[3:0]), .data(REG_D), .wren(REG_WE & EN), .rdaddress(RB_ADDR[3:0]), .q(RAMB_Q));
 	
-	reg [31:0] GR0;
+	bit  [31:0] PR;
+	always @(posedge CLK or negedge RST_N) begin
+		if (!RST_N) begin
+			PR <= '0;
+		end
+		else if (EN) begin
+			if (WAE && WA_ADDR[4] && CE) begin
+				PR <= WA_D;
+			end
+			if (WBE_LATCH && WB_ADDR_LATCH[4]) begin
+				PR <= WB_D_LATCH;
+			end
+		end
+	end
+	assign RA_Q = RA_ADDR[4] ? PR : RAMA_Q;
+	assign RB_Q = RB_ADDR[4] ? PR : RAMB_Q;
+	
+	bit  [31:0] GR0;
 	always @(posedge CLK or negedge RST_N) begin
 		if (!RST_N) begin
 			GR0 <= '0;
 		end
-		else if (CE) begin
-			if (WAE && !WA_ADDR) begin
+		else if (EN) begin
+			if (WAE && !WA_ADDR && CE) begin
 				GR0 <= WA_D;
 			end
-			if (WBE && !WB_ADDR) begin
-				GR0 <= WB_D;
+			if (WBE_LATCH && !WB_ADDR_LATCH) begin
+				GR0 <= WB_D_LATCH;
 			end
 		end
 	end
-
 	assign R0_Q = GR0;
 	
 	reg [31:0] DBG_GR[17];
@@ -145,12 +163,12 @@ module SH2_regfile (
 		if (!RST_N) begin
 			DBG_GR <= '{17{'0}};
 		end
-		else  begin
+		else if (EN) begin
 			if (WAE && CE) begin
 				DBG_GR[WA_ADDR] <= WA_D;
 			end
-			if (WBE_SAVE) begin
-				DBG_GR[WB_ADDR_SAVE] <= WB_D_SAVE;
+			if (WBE_LATCH) begin
+				DBG_GR[WB_ADDR_LATCH] <= WB_D_LATCH;
 			end
 		end
 	end
@@ -171,7 +189,7 @@ module SH2_regfile (
 	assign R13 = DBG_GR[13];
 	assign R14 = DBG_GR[14];
 	assign R15 = DBG_GR[15];
-	assign PR = DBG_GR[16];
+	assign PR_ = DBG_GR[16];
 	
 `endif
 	

@@ -3,6 +3,7 @@ module SH7604_SCI (
 	input             RST_N,
 	input             CE_R,
 	input             CE_F,
+	input             EN,
 	
 	input             RES_N,
 	
@@ -73,7 +74,7 @@ module SH7604_SCI (
 			CNT <= '0;
 			SCKI_OLD <= 0;
 		end
-		else if (CE_R) begin
+		else if (EN && CE_R) begin
 			case (SMR.CKS)
 				2'b00: CS_CE = CLK4_CE;
 				2'b01: CS_CE = CLK16_CE;
@@ -116,7 +117,7 @@ module SH7604_SCI (
 		if (!RST_N) begin
 			INT_SCK <= 1;
 		end
-		else if (CE_R) begin
+		else if (EN && CE_R) begin
 			if (INT_CE_R)
 				INT_SCK <= 1;
 			else if (INT_CE_F) 
@@ -145,7 +146,7 @@ module SH7604_SCI (
 			TBIT_CNT <= '0;
 			TX_RUN <= 0;
 		end
-		else if (CE_R) begin
+		else if (EN && CE_R) begin
 			LAST_BIT    = SMR.CA ? TBIT_CNT == 4'd7 : TBIT_CNT == 4'd11;
 			
 			if (!SSR.TDRE && LAST_BIT && SCE_R) begin
@@ -226,7 +227,7 @@ module SH7604_SCI (
 			RBIT_CNT <= '0;
 			REC_END <= 0;
 		end
-		else if (CE_R) begin
+		else if (EN && CE_R) begin
 			LAST_BIT = SMR.CA ? RBIT_CNT == 4'd7 : RBIT_CNT == 4'd11;
 			
 			if (SCE_R) begin

@@ -3,6 +3,7 @@ module SH7604_MULT (
 	input             RST_N,
 	input             CE_R,
 	input             CE_F,
+	input             EN,
 	
 	input             RES_N,
 	
@@ -56,7 +57,7 @@ module SH7604_MULT (
 			// synopsys translate_on
 		end
 		else begin
-			if (MAC_SEL && MAC_WE && CE_R) begin
+			if (MAC_SEL && MAC_WE && EN && CE_R) begin
 				case (MAC_OP) 
 					4'b0100,			//LDS Rm,MACx
 					4'b1000: begin	//LDS @Rm+,MACx

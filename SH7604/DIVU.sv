@@ -3,6 +3,7 @@ module SH7604_DIVU (
 	input             RST_N,
 	input             CE_R,
 	input             CE_F,
+	input             EN,
 	
 	input             RES_N,
 	
@@ -50,7 +51,7 @@ module SH7604_DIVU (
 			Q <= '0;
 			OVF <= 0;
 		end
-		else if (CE_R) begin
+		else if (EN && CE_R) begin
 			if (STEP != 6'h3F) begin
 				STEP <= STEP + 6'd1;
 			end
@@ -165,7 +166,7 @@ module SH7604_DIVU (
 		if (!RST_N) begin
 			BUSY <= 0;
 		end
-		else if (CE_R) begin
+		else if (EN && CE_R) begin
 			if (REG_SEL && IBUS_REQ && STEP < 6'd38 && !BUSY) begin
 				BUSY <= 1;
 			end else if (STEP == 6'd38 && BUSY) begin

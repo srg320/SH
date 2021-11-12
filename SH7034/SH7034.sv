@@ -7,6 +7,7 @@ module SH7034
 	input             RST_N,
 	input             CE_R,
 	input             CE_F,
+	input             EN,
 	
 	input             RES_N,
 	input             NMI_N,
@@ -255,6 +256,7 @@ module SH7034
 		.CLK(CLK),
 		.RST_N(RST_N),
 		.CE(CE_R),
+		.EN(EN),
 		
 		.RES_N(RES_N),
 		.NMI_N(NMI_N),

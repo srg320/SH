@@ -3,6 +3,7 @@ module SH7604 (
 	input             RST_N,
 	input             CE_R,
 	input             CE_F,
+	input             EN,
 	
 	input             RES_N,
 	input             NMI_N,
@@ -62,7 +63,14 @@ module SH7604 (
 	
 	input       [5:0] MD,
 	
-	output reg        UNUSED_REQ
+	input       [4:0] DBG_REGN,
+	output     [31:0] DBG_REGQ,
+	input             DBG_RUN,
+	output            DBG_BREAK,
+	
+	output reg        UNUSED_REQ,
+	output      [7:0] DBG_CNT,
+	output reg        HOOK
 );
 	import SH7604_PKG::*;
 	
@@ -81,6 +89,7 @@ module SH7604 (
 	bit        IBUS_WE;
 	bit        IBUS_REQ;
 	bit        IBUS_WAIT;
+	bit        IBUS_BURST;
 	bit        IBUS_LOCK;
 	
 	bit  [3:0] INT_LVL;
@@ -183,6 +192,7 @@ module SH7604 (
 		.CLK(CLK),
 		.RST_N(RST_N),
 		.CE(CE_R),
+		.EN(EN),
 		
 		.RES_N(RES_N),
 		.NMI_N(NMI_N),
@@ -208,7 +218,12 @@ module SH7604 (
 		.INT_ACK(INT_ACK),
 		.INT_ACP(INT_ACP),
 		.VECT_REQ(VECT_REQ),
-		.VECT_WAIT(VECT_WAIT)
+		.VECT_WAIT(VECT_WAIT),
+		
+		.DBG_REGN(DBG_REGN),
+		.DBG_REGQ(DBG_REGQ),
+		.DBG_RUN(DBG_RUN),
+		.DBG_BREAK(DBG_BREAK)
 	);
 	
 	assign CBUS_DI = |MAC_SEL && MAC_OP == 4'b1100 && !MAC_WE ? MULT_DO : CACHE_DO;
@@ -220,6 +235,7 @@ module SH7604 (
 		.RST_N(RST_N),
 		.CE_R(CE_R),
 		.CE_F(CE_F),
+		.EN(EN),
 		
 		.RES_N(RES_N),
 		
@@ -274,10 +290,14 @@ module SH7604 (
 	always @(posedge CLK or negedge RST_N) begin
 		if (!RST_N) begin
 			UNUSED_REQ <= '0;
+			HOOK <= 0;
 		end
 		else if (CE_F) begin	
 			if (CBUS_REQ) UNUSED_REQ <= ~USED_ADDR;
-//			else if (CBUS_A == 32'h060037EC && CBUS_REQ && !CBUS_WR) HOOK <= HOOK + 16'd1;
+			if (CBUS_A == 32'h0205AAF0 && CBUS_REQ && !CBUS_WR) HOOK <= 1;
+			
+			if (CBUS_REQ) DBG_CNT <= DBG_CNT + 1'd1;
+			else DBG_CNT <= '0;
 		end
 	end
 	
@@ -288,6 +308,7 @@ module SH7604 (
 		.RST_N(RST_N & RES_N),
 		.CE_R(CE_R),
 		.CE_F(CE_F),
+		.EN(EN),
 		
 		.RES_N(RES_N),
 		
@@ -306,8 +327,9 @@ module SH7604 (
 		.IBUS_WE(IBUS_WE),
 		.IBUS_BA(IBUS_BA),
 		.IBUS_REQ(IBUS_REQ),
-		.IBUS_WAIT(IBUS_WAIT),
-		.IBUS_LOCK(IBUS_LOCK)
+		.IBUS_BURST(IBUS_BURST),
+		.IBUS_LOCK(IBUS_LOCK),
+		.IBUS_WAIT(IBUS_WAIT)
 	);
 	
 	assign IBUS_DI = INTC_ACT ? INTC_DO : 
@@ -327,6 +349,7 @@ module SH7604 (
 		.RST_N(RST_N),
 		.CE_R(CE_R),
 		.CE_F(CE_F),
+		.EN(EN),
 		
 		.RES_N(RES_N),
 		
@@ -343,12 +366,11 @@ module SH7604 (
 	);
 	
 	bit  [31:0] DBUS_A;
-	bit  [31:0] DBUS_DI;
 	bit  [31:0] DBUS_DO;
 	bit   [3:0] DBUS_BA;
 	bit         DBUS_WE;
 	bit         DBUS_REQ;
-	bit         DBUS_WAIT;
+	bit         DBUS_BURST;
 	bit         DBUS_LOCK;
 	SH7604_DMAC dmac
 	(
@@ -356,6 +378,7 @@ module SH7604 (
 		.RST_N(RST_N),
 		.CE_R(CE_R),
 		.CE_F(CE_F),
+		.EN(EN),
 		
 		.RES_N(RES_N),
 		.NMI_N(NMI_N),
@@ -374,8 +397,9 @@ module SH7604 (
 		.IBUS_BA(IBUS_BA),
 		.IBUS_WE(IBUS_WE),
 		.IBUS_REQ(IBUS_REQ),
-		.IBUS_BUSY(DMAC_BUSY),
+		.IBUS_BURST(IBUS_BURST),
 		.IBUS_LOCK(IBUS_LOCK),
+		.IBUS_BUSY(DMAC_BUSY),
 		.IBUS_ACT(DMAC_ACT),
 		
 		.DBUS_A(DBUS_A),
@@ -384,8 +408,9 @@ module SH7604 (
 		.DBUS_BA(DBUS_BA),
 		.DBUS_WE(DBUS_WE),
 		.DBUS_REQ(DBUS_REQ),
-		.DBUS_WAIT(BSC_BUSY/* | DIVU_BUSY*/),
+		.DBUS_BURST(DBUS_BURST),
 		.DBUS_LOCK(DBUS_LOCK),
+		.DBUS_WAIT(BSC_BUSY),
 		
 		.BSC_ACK(BSC_ACK),
 		
@@ -416,6 +441,7 @@ module SH7604 (
 		.RST_N(RST_N),
 		.CE_R(CE_R),
 		.CE_F(CE_F),
+		.EN(EN),
 		
 		.RES_N(RES_N),
 		
@@ -444,8 +470,9 @@ module SH7604 (
 		.IBUS_BA(DBUS_BA),
 		.IBUS_WE(DBUS_WE),
 		.IBUS_REQ(DBUS_REQ),
-		.IBUS_BUSY(BSC_BUSY),
+		.IBUS_BURST(DBUS_BURST),
 		.IBUS_LOCK(DBUS_LOCK),
+		.IBUS_BUSY(BSC_BUSY),
 		.IBUS_ACT(),
 		
 		.VBUS_A(VBUS_A),
@@ -472,6 +499,7 @@ module SH7604 (
 		.RST_N(RST_N),
 		.CE_R(CE_R),
 		.CE_F(CE_F),
+		.EN(EN),
 		
 		.RES_N(RES_N),
 		.NMI_N(NMI_N),
@@ -524,6 +552,7 @@ module SH7604 (
 		.RST_N(RST_N),
 		.CE_R(CE_R),
 		.CE_F(CE_F),
+		.EN(EN),
 		
 		.RES_N(RES_N),
 		
@@ -583,6 +612,7 @@ module SH7604 (
 		.RST_N(RST_N),
 		.CE_R(CE_R),
 		.CE_F(CE_F),
+		.EN(EN),
 		
 		.RES_N(RES_N),
 		
@@ -617,6 +647,7 @@ module SH7604 (
 		.RST_N(RST_N),
 		.CE_R(CE_R),
 		.CE_F(CE_F),
+		.EN(EN),
 		
 		.RES_N(RES_N),
 		
@@ -650,6 +681,7 @@ module SH7604 (
 		.RST_N(RST_N),
 		.CE_R(CE_R),
 		.CE_F(CE_F),
+		.EN(EN),
 		
 		.RES_N(RES_N),
 		

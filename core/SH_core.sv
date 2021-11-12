@@ -4,6 +4,7 @@ module SH_core
 	input             CLK,
 	input             RST_N,
 	input             CE,
+	input             EN,
 	
 	input             RES_N,
 	input             NMI_N,
@@ -33,7 +34,13 @@ module SH_core
 	input             VECT_WAIT,
 	
 	output			   ILI,
-	output			   REG_HOOK
+	
+	input       [4:0] DBG_REGN,
+	output     [31:0] DBG_REGQ,
+	input             DBG_RUN,
+	output            DBG_BREAK/*,
+	
+	output			   REG_HOOK*/
 );
 	
 	import SH2_PKG::*;
@@ -84,10 +91,10 @@ module SH_core
 	bit [31:0] REGS_WBD;
 	bit        REGS_WBE;
 	
-	assign REGS_RAN = ID_DECI.RA.N;
+	assign REGS_RAN = EN ? ID_DECI.RA.N : DBG_REGN;
 	assign REGS_RBN = ID_DECI.RB.N;
 	
-	SH2_regfile regfile (CLK, RST_N, CE, REGS_WAN, REGS_WAD, REGS_WAE, REGS_WBN, REGS_WBD, REGS_WBE, 
+	SH2_regfile regfile (CLK, RST_N, CE, EN, REGS_WAN, REGS_WAD, REGS_WAE, REGS_WBN, REGS_WBD, REGS_WBE, 
 								REGS_RAN, REGS_RAQ, REGS_RBN, REGS_RBQ, REGS_R0Q);
 
 	
@@ -103,7 +110,7 @@ module SH_core
 		else if (!RES_N) begin
 			NPC <= '0;
 		end
-		else if (CE) begin
+		else if (EN && CE) begin
 			if (PIPE.EX.DI.PCW && !EX_STALL) begin
 				NPC <= ALU_RES;
 			end else if (!PC_STALL && !STBY) begin
@@ -136,7 +143,7 @@ module SH_core
 			INST_SPLIT <= 0;
 			MAWB_STALL <= 0;
 		end
-		else if (CE) begin
+		else if (EN && CE) begin
 			// synopsys translate_off
 			if (LOAD_ISSUE && !INST_SPLIT && (!MA_ACTIVE || !BUS_WAIT) && !EX_STALL) begin
 				LOAD_SPLIT <= 1;
@@ -199,7 +206,7 @@ module SH_core
 			PIPE.ID.PC <= '0;
 			SAVE_IR <= '0;
 		end
-		else if (CE) begin
+		else if (EN && CE) begin
 			if (!PC[1] || PIPE.MA.BC) begin
 				NEW_IR = PC[1] ? BUS_DI[15:0] : BUS_DI[31:16];
 			end
@@ -287,7 +294,7 @@ module SH_core
 			IFID_STALL <= 0;
 			STBY <= 0;
 		end
-		else if (CE) begin
+		else if (EN && CE) begin
 			if (!ID_STALL) begin
 				PIPE.EX.IR <= DEC_IR;
 				PIPE.EX.PC <= PIPE.ID.PC;
@@ -344,7 +351,7 @@ module SH_core
 	wire BP_B_WBLD = (PIPE.EX.DI.RB.N == PIPE.WB.DI.RA.N)  & PIPE.EX.DI.RB.R & PIPE.WB.DI.RA.W & ((PIPE.WB.DI.MEM.R & !PIPE.WB.DI.MAC.W) | (PIPE.WB.DI.MAC.R & !PIPE.WB.DI.MEM.W));
 	wire BP_C_WBLD = (5'd0            == PIPE.WB.DI.RA.N)  & PIPE.EX.DI.R0R  & PIPE.WB.DI.RA.W & ((PIPE.WB.DI.MEM.R & !PIPE.WB.DI.MAC.W) | (PIPE.WB.DI.MAC.R & !PIPE.WB.DI.MEM.W));
 	
-	assign REG_HOOK = (PIPE.MA.DI.RA.N == PIPE.MA.DI.RB.N) & PIPE.MA.DI.RA.W & PIPE.MA.DI.RB.W;
+//	assign REG_HOOK = (PIPE.MA.DI.RA.N == PIPE.MA.DI.RB.N) & PIPE.MA.DI.RA.W & PIPE.MA.DI.RB.W;
 	
 	bit [31:0] REG_A;
 	bit [31:0] REG_B;
@@ -570,15 +577,17 @@ module SH_core
 		else if (!RES_N) begin
 			PIPE.MA.IR <= '0;
 			PIPE.MA.DI <= DECI_RESET;
+			PIPE.MA.PC <= '0;
 			PIPE.MA.BC <= 0;
 			PIPE.MA.RES <= '0;
 			PIPE.MA.ADDR <= '0;
 			PIPE.MA.WD <= '0;
 		end
-		else if (CE) begin
+		else if (EN && CE) begin
 			if (!EX_STALL) begin
 				PIPE.MA.IR <= PIPE.EX.IR;
 				PIPE.MA.DI <= PIPE.EX.DI;
+				PIPE.MA.PC <= PIPE.EX.PC;
 				PIPE.MA.BC <= PIPE.EX.BC;
 				PIPE.MA.RES <= PIPE.EX.DI.BR.BI ? REG_B : ALU_RES;
 				PIPE.MA.ADDR <= MA_ADDR;
@@ -627,7 +636,7 @@ module SH_core
 			GBR <= '0;
 			VBR <= '0;
 		end
-		else if (CE) begin
+		else if (EN && CE) begin
 			if (!EX_STALL) begin
 				if (PIPE.EX.DI.CTRL.W) begin
 					case (PIPE.EX.DI.CTRL.S)
@@ -679,10 +688,11 @@ module SH_core
 			PIPE.WB.RES <= '0;
 			PIPE.WB.RD <= '0;
 		end
-		else if (CE) begin
+		else if (EN && CE) begin
 			if (!MA_STALL && !INST_SPLIT) begin
 				PIPE.WB.IR <= PIPE.MA.IR;
 				PIPE.WB.DI <= PIPE.MA.DI;
+				PIPE.WB.PC <= PIPE.MA.PC;
 				PIPE.WB.RES <= PIPE.MA.RES;
 				PIPE.WB.RD <= MA_RDATA;
 				RD_SAVE <= MA_RDATA;
@@ -693,6 +703,7 @@ module SH_core
 			else if (!(IF_ACTIVE & BUS_WAIT) && MAWB_STALL) begin
 				PIPE.WB.IR <= PIPE.MA.IR;
 				PIPE.WB.DI <= PIPE.MA.DI;
+				PIPE.WB.PC <= PIPE.MA.PC;
 				PIPE.WB.RES <= PIPE.MA.RES;
 				PIPE.WB.RD <= RD_SAVE;
 			end
@@ -736,7 +747,7 @@ module SH_core
 			PIPE.WB2.RESA <= '0;
 			PIPE.WB2.RESB <= '0;
 		end
-		else if (CE) begin
+		else if (EN && CE) begin
 			if (!WB_STALL && !INST_SPLIT) begin
 				PIPE.WB2.IR <= PIPE.WB.IR;
 				PIPE.WB2.DI <= PIPE.WB.DI;
@@ -780,5 +791,25 @@ module SH_core
 	
 	//Debug
 	assign ILI = ID_DECI.ILI & ~ID_STALL & ~IFID_STALL;
+	assign DBG_REGQ = DBG_REGN <= 5'h10 ? REGS_RAQ :
+	                  DBG_REGN == 5'h11 ? SR :
+							DBG_REGN == 5'h12 ? GBR :
+							DBG_REGN == 5'h13 ? VBR :
+							DBG_REGN == 5'h14 ? PIPE.WB.PC : '0;
+							
+	bit [31:0] BP_ADDR;
+	always @(posedge CLK or negedge RST_N) begin
+		if (!RST_N) begin
+			DBG_BREAK <= 0;
+		end
+		else begin
+			if (BP_ADDR == PIPE.WB.PC && CE) begin
+				DBG_BREAK <= 1;
+			end
+			else if (!DBG_BREAK && DBG_RUN) begin
+				DBG_BREAK <= 0;
+			end
+		end
+	end
 	
 endmodule

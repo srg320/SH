@@ -3,6 +3,7 @@ module SH7604_INTC (
 	input             RST_N,
 	input             CE_R,
 	input             CE_F,
+	input             EN,
 	
 	input             RES_N,
 	input             NMI_N,
@@ -94,7 +95,7 @@ module SH7604_INTC (
 		else if (!RES_N) begin	
 			NMI_REQ <= 0;
 		end
-		else if (CE_R) begin	
+		else if (EN && CE_R) begin	
 			NMI_N_OLD <= NMI_N;
 			if (!(NMI_N ^ ICR.NMIE) && (NMI_N_OLD ^ ICR.NMIE) && !NMI_REQ) begin
 				NMI_REQ <= 1;
@@ -116,7 +117,7 @@ module SH7604_INTC (
 			IRL_OLD <= '{4{'1}};
 			IRL_REQ <= 0;
 		end
-		else if (CE_R) begin	
+		else if (EN && CE_R) begin	
 			IRL_OLD[0] <= ~IRL_N;
 			IRL_OLD[1] <= IRL_OLD[0];
 			IRL_OLD[2] <= IRL_OLD[1];
@@ -135,7 +136,7 @@ module SH7604_INTC (
 		if (!RST_N) begin
 			INT_REQ <= 0;
 			INT_PEND <= '0;
-		end else if (CE_R) begin	
+		end else if (EN && CE_R) begin	
 			if (!INT_REQ) begin
 				if (NMI_REQ)                                    begin INT_REQ <= 1; INT_PEND[NMI_INT]     <= 1; LVL_SAVE <= 4'hF; end
 				else if (UBC_IRQ     && 4'hF        > INT_MASK) begin INT_REQ <= 1; INT_PEND[UBC_INT]     <= 1; LVL_SAVE <= 4'hF; end
@@ -209,7 +210,7 @@ module SH7604_INTC (
 		if (!RST_N) begin
 			VBREQ <= 0;
 			VBA <= '0;
-		end else if (CE_F) begin	
+		end else if (EN && CE_F) begin	
 			if (VECT_REQ && !VBREQ) begin
 				VBREQ <= 1;
 				VBA <= IRL_LVL;

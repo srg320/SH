@@ -3,6 +3,7 @@ module SH7604_FRT (
 	input             RST_N,
 	input             CE_R,
 	input             CE_F,
+	input             EN,
 	
 	input             RES_N,
 	
@@ -50,7 +51,7 @@ module SH7604_FRT (
 			FRC_CE <= 0;
 			FTCI_OLD <= 0;
 		end
-		else if (CE_R) begin
+		else if (EN && CE_R) begin
 			FTCI_OLD <= FTCI;
 			case (TCR.CKS)
 				2'b00: FRC_CE <= CLK8_CE;
@@ -70,7 +71,7 @@ module SH7604_FRT (
 			FTCSR.OCFB <= 0;
 			FTCSR.OVF <= 0;
 		end
-		else if (CE_R) begin
+		else if (EN && CE_R) begin
 			if (FRC_CE) begin
 				if (FRC == OCRA) begin
 					FTOA <= TOCR.OLVLA;
@@ -112,13 +113,13 @@ module SH7604_FRT (
 //			ICR_READ_OLD <= 0;
 //			FTCSR_WRITE_OLD <= 0;
 		end
-		else if (CE_F) begin
+		else if (EN && CE_F) begin
 			FTCSR_READ_OLD <= FTCSR_READ;
 			if (!FTCSR_READ && FTCSR_READ_OLD) begin
 				ICF_CLEAR_PEND <= FTCSR.ICF;
 			end
 		end
-		else if (CE_R) begin
+		else if (EN && CE_R) begin
 			FTI_OLD <= FTI;
 			CAPT <= ~(FTI ^ TCR.IEDG) & (FTI_OLD ^ TCR.IEDG);
 			

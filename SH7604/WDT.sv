@@ -3,6 +3,7 @@ module SH7604_WDT (
 	input             RST_N,
 	input             CE_R,
 	input             CE_F,
+	input             EN,
 	
 	input             RES_N,
 	
@@ -44,7 +45,7 @@ module SH7604_WDT (
 		if (!RST_N) begin
 			WT_CE <= 0;
 		end
-		else if (CE_R) begin
+		else if (EN && CE_R) begin
 			case (WTCSR.CKS)
 				3'b000: WT_CE <= CLK2_CE;
 				3'b001: WT_CE <= CLK64_CE;
@@ -63,7 +64,7 @@ module SH7604_WDT (
 			WDTOVF_N <= 1;
 			WRES <= 0;
 		end
-		else if (CE_R) begin
+		else if (EN && CE_R) begin
 			if (WT_CE) begin
 				if (WTCNT == 8'hFF && WTCSR.WTIT) begin
 					WDTOVF_N <= 0;
@@ -93,7 +94,7 @@ module SH7604_WDT (
 			
 			// synopsys translate_on
 		end
-		else if (CE_R) begin
+		else if (EN && CE_R) begin
 			if (WT_CE) begin
 				if (WTCSR.TME) begin
 					WTCNT <= WTCNT + 8'd1;

@@ -3,6 +3,7 @@ module SH7604_CACHE (
 	input             RST_N,
 	input             CE_R,
 	input             CE_F,
+	input             EN,
 	
 	input             RES_N,
 	
@@ -21,8 +22,9 @@ module SH7604_CACHE (
 	output      [3:0] IBUS_BA,
 	output            IBUS_WE,
 	output            IBUS_REQ,
-	input             IBUS_WAIT,
-	output            IBUS_LOCK
+	output            IBUS_BURST,
+	output            IBUS_LOCK,
+	input             IBUS_WAIT
 );
 
 	import SH7604_PKG::*;
@@ -38,6 +40,7 @@ module SH7604_CACHE (
 	bit   [3:0] IBBA;
 	bit         IBWE;
 	bit         IBREQ;
+	bit         IBBURST;
 	bit         IBLOCK;
 	
 	wire CACHE_AREA      = (CBUS_A[31:29] == 3'b000);
@@ -340,7 +343,7 @@ module SH7604_CACHE (
 		if (!RST_N) begin
 			TAG_DIRTY <= '{'1,'1,'1,'1};
 		end
-		else if (CE_R) begin
+		else if (EN && CE_R) begin
 			if (CTAG_WE[0]) TAG_DIRTY[0][CACHE_WR_ADDR[9:4]] <= CACHE_LINE_PURGE;
 			if (CTAG_WE[1]) TAG_DIRTY[1][CACHE_WR_ADDR[9:4]] <= CACHE_LINE_PURGE;
 			if (CTAG_WE[2]) TAG_DIRTY[2][CACHE_WR_ADDR[9:4]] <= CACHE_LINE_PURGE;
@@ -409,6 +412,7 @@ module SH7604_CACHE (
 			IBBA <= '0;
 			IBWE <= '0;
 			IBREQ <= 0;
+			IBBURST <= 0;
 			IBLOCK <= 0;
 			ARRAY_POS <= '0;
 			CACHE_WR_ADDR <= '0;
@@ -428,7 +432,7 @@ module SH7604_CACHE (
 			IBUS_READARRAY <= 0;
 			IBUS_READ_PEND <= 0;
 		end
-		else if (CE_F) begin
+		else if (EN && CE_F) begin
 			CACHE_UPDATE <= 0;
 			CACHE_WRITE <= 0;
 			CACHE_READ <= 0;
@@ -444,6 +448,7 @@ module SH7604_CACHE (
 							IBBA <= CBUS_BA;
 							IBWE <= 1;
 							IBREQ <= 1;
+							IBBURST <= 0;
 							IBLOCK <= 0;
 							IBUS_WRITE <= 1;
 							IBUS_WRITE_PEND <= 0;
@@ -482,6 +487,7 @@ module SH7604_CACHE (
 							IBBA <= CBUS_BA;
 							IBWE <= 0;
 							IBREQ <= 1;
+							IBBURST <= 0;
 							IBLOCK <= CBUS_TAS;
 							IBUS_READ <= 1;
 							IBUS_READ_PEND <= 0;
@@ -501,6 +507,7 @@ module SH7604_CACHE (
 								IBBA <= 4'b1111;
 								IBWE <= 0;
 								IBREQ <= 1;
+								IBBURST <= 1;
 								IBLOCK <= 1;
 								ARRAY_POS <= CBUS_A[3:2];
 								CACHE_WR_WAY <= WayFromLRU(LRU_DATA, CCR.TW);
@@ -589,6 +596,7 @@ module SH7604_CACHE (
 	assign IBUS_BA = IBBA;
 	assign IBUS_WE = IBWE;
 	assign IBUS_REQ = IBREQ;
+	assign IBUS_BURST = IBBURST;
 	assign IBUS_LOCK = IBLOCK;
 
 endmodule

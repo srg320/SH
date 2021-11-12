@@ -3,6 +3,7 @@ module SH7604_UBC (
 	input             RST_N,
 	input             CE_R,
 	input             CE_F,
+	input             EN,
 	
 	input             RES_N,
 	
@@ -60,7 +61,7 @@ module SH7604_UBC (
 			
 			// synopsys translate_on
 		end
-		else if (CE_R) begin
+		else if (EN && CE_R) begin
 			if (!RES_N) begin
 				BARAH <= BARx_INIT;
 				BARAL <= BARx_INIT;

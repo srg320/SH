@@ -1292,6 +1292,7 @@ package SH2_PKG;
 	{
 		bit [15:0] IR;
 		DecInstr_t DI;			//Decoded instruction
+		bit [31:0] PC;
 		bit        BC;			//Branch condition
 		bit [31:0] RES;		//ALU output
 		bit [31:0] ADDR;		//Data memory address
@@ -1302,6 +1303,7 @@ package SH2_PKG;
 	{
 		bit [15:0] IR;
 		DecInstr_t DI;			//Decoded instruction
+		bit [31:0] PC;
 		bit [31:0] RES;
 		bit [31:0] RD;			//Read data
 		bit        LOCK;
@@ -1311,6 +1313,7 @@ package SH2_PKG;
 	{
 		bit [15:0] IR;
 		DecInstr_t DI;			//Decoded instruction
+		bit [31:0] PC;
 		bit [31:0] RESA;
 		bit [31:0] RESB;
 		bit        LOCK;
