@@ -207,6 +207,7 @@ module SH7604_SCI (
 	end
 	
 	//Receiver
+	bit RX_RUN;
 	always @(posedge CLK or negedge RST_N) begin
 		bit [3:0] RBIT_CNT;
 		bit       LAST_BIT;
@@ -224,17 +225,27 @@ module SH7604_SCI (
 			SSR.MPBT <= 0;
 			RXI <= 0;
 			ERI <= 0;
+			RX_RUN <= 0; 
 			RBIT_CNT <= '0;
 			REC_END <= 0;
 		end
 		else if (EN && CE_R) begin
-			LAST_BIT = SMR.CA ? RBIT_CNT == 4'd7 : RBIT_CNT == 4'd11;
+//			LAST_BIT = SMR.CA ? RBIT_CNT == 4'd7 : RBIT_CNT == 4'd11;
+			
+			if (SCE_F) begin
+				if (RBIT_CNT == 4'd0) RX_RUN <= 1;
+			end
 			
 			if (SCE_R) begin
 				if (SMR.CA) begin
-					if (TX_RUN) begin
+					if ((TX_RUN && !SCR.CKE[1]) || (RX_RUN && SCR.CKE[1])) begin
 						RSR <= {RXD,RSR[7:1]};
-						RBIT_CNT <= !LAST_BIT ? RBIT_CNT + 4'd1 : 4'd0;
+						RBIT_CNT <= RBIT_CNT + 4'd1;
+						if (RBIT_CNT == 4'd7) begin
+							RBIT_CNT <= 4'd0;
+							RX_RUN <= 0; 
+							REC_END <= 1;
+						end
 					end
 				end else begin
 					if (RBIT_CNT == 4'd0) begin
@@ -251,25 +262,26 @@ module SH7604_SCI (
 						RBIT_CNT <= SMR.STOP ? RBIT_CNT + 4'd1 : RBIT_CNT + 4'd2;
 					end else begin
 						SSR.FER <= ~RXD;
-						RBIT_CNT <= !LAST_BIT ? RBIT_CNT + 4'd1 : 4'd0;
+						RBIT_CNT <= RBIT_CNT + 4'd1;
+						if (RBIT_CNT == 4'd11) begin
+							RBIT_CNT <= 4'd0;
+							REC_END <= 1;
+						end
 					end
 				end
-				REC_END <= LAST_BIT;
 			end
 			
-			if (SCE_F) begin
-				if (REC_END) begin
-					if (!SSR.RDRF && SCR.RE) begin
-						RDR <= RSR;
-						SSR.RDRF <= 1;
-						RXI <= 1;
-					end
-					else if (SSR.RDRF && SCR.RE) begin
-						SSR.ORER <= 1;
-						ERI <= 1;
-					end
+			if (REC_END) begin
+				if (!SSR.RDRF && SCR.RE) begin
+					RDR <= RSR;
+					SSR.RDRF <= 1;
+					RXI <= 1;
 				end
-				REC_END <= 0;
+				else if (SSR.RDRF && SCR.RE) begin
+					SSR.ORER <= 1;
+					ERI <= 1;
+				end
+			REC_END <= 0;
 			end
 			
 			if (SSR_WRITE) begin

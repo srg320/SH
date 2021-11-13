@@ -553,7 +553,7 @@ module SH7604_CACHE (
 	assign CBUS_BUSY = CBUS_REQ & (IBUS_READ | IBUS_READARRAY | IBUS_READ_PEND | IBUS_WRITE_PEND);
 	
 	
-	wire CCR_SEL = IBADDR == 32'hFFFFFE92 && IBBA[1];
+	wire CCR_SEL = IBADDR == 32'hFFFFFE92;
 	always @(posedge CLK or negedge RST_N) begin
 		if (!RST_N) begin
 			CCR <= '0;
@@ -565,8 +565,8 @@ module SH7604_CACHE (
 			CCR <= CCR_INIT;
 		end
 		else if (CE_R) begin
-			if (CCR_SEL && IBWE && IBREQ) begin
-				CCR <= IBDATA[15:8] & CCR_WMASK;
+			if (CCR_SEL && IBBA ==? 4'b001? && IBWE && IBREQ) begin
+				CCR <= IBDATA[7:0] & CCR_WMASK;
 			end
 			if (CCR.CP) CCR.CP <= 0;
 		end
