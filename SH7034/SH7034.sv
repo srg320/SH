@@ -284,10 +284,10 @@ module SH7034
 		.VECT_WAIT(VECT_WAIT)
 	);
 	
-	assign CBUS_DI = MAC_SEL ? MULT_DO : IBUS_DI;
+	assign CBUS_DI = |MAC_SEL && MAC_OP == 4'b1100 && !MAC_WE ? MULT_DO : IBUS_DI;
 	assign CBUS_WAIT = IBUS_WAIT;
 	
-	wire [31:0] MULT_DI = MAC_SEL && MAC_OP[3:2] == 2'b10 ? IBUS_DI : CBUS_DO;
+	wire [31:0] MULT_DI = |MAC_SEL && MAC_OP[3:2] == 2'b10 ? IBUS_DI : CBUS_DO;
 	SH7034_MULT mult
 	(
 		.CLK(CLK),
@@ -313,7 +313,7 @@ module SH7034
 	
 	assign IBUS_A = CBUS_A;
 	assign IBUS_BA = CBUS_BA;
-	assign IBUS_DO = MAC_SEL && !MAC_OP && !MAC_WE ? MULT_DO : CBUS_DO;
+	assign IBUS_DO = |MAC_SEL && MAC_OP == 4'b1110 && !MAC_WE ? MULT_DO : CBUS_DO;
 	assign IBUS_WE = CBUS_WR;
 	assign IBUS_REQ = CBUS_REQ;
 	

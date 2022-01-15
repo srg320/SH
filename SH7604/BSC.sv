@@ -349,10 +349,13 @@ module SH7604_BSC
 			
 			if (CE_R) begin
 				if (BUS_STATE == T0 || BUS_STATE == T2 || BUS_STATE == TD || BUS_STATE == TV2) begin
-					if (BUS_ACCESS_REQ && !BUS_RLS && !BUSY) begin
+					if (DBUS_REQ && !BUS_RLS && !BUSY && (BURST_CNT[0] || !BURST_EN)) begin
 						BUSY <= 1;
-						DBUSY <= DBUS_REQ;
-						VBUSY <= VBUS_REQ;
+						DBUSY <= 1;
+					end
+					if (VBUS_REQ && !BUS_RLS && !BUSY) begin
+						BUSY <= 1;
+						VBUSY <= 1;
 					end
 					
 					if (((BUS_STATE == T2 || BUS_STATE == TD) && BUSY && DBUSY && !BURST_EN) || (BUS_STATE == TD && BURST_EN && !BURST_LAST)) begin

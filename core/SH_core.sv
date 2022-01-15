@@ -779,8 +779,8 @@ module SH_core
 	assign BUS_REQ = ((PIPE.MA.DI.MEM.R | PIPE.MA.DI.MEM.W) & MA_ACTIVE & ~MAWB_STALL) | (IF_ACTIVE & ~INST_SPLIT & ~IFID_STALL);
 	assign BUS_TAS = PIPE.MA.DI.TAS & MA_ACTIVE & ~MAWB_STALL;
 	
-	assign MAC_SEL = PIPE.MA.DI.MAC.S & {2{MA_ACTIVE & ~MAWB_STALL}};
-	assign MAC_OP = PIPE.MA.DI.MAC.OP & {4{MA_ACTIVE & ~MAWB_STALL}};
+	assign MAC_SEL = PIPE.MA.DI.MAC.S & {2{(MA_ACTIVE & ~MAWB_STALL)}};
+	assign MAC_OP = PIPE.MA.DI.MAC.OP & {4{(MA_ACTIVE & ~MAWB_STALL)}};
 	assign MAC_S = SR.S;
 	assign MAC_WE = |PIPE.MA.DI.MAC.S & PIPE.MA.DI.MAC.W & MA_ACTIVE & ~MA_STALL;
 	
@@ -803,8 +803,9 @@ module SH_core
 			DBG_BREAK <= 0;
 		end
 		else begin
+			BP_ADDR <= '0;
 			if (BP_ADDR == PIPE.WB.PC && CE) begin
-				DBG_BREAK <= 1;
+//				DBG_BREAK <= 1;
 			end
 			else if (!DBG_BREAK && DBG_RUN) begin
 				DBG_BREAK <= 0;

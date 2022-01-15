@@ -58,7 +58,7 @@ module SH7034_MULT (
 		else begin
 			if (MAC_SEL && MAC_WE && CE_R) begin
 				case (MAC_OP) 
-					4'b0000,			//LDS Rm,MACx
+					4'b0100,			//LDS Rm,MACx
 					4'b1000: begin	//LDS @Rm+,MACx
 						if (MAC_SEL[0]) MACL <= CBUS_DI;
 						if (MAC_SEL[1]) MACH <= CBUS_DI[9:0];

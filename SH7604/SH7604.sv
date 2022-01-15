@@ -70,7 +70,8 @@ module SH7604 (
 	
 	output reg        UNUSED_REQ,
 	output      [7:0] DBG_CNT,
-	output reg        HOOK
+	output reg        HOOK,
+	output reg  [3:0] HOOK2
 );
 	import SH7604_PKG::*;
 	
@@ -291,12 +292,17 @@ module SH7604 (
 		if (!RST_N) begin
 			UNUSED_REQ <= '0;
 			HOOK <= 0;
+			HOOK2 <= 0;
 		end
-		else if (CE_F) begin	
-			if (CBUS_REQ) UNUSED_REQ <= ~USED_ADDR;
-			if (CBUS_A == 32'h0205AAF0 && CBUS_REQ && !CBUS_WR) HOOK <= 1;
+		else begin	
+			if (CBUS_A == 32'h060F0A5C && CBUS_DI == 32'h7704430B && CBUS_REQ && !CBUS_WR) HOOK <= 1;
+			if (CBUS_A == 32'h060F0A64 /*&& CBUS_DI == 32'h7704430B*/ && CBUS_REQ && !CBUS_WR) HOOK <= 0;
+			if (CBUS_A == 32'h060F1C04 && CBUS_DI == 32'h8901A001 && CBUS_REQ && !CBUS_WR && HOOK) HOOK2 <= HOOK2 + 1'd1;
 			
-			if (CBUS_REQ) DBG_CNT <= DBG_CNT + 1'd1;
+			if (CBUS_REQ && CE_F) begin
+				UNUSED_REQ <= ~USED_ADDR;
+				DBG_CNT <= DBG_CNT + 1'd1;
+			end
 			else DBG_CNT <= '0;
 		end
 	end
