@@ -33,6 +33,8 @@ module SH_core
 	output            VECT_REQ,
 	input             VECT_WAIT,
 	
+	output            SLEEP,
+	
 	output			   ILI,
 	
 	input       [4:0] DBG_REGN,
@@ -58,7 +60,7 @@ module SH_core
 	bit [31:0] RD_SAVE;
 	bit [ 2:0] STATE;
 	DecInstr_t ID_DECI;
-	bit        STBY;
+	bit        SLP;
 	bit [31:0] ALU_RES;
 	bit        ALU_T;
 	SR_t       SR_NEW;
@@ -113,7 +115,7 @@ module SH_core
 		else if (EN && CE) begin
 			if (PIPE.EX.DI.PCW && !EX_STALL) begin
 				NPC <= ALU_RES;
-			end else if (!PC_STALL && !STBY) begin
+			end else if (!PC_STALL && !SLP) begin
 				NPC <= PC + 2;
 			end
 		end
@@ -214,7 +216,7 @@ module SH_core
 				NEW_IR = SAVE_IR;
 			end
 			
-			if (STBY) begin
+			if (SLP) begin
 				NEW_IR = 16'h0009;
 			end
 				
@@ -280,7 +282,7 @@ module SH_core
 			PIPE.EX.BC <= 0;
 			STATE <= '0;
 			IFID_STALL <= 0;
-			STBY <= 1;
+			SLP <= 1;
 		end
 		else if (!RES_N) begin
 			PIPE.EX.IR <= '0;
@@ -292,7 +294,7 @@ module SH_core
 			PIPE.EX.BC <= 0;
 			STATE <= '0;
 			IFID_STALL <= 0;
-			STBY <= 0;
+			SLP <= 0;
 		end
 		else if (EN && CE) begin
 			if (!ID_STALL) begin
@@ -306,8 +308,8 @@ module SH_core
 				STATE <= NEXT_STATE;
 				IFID_STALL <= |NEXT_STATE;
 				
-				if (ID_DECI.SLP) STBY <= 1;
-				if (STBY && INT_REQ) STBY <= 0;
+				if (ID_DECI.SLP) SLP <= 1;
+				if (SLP && INT_REQ) SLP <= 0;
 			end
 			
 			INT_REQ_OLD <= INT_REQ;
@@ -788,6 +790,8 @@ module SH_core
 	assign INT_ACK = PIPE.EX.DI.IACK;
 	assign INT_ACP = PIPE.MA.DI.VECR;
 	assign VECT_REQ = VECT_ACTIVE;
+	
+	assign SLEEP = SLP;
 	
 	//Debug
 	assign ILI = ID_DECI.ILI & ~ID_STALL & ~IFID_STALL;

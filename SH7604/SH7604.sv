@@ -102,6 +102,8 @@ module SH7604 (
 	bit        VECT_REQ;
 	bit        VECT_WAIT;
 	
+	bit        SLEEP;
+	
 	bit  [3:0] VBUS_A;
 	bit  [7:0] VBUS_DO;
 	bit        VBUS_REQ;
@@ -174,6 +176,13 @@ module SH7604 (
 	bit        UBC_ACT;
 	bit        UBC_IRQ;
 	
+	//MSBY
+	bit [31:0] MSBY_DO;
+	bit        MSBY_ACT;
+	bit        MSBY_SBY;
+	
+	bit        SBY;
+	
 	//Internal clocks
 	bit        CLK4_CE;
 	bit        CLK8_CE;
@@ -220,6 +229,8 @@ module SH7604 (
 		.INT_ACP(INT_ACP),
 		.VECT_REQ(VECT_REQ),
 		.VECT_WAIT(VECT_WAIT),
+		
+		.SLEEP(SLEEP),
 		
 		.DBG_REGN(DBG_REGN),
 		.DBG_REGQ(DBG_REGQ),
@@ -656,6 +667,7 @@ module SH7604 (
 		.EN(EN),
 		
 		.RES_N(RES_N),
+		.SBY(SBY),
 		
 		.FTOA(FTOA),
 		.FTOB(FTOB),
@@ -690,6 +702,7 @@ module SH7604 (
 		.EN(EN),
 		
 		.RES_N(RES_N),
+		.SBY(SBY),
 		
 		.WDTOVF_N(WDTOVF_N),
 		
@@ -715,5 +728,29 @@ module SH7604 (
 		.PRES(WDT_PRES),
 		.MRES(WDT_MRES)
 	);
+	
+	SH7604_MSBY msby
+	(
+		.CLK(CLK),
+		.RST_N(RST_N),
+		.CE_R(CE_R),
+		.CE_F(CE_F),
+		.EN(EN),
+		
+		.RES_N(RES_N),
+		
+		.IBUS_A(DBUS_A),
+		.IBUS_DI(DBUS_DO),
+		.IBUS_DO(MSBY_DO),
+		.IBUS_BA(DBUS_BA),
+		.IBUS_WE(DBUS_WE),
+		.IBUS_REQ(DBUS_REQ),
+		.IBUS_BUSY(),
+		.IBUS_ACT(MSBY_ACT),
+		
+		.SBY(MSBY_SBY)
+	);
+	
+	assign SBY = MSBY_SBY & SLEEP;
 	
 endmodule

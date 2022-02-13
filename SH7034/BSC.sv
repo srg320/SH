@@ -118,6 +118,7 @@ module SH7034_BSC
 	bit   [3:0] NEXT_BA;
 	always @(posedge CLK or negedge RST_N) begin
 		BusState_t STATE_NEXT;
+		bit        STATE_T2_END;
 		bit  [2:0] WAIT_CNT;
 		bit [31:0] IBUS_DI_SAVE;
 		bit        IBUS_WE_SAVE;
@@ -140,78 +141,75 @@ module SH7034_BSC
 			AREA_SZ = GetAreaSZ(ADDR,BCR,A0_SZ);
 			STATE_NEXT = BUS_STATE;
 			case (BUS_STATE)
-				T0: begin
+				T0:;
+				
+				T1: if (CE_R) begin
+					case (GetAreaW(ADDR[26:24],WCR1))
+						2'b00: begin
+//							STATE_NEXT = T2;
+						end
+						2'b01: begin
+							WAIT_CNT <= 3'd0;
+//							STATE_NEXT = !WAIT_N ? TW : T2;
+						end
+						2'b10,2'b11: begin
+							case (GetAreaLW(ADDR[26:24],WCR3))
+								2'b00: begin WAIT_CNT <= 3'd1 - 3'd1; /*STATE_NEXT = !WAIT_N ? TW : T2;*/ end
+								2'b01: begin WAIT_CNT <= 3'd2 - 3'd1; /*STATE_NEXT = TW;*/ end
+								2'b10: begin WAIT_CNT <= 3'd3 - 3'd1; /*STATE_NEXT = TW;*/ end
+								2'b11: begin WAIT_CNT <= 3'd4 - 3'd1; /*STATE_NEXT = TW;*/ end
+							endcase
+						end
+					endcase
+					STATE_T2_END <= 0;
+					STATE_NEXT = T2;
 				end
 				
-				T1: begin
-					if (CE_R) begin
-						case (GetAreaW(ADDR[26:24],WCR1))
-							2'b00: begin
-								if (!NEXT_BA) begin
-									BUSY <= 0;
-								end
-//								CACK <= 1;
-								STATE_NEXT = T2;
-							end
-							2'b01: begin
-								WAIT_CNT <= 3'd0;
-								STATE_NEXT = TW;
-							end
-							2'b10,2'b11: begin
-								case (GetAreaLW(ADDR[26:24],WCR3))
-									2'b00: WAIT_CNT <= 3'd1;
-									2'b01: WAIT_CNT <= 3'd2;
-									2'b10: WAIT_CNT <= 3'd3;
-									2'b11: WAIT_CNT <= 3'd4;
-								endcase
-								STATE_NEXT = TW;
-							end
-						endcase
-					end
-				end
+//				TW: if (CE_R) begin
+//					if (WAIT_N) begin
+//						if (WAIT_CNT) begin
+//							WAIT_CNT <= WAIT_CNT - 3'd1;
+//						end
+//						else begin
+//							STATE_NEXT = T2;
+//						end
+//					end
+//				end
 				
-				TW: begin
-					if (CE_F) begin
-//						CACK <= 1;
-					end else if (CE_R) begin
+				T2: if (CE_F) begin
+					if (WAIT_N) begin
 						if (WAIT_CNT) begin
 							WAIT_CNT <= WAIT_CNT - 3'd1;
 						end
-						else if (WAIT_N) begin
-//							if (!NEXT_BA) begin
-//								BUSY <= 0;
-//							end
-							STATE_NEXT = T2;
+						else begin
+							case (AREA_SZ)
+								1'b0: 
+									case (A[1:0])
+										2'b00: DAT_BUF[31:24] <= DI[7:0];
+										2'b01: DAT_BUF[23:16] <= DI[7:0];
+										2'b10: DAT_BUF[15: 8] <= DI[7:0];
+										2'b11: DAT_BUF[ 7: 0] <= DI[7:0];
+									endcase
+								1'b1: 
+									case (A[1])
+										1'b0: DAT_BUF[31:16] <= DI[15:0];
+										1'b1: DAT_BUF[15: 0] <= DI[15:0];
+									endcase
+								default:;
+							endcase
+							if (!NEXT_BA) begin
+								BUSY <= 0;
+							end
+							WRL_N <= 1;
+							WRH_N <= 1;
+							RD_N <= 1;
+							CACK <= 0;
+							
+							STATE_T2_END <= 1;
 						end
 					end
-				end
-				
-				T2: begin
-					if (CE_F) begin
-						case (AREA_SZ)
-							1'b0: 
-								case (A[1:0])
-									2'b00: DAT_BUF[31:24] <= DI[7:0];
-									2'b01: DAT_BUF[23:16] <= DI[7:0];
-									2'b10: DAT_BUF[15: 8] <= DI[7:0];
-									2'b11: DAT_BUF[ 7: 0] <= DI[7:0];
-								endcase
-							1'b1: 
-								case (A[1])
-									1'b0: DAT_BUF[31:16] <= DI[15:0];
-									1'b1: DAT_BUF[15: 0] <= DI[15:0];
-								endcase
-							default:;
-						endcase
-						if (!NEXT_BA) begin
-							BUSY <= 0;
-						end
-						WRL_N <= 1;
-						WRH_N <= 1;
-						RD_N <= 1;
-						CACK <= 0;
-					end
-					else if (CE_R) begin
+				end else if (CE_R) begin
+					if (STATE_T2_END) begin
 						if (!NEXT_BA) begin
 							CS_N <= '1;
 						end
@@ -222,16 +220,12 @@ module SH7034_BSC
 				default:;
 			endcase
 			
-			/*if (CE_F) begin
-				if (BUS_ACCESS_REQ && !BUS_RLS && !BUSY) begin
-						BUSY <= 1;
-					end
-			end elseif (CE_F)*/  begin
+			begin
 				if (BUS_STATE == T0 || BUS_STATE == T2) begin
 					if (BUS_ACCESS_REQ && !BUS_RLS && !BUSY && CE_F) begin
 						BUSY <= 1;
 					end
-					if (BUS_STATE == T0 && BUSY && CE_R) begin
+					if (STATE_T2_END && BUSY && CE_R) begin
 						case (AREA_SZ)
 							1'b0: begin 
 								ADDR[1:0] <= ADDR[1:0] + 2'd1; 

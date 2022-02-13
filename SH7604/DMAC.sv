@@ -277,7 +277,7 @@ module SH7604_DMAC (
 						
 						if (!CHCR[DMA_CH].TB) DMA_WR <= 0;
 					end
-					DMA_REQ_CLR <= 1;
+					if (!LW_CNT) DMA_REQ_CLR <= 1;
 					
 					TCR[DMA_CH] <= TCR_NEXT;
 					if (!TCR_NEXT) begin

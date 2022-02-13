@@ -6,6 +6,7 @@ module SH7604_FRT (
 	input             EN,
 	
 	input             RES_N,
+	input             SBY,
 	
 	output reg        FTOA,
 	output reg        FTOB,
@@ -44,53 +45,67 @@ module SH7604_FRT (
 	
 	//Clock selector
 	bit         FRC_CE;
+	bit         FTCI_OLD;
 	always @(posedge CLK or negedge RST_N) begin
-		bit         FTCI_OLD;
-		
 		if (!RST_N) begin
-			FRC_CE <= 0;
+//			FRC_CE <= 0;
 			FTCI_OLD <= 0;
 		end
 		else if (EN && CE_R) begin
 			FTCI_OLD <= FTCI;
-			case (TCR.CKS)
-				2'b00: FRC_CE <= CLK8_CE;
-				2'b01: FRC_CE <= CLK32_CE;
-				2'b10: FRC_CE <= CLK128_CE;
-				2'b11: FRC_CE <= FTCI & ~FTCI_OLD;
-			endcase
+//			case (TCR.CKS)
+//				2'b00: FRC_CE <= CLK8_CE;
+//				2'b01: FRC_CE <= CLK32_CE;
+//				2'b10: FRC_CE <= CLK128_CE;
+//				2'b11: FRC_CE <= FTCI & ~FTCI_OLD;
+//			endcase
 		end
+	end
+	
+	always_comb begin
+		case (TCR.CKS)
+			2'b00: FRC_CE = CLK8_CE;
+			2'b01: FRC_CE = CLK32_CE;
+			2'b10: FRC_CE = CLK128_CE;
+			2'b11: FRC_CE = FTCI & ~FTCI_OLD;
+		endcase
 	end
 	
 	wire REG_SEL = (IBUS_A >= 32'hFFFFFE10 && IBUS_A <= 32'hFFFFFE19);
 	wire FTCSR_WRITE = REG_SEL && IBUS_A[3:0] == 4'h1 && IBUS_WE && IBUS_REQ;
-	wire FTCSR_READ = REG_SEL && IBUS_A[3:0] == 4'h1 && !IBUS_WE && IBUS_REQ;
+//	wire FTCSR_READ = REG_SEL && IBUS_A[3:0] == 4'h1 && !IBUS_WE && IBUS_REQ;
 	always @(posedge CLK or negedge RST_N) begin
 		if (!RST_N) begin
 			FTCSR.OCFA <= 0;
 			FTCSR.OCFB <= 0;
 			FTCSR.OVF <= 0;
 		end
-		else if (EN && CE_R) begin
-			if (FRC_CE) begin
-				if (FRC == OCRA) begin
-					FTOA <= TOCR.OLVLA;
-					FTCSR.OCFA <= 1;
-				end
-				if (FRC == OCRB) begin
-					FTOB <= TOCR.OLVLB;
-					FTCSR.OCFB <= 1;
+		else if (CE_R) begin
+			if (!RES_N || SBY) begin
+				FTCSR.OCFA <= 0;
+				FTCSR.OCFB <= 0;
+				FTCSR.OVF <= 0;
+			end else if (EN) begin
+				if (FRC_CE) begin
+					if (FRC == OCRA) begin
+						FTOA <= TOCR.OLVLA;
+						FTCSR.OCFA <= 1;
+					end
+					if (FRC == OCRB) begin
+						FTOB <= TOCR.OLVLB;
+						FTCSR.OCFB <= 1;
+					end
+					
+					if (FRC == 16'hFFFF) begin
+						FTCSR.OVF <= 1;
+					end
 				end
 				
-				if (FRC == 16'hFFFF) begin
-					FTCSR.OVF <= 1;
+				if (FTCSR_WRITE) begin
+					if (!IBUS_DI[19] && FTCSR.OCFA) FTCSR.OCFA <= 0;
+					if (!IBUS_DI[18] && FTCSR.OCFB) FTCSR.OCFB <= 0;
+					if (!IBUS_DI[17] && FTCSR.OVF) FTCSR.OVF <= 0;
 				end
-			end
-			
-			if (FTCSR_WRITE) begin
-				if (!IBUS_DI[19] && FTCSR.OCFA) FTCSR.OCFA <= 0;
-				if (!IBUS_DI[18] && FTCSR.OCFB) FTCSR.OCFB <= 0;
-				if (!IBUS_DI[17] && FTCSR.OVF) FTCSR.OVF <= 0;
 			end
 		end
 	end
@@ -99,43 +114,38 @@ module SH7604_FRT (
 	always @(posedge CLK or negedge RST_N) begin
 		bit         CAPT;
 		bit         FTI_OLD;
-		bit         ICF_CLEAR_PEND;
 		bit         ICR_READ_OLD;
-		bit         FTCSR_READ_OLD;
-		bit         FTCSR_WRITE_OLD;
 		
 		if (!RST_N) begin
 			ICR <= 16'h0000;
 			FTCSR.ICF <= 0;
 			CAPT <= 0;
 			FTI_OLD <= 0;
-//			ICF_CLEAR_PEND <= 0;
-//			ICR_READ_OLD <= 0;
-//			FTCSR_WRITE_OLD <= 0;
+			ICR_READ_OLD <= 0;
 		end
-		else if (EN && CE_F) begin
-			FTCSR_READ_OLD <= FTCSR_READ;
-			if (!FTCSR_READ && FTCSR_READ_OLD) begin
-				ICF_CLEAR_PEND <= FTCSR.ICF;
-			end
-		end
-		else if (EN && CE_R) begin
-			FTI_OLD <= FTI;
-			CAPT <= ~(FTI ^ TCR.IEDG) & (FTI_OLD ^ TCR.IEDG);
-			
-			ICR_READ_OLD <= ICR_READ;
-			if (ICR_READ && !ICR_READ_OLD && CAPT) begin
-				CAPT <= 1;
-			end
-			else if (CAPT) begin
-				ICR <= FRC;
-				FTCSR.ICF <= 1;
-			end
-			
-			FTCSR_WRITE_OLD <= FTCSR_WRITE;
-			if (FTCSR_WRITE && !FTCSR_WRITE_OLD) begin
-				if (!IBUS_DI[23] && ICF_CLEAR_PEND) FTCSR.ICF <= 0;
-				ICF_CLEAR_PEND <= 0;
+		else if (CE_R) begin
+			if (!RES_N || SBY) begin
+				ICR <= 16'h0000;
+				FTCSR.ICF <= 0;
+				CAPT <= 0;
+				FTI_OLD <= 0;
+				ICR_READ_OLD <= 0;
+			end else if (EN) begin
+				FTI_OLD <= FTI;
+				CAPT <= ~(FTI ^ TCR.IEDG) & (FTI_OLD ^ TCR.IEDG);
+				
+				ICR_READ_OLD <= ICR_READ;
+				if (ICR_READ && !ICR_READ_OLD && CAPT) begin
+					CAPT <= 1;
+				end
+				else if (CAPT) begin
+					ICR <= FRC;
+					FTCSR.ICF <= 1;
+				end
+				
+				if (FTCSR_WRITE) begin
+					if (!IBUS_DI[23] && FTCSR.ICF) FTCSR.ICF <= 0;
+				end
 			end
 		end
 	end
@@ -168,7 +178,7 @@ module SH7604_FRT (
 				FRC <= FRC + 16'd1;
 			end
 			
-			if (!RES_N) begin
+			if (!RES_N || SBY) begin
 				TIER <= TIER_INIT;
 				FRC  <= FRC_INIT;
 				OCRA <= OCR_INIT;

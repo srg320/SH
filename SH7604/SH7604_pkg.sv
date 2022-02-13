@@ -327,8 +327,8 @@ package SH7604_PKG;
 		bit [ 1: 0] UNUSED;
 		bit [ 2: 0] CKS;			//R/W
 	} WTCSR_t;
-	parameter bit [7:0] WTCSR_WMASK = 8'hE7;
-	parameter bit [7:0] WTCSR_RMASK = 8'hE7;
+	parameter bit [7:0] WTCSR_WMASK = 8'hFF;
+	parameter bit [7:0] WTCSR_RMASK = 8'hFF;
 	parameter bit [7:0] WTCSR_INIT = 8'h18;
 	
 	typedef struct packed		//R;FFFFFE83/W;FFFFFE82
@@ -488,5 +488,17 @@ package SH7604_PKG;
 	parameter bit [15:0] BRCR_WMASK = 16'hF4D4;
 	parameter bit [15:0] BRCR_RMASK = 16'hF4DC;
 	parameter bit [15:0] BRCR_INIT = 16'h0000;
+	
+	//MSBY
+	typedef struct packed		//R/W;FFFFFE91
+	{
+		bit         SBY;			//R/W
+		bit         HIZ;			//R/W
+		bit         UNUSED;
+		bit [ 4: 0] MSTP;			//R/W
+	} SBYCR_t;
+	parameter bit [7:0] SBYCR_WMASK = 8'hDF;
+	parameter bit [7:0] SBYCR_RMASK = 8'hDF;
+	parameter bit [7:0] SBYCR_INIT = 8'h00;
 	
 endpackage
