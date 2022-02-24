@@ -622,7 +622,7 @@ module SH7604_BSC
 	end
 	
 	assign IBUS_DO = REG_SEL ? REG_DO : DAT_BUF;
-	assign IBUS_BUSY = DBUSY | ((BUS_RLS | BGR) & DBUS_REQ);
+	assign IBUS_BUSY = DBUSY | ((BUS_RLS | (BGR & MASTER) | (~BREQ & ~MASTER)) & DBUS_REQ);
 	assign IBUS_ACT = REG_SEL;
 	
 	assign OE_N = 1;
