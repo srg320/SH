@@ -33,8 +33,10 @@ module SH_core
 	output            VECT_REQ,
 	input             VECT_WAIT,
 	
-	output            SLEEP,
+	output            SLEEP
 	
+`ifdef DEBUG
+	                  ,
 	output			   ILI,
 	
 	input       [4:0] DBG_REGN,
@@ -43,6 +45,7 @@ module SH_core
 	output            DBG_BREAK/*,
 	
 	output			   REG_HOOK*/
+`endif
 );
 	
 	import SH2_PKG::*;
@@ -794,6 +797,7 @@ module SH_core
 	assign SLEEP = SLP;
 	
 	//Debug
+`ifdef DEBUG
 	assign ILI = ID_DECI.ILI & ~ID_STALL & ~IFID_STALL;
 	assign DBG_REGQ = DBG_REGN <= 5'h10 ? REGS_RAQ :
 	                  DBG_REGN == 5'h11 ? SR :
@@ -816,5 +820,6 @@ module SH_core
 			end
 		end
 	end
-	
+`endif
+
 endmodule
