@@ -96,7 +96,11 @@ module SH_core
 	bit [31:0] REGS_WBD;
 	bit        REGS_WBE;
 	
+`ifdef DEBUG
 	assign REGS_RAN = EN ? ID_DECI.RA.N : DBG_REGN;
+`elsif
+	assign REGS_RAN = ID_DECI.RA.N;
+`endif
 	assign REGS_RBN = ID_DECI.RB.N;
 	
 	SH2_regfile regfile (CLK, RST_N, CE, EN, REGS_WAN, REGS_WAD, REGS_WAE, REGS_WBN, REGS_WBD, REGS_WBE, 
