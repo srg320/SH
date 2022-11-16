@@ -433,7 +433,7 @@ module SH7034_DMAC (
 						6'h0C: begin
 							if (IBUS_BA[1]) CHCR[0][15: 8] <= IBUS_DI[15: 8] & CHCRx_WMASK[15: 8];
 							if (IBUS_BA[0]) CHCR[0][ 7: 2] <= IBUS_DI[ 7: 2] & CHCRx_WMASK[ 7: 2];
-							if (IBUS_BA[0] && !IBUS_DI[1]) CHCR[0][1] <= 0;
+							if (IBUS_BA[0] && !IBUS_DI[1] && REG_DO[1]) CHCR[0][1] <= 0;
 							if (IBUS_BA[0]) CHCR[0][ 0: 0] <= IBUS_DI[ 0: 0] & CHCRx_WMASK[ 0: 0];
 						end
 						6'h10: begin
@@ -450,7 +450,7 @@ module SH7034_DMAC (
 						6'h1C: begin
 							if (IBUS_BA[1]) CHCR[1][15: 8] <= IBUS_DI[15: 8] & CHCRx_WMASK[15: 8];
 							if (IBUS_BA[0]) CHCR[1][ 7: 2] <= IBUS_DI[ 7: 2] & CHCRx_WMASK[ 7: 2];
-							if (IBUS_BA[0] && !IBUS_DI[1]) CHCR[1][1] <= 0;
+							if (IBUS_BA[0] && !IBUS_DI[1] && REG_DO[1]) CHCR[1][1] <= 0;
 							if (IBUS_BA[0]) CHCR[1][ 0: 0] <= IBUS_DI[ 0: 0] & CHCRx_WMASK[ 0: 0];
 						end
 						6'h20: begin
@@ -467,7 +467,7 @@ module SH7034_DMAC (
 						6'h2C: begin
 							if (IBUS_BA[1]) CHCR[2][15: 8] <= IBUS_DI[15: 8] & CHCRx_WMASK[15: 8];
 							if (IBUS_BA[0]) CHCR[2][ 7: 2] <= IBUS_DI[ 7: 2] & CHCRx_WMASK[ 7: 2];
-							if (IBUS_BA[0] && !IBUS_DI[1]) CHCR[2][1] <= 0;
+							if (IBUS_BA[0] && !IBUS_DI[1] && REG_DO[1]) CHCR[2][1] <= 0;
 							if (IBUS_BA[0]) CHCR[2][ 0: 0] <= IBUS_DI[ 0: 0] & CHCRx_WMASK[ 0: 0];
 						end
 						6'h30: begin
@@ -484,7 +484,7 @@ module SH7034_DMAC (
 						6'h3C: begin
 							if (IBUS_BA[1]) CHCR[3][15: 8] <= IBUS_DI[15: 8] & CHCRx_WMASK[15: 8];
 							if (IBUS_BA[0]) CHCR[3][ 7: 2] <= IBUS_DI[ 7: 2] & CHCRx_WMASK[ 7: 2];
-							if (IBUS_BA[0] && !IBUS_DI[1]) CHCR[3][1] <= 0;
+							if (IBUS_BA[0] && !IBUS_DI[1] && REG_DO[1]) CHCR[3][1] <= 0;
 							if (IBUS_BA[0]) CHCR[3][ 0: 0] <= IBUS_DI[ 0: 0] & CHCRx_WMASK[ 0: 0];
 						end
 						default:;

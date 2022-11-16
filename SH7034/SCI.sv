@@ -46,6 +46,7 @@ module SH7034_SCI
 	bit         TXI;
 	bit         RXI;
 	bit         ERI;
+	SSR_t       SSR_READED;
 	
 	bit         SCE_R;
 	bit         SCE_F;
@@ -144,7 +145,7 @@ module SH7034_SCI
 			TX_RUN <= 0;
 		end
 		else if (CE_R) begin
-			LAST_BIT    = SMR.CA ? TBIT_CNT == 4'd7 : TBIT_CNT == 4'd11;
+			LAST_BIT = SMR.CA ? TBIT_CNT == 4'd7 : TBIT_CNT == 4'd11;
 			
 			if (!SSR.TDRE && LAST_BIT && SCE_R) begin
 				TSR <= TDR;
@@ -157,12 +158,14 @@ module SH7034_SCI
 			end
 			
 			if (SSR_WRITE) begin
-				if (!IBUS_DI[31] && SSR.TDRE && SCR.TE) begin
+				if (!IBUS_DI[31] /*&& SSR.TDRE*/ && SSR_READED.TDRE) begin
 					SSR.TDRE <= 0;
 					TEI <= 0;
+					TXI <= 0;
+					if (SCR.TE) begin
 					SSR.TEND <= 0;
 					TBIT_CNT <= SMR.CA ? 4'd7 : 4'd11;
-					TXI <= 0;
+					end
 				end
 			end
 
@@ -270,19 +273,19 @@ module SH7034_SCI
 			end
 			
 			if (SSR_WRITE) begin
-				if (!IBUS_DI[30] && SSR.RDRF && SCR.RE) begin
+				if (!IBUS_DI[30] /*&& SSR.RDRF && SCR.RE*/ && SSR_READED.RDRF) begin
 					SSR.RDRF <= 0;
 					RXI <= 0;
 				end
-				if (!IBUS_DI[29] && SSR.ORER && SCR.RE) begin
+				if (!IBUS_DI[29] /*&& SSR.ORER && SCR.RE*/ && SSR_READED.ORER) begin
 					SSR.ORER <= 0;
 					ERI <= 0;
 				end
-				if (!IBUS_DI[28] && SSR.FER && SCR.RE) begin
+				if (!IBUS_DI[28] /*&& SSR.FER && SCR.RE*/ && SSR_READED.FER) begin
 					SSR.FER <= 0;
 					ERI <= 0;
 				end
-				if (!IBUS_DI[27] && SSR.PER && SCR.RE) begin
+				if (!IBUS_DI[27] /*&& SSR.PER && SCR.RE*/ && SSR_READED.PER) begin
 					SSR.PER <= 0;
 					ERI <= 0;
 				end
@@ -333,7 +336,7 @@ module SH7034_SCI
 		end
 	end
 	
-	bit [31:0] REG_DO;
+	bit [31: 0] REG_DO;
 	always @(posedge CLK or negedge RST_N) begin
 		if (!RST_N) begin
 			REG_DO <= '0;
@@ -341,12 +344,12 @@ module SH7034_SCI
 		else if (CE_F) begin
 			if (REG_SEL && !IBUS_WE && IBUS_REQ) begin
 				case (IBUS_A[2:0])
-					3'h0: REG_DO <= {4{SMR & SMR_WMASK}};
-					3'h1: REG_DO <= {4{BRR & BRR_WMASK}};
-					3'h2: REG_DO <= {4{SCR & SCR_WMASK}};
-					3'h3: REG_DO <= {4{TDR & TDR_WMASK}};
-					3'h4: REG_DO <= {4{SSR & SSR_RMASK}};
-					3'h5: REG_DO <= {4{RDR & RDR_RMASK}};
+					3'h0: begin REG_DO <= {4{SMR & SMR_WMASK}}; end
+					3'h1: begin REG_DO <= {4{BRR & BRR_WMASK}}; end
+					3'h2: begin REG_DO <= {4{SCR & SCR_WMASK}}; end
+					3'h3: begin REG_DO <= {4{TDR & TDR_WMASK}}; end
+					3'h4: begin REG_DO <= {4{SSR & SSR_RMASK}}; SSR_READED <= SSR & SSR_RMASK; end
+					3'h5: begin REG_DO <= {4{RDR & RDR_RMASK}}; end
 					default:;
 				endcase
 			end
@@ -357,4 +360,4 @@ module SH7034_SCI
 	assign IBUS_BUSY = 0;
 	assign IBUS_ACT = REG_SEL;
 	
-endmodule
+endmodule 

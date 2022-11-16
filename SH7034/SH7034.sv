@@ -324,9 +324,9 @@ module SH7034
 						  SCI1_ACT ? SCI1_DO : 
 						  UBC_ACT  ? UBC_DO : 
 						  PFC_ACT  ? PFC_DO :
-						  DMAC_DO;
-	assign IBUS_WAIT = DMAC_BUSY | INTC_BUSY;
-
+						             DMAC_DO;
+	assign IBUS_WAIT = INTC_ACT ? INTC_BUSY : 
+	                              DMAC_BUSY;
 	
 	SH7034_UBC ubc
 	(

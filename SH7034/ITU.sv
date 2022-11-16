@@ -50,6 +50,7 @@ module SH7034_ITU (
 	GRx_t       GRB[5];
 	BRx_t       BRA[2];
 	BRx_t       BRB[2];
+	TSR_t       TSR_READED;
 	
 	wire REG_SEL = (IBUS_A >= 28'h5FFFF00 && IBUS_A <= 28'h5FFFF3F);
 	
@@ -178,9 +179,9 @@ module SH7034_ITU (
 				end
 				
 				if (TSR_WRITE[i]) begin
-					if (!IBUS_DI[0] && TSR[i].IMFA) TSR[i].IMFA <= 0;
-					if (!IBUS_DI[1] && TSR[i].IMFB) TSR[i].IMFB <= 0;
-					if (!IBUS_DI[2] && TSR[i].OVF)  TSR[i].OVF <= 0;
+					if (!IBUS_DI[0] && TSR[i].IMFA && TSR_READED.IMFA) TSR[i].IMFA <= 0;
+					if (!IBUS_DI[1] && TSR[i].IMFB && TSR_READED.IMFB) TSR[i].IMFB <= 0;
+					if (!IBUS_DI[2] && TSR[i].OVF && TSR_READED.OVF)  TSR[i].OVF <= 0;
 				end
 			end
 		end
@@ -362,19 +363,19 @@ module SH7034_ITU (
 			if (REG_SEL && !IBUS_WE && IBUS_REQ) begin
 				case ({IBUS_A[5:2],2'b00})
 					6'h00: REG_DO <= {TSTR & TSTR_RMASK,TSNC & TSNC_RMASK,TMDR & TMDR_RMASK,TFCR & TFCR_RMASK};
-					6'h04: REG_DO <= {TCR[0] & TCR_RMASK,TIOR[0] & TIOR_RMASK,TIER[0] & TIER_RMASK,TSR[0] & TSR_RMASK};
+					6'h04: begin REG_DO <= {TCR[0] & TCR_RMASK,TIOR[0] & TIOR_RMASK,TIER[0] & TIER_RMASK,TSR[0] & TSR_RMASK}; TSR_READED <= TSR[0]; end
 					6'h08: REG_DO <= {TCNT[0] & TCNT_RMASK,GRA[0] & GRx_RMASK};
 					6'h0C: REG_DO <= {GRB[0] & GRx_RMASK,TCR[1] & TCR_RMASK,TIOR[1] & TIOR_RMASK};
-					6'h10: REG_DO <= {TIER[4] & TIER_RMASK,TSR[4] & TSR_RMASK,TCNT[1] & TCNT_RMASK};
+					6'h10: begin REG_DO <= {TIER[4] & TIER_RMASK,TSR[1] & TSR_RMASK,TCNT[1] & TCNT_RMASK}; TSR_READED <= TSR[1]; end
 					6'h14: REG_DO <= {GRA[1] & GRx_RMASK,GRB[1] & GRx_RMASK};
-					6'h18: REG_DO <= {TCR[2] & TCR_RMASK,TIOR[2] & TIOR_RMASK,TIER[2] & TIER_RMASK,TSR[2] & TSR_RMASK};
+					6'h18: begin REG_DO <= {TCR[2] & TCR_RMASK,TIOR[2] & TIOR_RMASK,TIER[2] & TIER_RMASK,TSR[2] & TSR_RMASK}; TSR_READED <= TSR[2]; end
 					6'h1C: REG_DO <= {TCNT[2] & TCNT_RMASK,GRA[2] & GRx_RMASK};
 					6'h20: REG_DO <= {GRB[2] & GRx_RMASK,TCR[3] & TCR_RMASK,TIOR[3] & TIOR_RMASK};
-					6'h24: REG_DO <= {TIER[3] & TIER_RMASK,TSR[3] & TSR_RMASK,TCNT[3] & TCNT_RMASK};
+					6'h24: begin REG_DO <= {TIER[3] & TIER_RMASK,TSR[3] & TSR_RMASK,TCNT[3] & TCNT_RMASK}; TSR_READED <= TSR[3]; end
 					6'h28: REG_DO <= {GRA[3] & GRx_RMASK,GRB[3] & GRx_RMASK};
 					6'h2C: REG_DO <= {BRA[0] & BRx_RMASK,BRB[0] & BRx_RMASK};
 					6'h30: REG_DO <= {16'h0000,TCR[4] & TCR_RMASK,TIOR[4] & TIOR_RMASK};
-					6'h34: REG_DO <= {TIER[4] & TIER_RMASK,TSR[4] & TSR_RMASK,TCNT[4] & TCNT_RMASK};
+					6'h34: begin REG_DO <= {TIER[4] & TIER_RMASK,TSR[4] & TSR_RMASK,TCNT[4] & TCNT_RMASK}; TSR_READED <= TSR[4]; end
 					6'h38: REG_DO <= {GRA[4] & GRx_RMASK,GRB[4] & GRx_RMASK};
 					6'h3C: REG_DO <= {BRA[1] & BRx_RMASK,BRB[1] & BRx_RMASK};
 					default:;
@@ -387,4 +388,4 @@ module SH7034_ITU (
 	assign IBUS_BUSY = 0;
 	assign IBUS_ACT = REG_SEL;
 	
-endmodule
+endmodule 
