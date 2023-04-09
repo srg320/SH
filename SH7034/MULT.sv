@@ -29,13 +29,11 @@ module SH7034_MULT (
 	
 	wire [31:0] SRES =   $signed(MA) *   $signed(MB);
 	wire [31:0] URES = $unsigned(MA) * $unsigned(MB);
-	wire [41:0] ACC  = $signed({MACH,MACL}) + $signed(SRES);
+	wire [41:0] ACC  = {MACH,MACL} + {{10{SRES[31]}},SRES};
 	
 	always @(posedge CLK or negedge RST_N) begin
 		bit        MUL_EXEC;
-//		bit        DMUL_EXEC;
 		bit        MACW_EXEC;
-//		bit        MACL_EXEC;
 //		bit        SAT;
 		bit        SIGNED;
 		bit [15:0] DW;
@@ -46,9 +44,7 @@ module SH7034_MULT (
 			MA <= '0;
 			MB <= '0;
 			MUL_EXEC <= 0;
-//			DMUL_EXEC <= 0;
 			MACW_EXEC <= 0;
-//			MACL_EXEC <= 0;
 			SIGNED <= 0;
 			// synopsys translate_off
 			MACL <= 32'h01234567;
@@ -63,15 +59,10 @@ module SH7034_MULT (
 						if (MAC_SEL[0]) MACL <= CBUS_DI;
 						if (MAC_SEL[1]) MACH <= CBUS_DI[9:0];
 					end
-//					4'b0001,				//MUL.L
-//					4'b0010,				//DMULU.L
-//					4'b0011: begin		//DMULS.L
-//						if (MAC_SEL[0]) MA <= CBUS_DI;
-//						if (MAC_SEL[1]) MB <= CBUS_DI;
-//						MUL_EXEC <= MAC_SEL[1] & ~MAC_OP[1];
-//						DMUL_EXEC <= MAC_SEL[1] & MAC_OP[1];
-//						SIGNED <= MAC_OP[0];
-//					end
+					4'b0001,				//MUL.L
+					4'b0010,				//DMULU.L
+					4'b0011: begin		//DMULS.L
+					end
 					4'b0110,				//MULU.W
 					4'b0111: begin		//MULS.W
 						MA <= CBUS_DI[15:0];
@@ -79,13 +70,8 @@ module SH7034_MULT (
 						MUL_EXEC <= MAC_SEL[1];
 						SIGNED <= MAC_OP[0];
 					end
-//					4'b1001: begin		//MAC.L
-//						if (MAC_SEL[0]) MA <= CBUS_DI;
-//						if (MAC_SEL[1]) MB <= CBUS_DI;
-//						MACL_EXEC <= MAC_SEL[1];
-//						SIGNED <= MAC_OP[0];
-//						SAT <= MAC_S;
-//					end
+					4'b1001: begin		//MAC.L
+					end
 					4'b1011: begin		//MAC.W
 						DW = !CBUS_A[1] ? CBUS_DI[31:16] : CBUS_DI[15:0];
 						if (MAC_SEL[0]) MA <= DW;
@@ -104,34 +90,10 @@ module SH7034_MULT (
 				MUL_EXEC <= 0;
 			end
 			
-//			if (DMUL_EXEC) begin
-//				if (SIGNED) {MACH,MACL} <= SRES;
-//				else        {MACH,MACL} <= URES;
-//				DMUL_EXEC <= 0;
-//			end
-			
 			if (MACW_EXEC) begin
-//				if (!SAT) begin
-					{MACH,MACL} <= ACC;
-//				end else begin
-//					if (ACC[63:32]) begin
-//						MACL <= {ACC[63],{31{~ACC[63]}}};
-//						MACH <= 32'h00000001;
-//					end else begin
-//						MACL <= ACC[31:0];
-//					end
-//				end
+				{MACH,MACL} <= ACC;
 				MACW_EXEC <= 0;
 			end
-			
-//			if (MACL_EXEC) begin
-//				if (!SAT) begin
-//					{MACH,MACL} <= ACC;
-//				end else begin
-//					{MACH,MACL} <= {{16{ACC[63]}},ACC[47:0]};
-//				end
-//				MACL_EXEC <= 0;
-//			end
 		end
 	end
 	

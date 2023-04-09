@@ -251,6 +251,18 @@ module SH7034
 	bit        CLK4096_CE;
 	bit        CLK8192_CE;
 	
+	bit        RES_SYNC_N;
+	always @(posedge CLK or negedge RST_N) begin
+		if (!RST_N) begin
+			RES_SYNC_N <= 0;
+		end
+		else begin	
+			if (CE_R) begin
+				RES_SYNC_N <= RES_N;
+			end
+		end
+	end
+	
 	SH_core #(.VER(0)) core
 	(
 		.CLK(CLK),
@@ -258,7 +270,7 @@ module SH7034
 		.CE(CE_R),
 		.EN(EN),
 		
-		.RES_N(RES_N),
+		.RES_N(RES_SYNC_N),
 		.NMI_N(NMI_N),
 		
 		.BUS_A(CBUS_A),
@@ -295,7 +307,7 @@ module SH7034
 		.CE_R(CE_R),
 		.CE_F(CE_F),
 		
-		.RES_N(RES_N),
+		.RES_N(RES_SYNC_N),
 		
 		.CBUS_A(CBUS_A),
 		.CBUS_DI(MULT_DI),
@@ -325,8 +337,7 @@ module SH7034
 						  UBC_ACT  ? UBC_DO : 
 						  PFC_ACT  ? PFC_DO :
 						             DMAC_DO;
-	assign IBUS_WAIT = INTC_ACT ? INTC_BUSY : 
-	                              DMAC_BUSY;
+	assign IBUS_WAIT = DMAC_BUSY;
 	
 	SH7034_UBC ubc
 	(
@@ -335,7 +346,7 @@ module SH7034
 		.CE_R(CE_R),
 		.CE_F(CE_F),
 		
-		.RES_N(RES_N),
+		.RES_N(RES_SYNC_N),
 		
 		.IBUS_A(IBUS_A),
 		.IBUS_DI(IBUS_DO),
@@ -364,7 +375,7 @@ module SH7034
 		.CE_R(CE_R),
 		.CE_F(CE_F),
 		
-		.RES_N(RES_N),
+		.RES_N(RES_SYNC_N),
 		.NMI_N(NMI_N),
 		
 		.DREQ0_N(DREQ0_N),
@@ -419,12 +430,12 @@ module SH7034
 		.CE_R(CE_R),
 		.CE_F(CE_F),
 		
-		.IBUS_A(DBUS_A),
-		.IBUS_DI(DBUS_DO),
+		.IBUS_A(IBUS_A),
+		.IBUS_DI(IBUS_DO),
 		.IBUS_DO(RAM_DO),
-		.IBUS_BA(DBUS_BA),
-		.IBUS_WE(DBUS_WE),
-		.IBUS_REQ(DBUS_REQ),
+		.IBUS_BA(IBUS_BA),
+		.IBUS_WE(IBUS_WE),
+		.IBUS_REQ(IBUS_REQ),
 		.IBUS_BUSY(),
 		.IBUS_ACT(RAM_ACT)
 	);
@@ -457,7 +468,7 @@ module SH7034
 		.CE_R(CE_R),
 		.CE_F(CE_F),
 		
-		.RES_N(RES_N),
+		.RES_N(RES_SYNC_N),
 		
 		.A(A),
 		.DI(DI),
@@ -487,13 +498,6 @@ module SH7034
 		.BUS_RLS(BUS_RLS)
 	);
 	
-//	assign {A,DO}                         = !BUS_RLS ? {IA[21:0],IDO} : {EA,EDO};
-//	assign IDI                            = !BUS_RLS ? DI        : EDO;
-//	assign {CS0_N,CS1_N,CS2_N,CS3_N,CS4_N,CS5_N,CS6_N,CS7_N} = !BUS_RLS ? {ICS0_N,ICS1_N,ICS2_N,ICS3_N,ICS4_N,ICS5_N,ICS6_N,ICS7_N} : {ECS0_N,ECS1_N,ECS2_N,ECS3_N,ECS4_N,ECS5_N,ECS6_N,ECS7_N};
-//	assign {WE_N,RD_N}  = !BUS_RLS ? {IWE_N,IRD_N}  : {EWE_N,ERD_N};
-//	assign EDI = DI;
-	
-	
 	SH7034_INTC intc
 	(
 		.CLK(CLK),
@@ -501,7 +505,7 @@ module SH7034
 		.CE_R(CE_R),
 		.CE_F(CE_F),
 		
-		.RES_N(RES_N),
+		.RES_N(RES_SYNC_N),
 		.NMI_N(NMI_N),
 		.IRQ_N(INTC_IRQ_N),
 		.IRQOUT_N(INTC_IRQOUT_N),
@@ -532,12 +536,12 @@ module SH7034
 		.ITU_IMIB_IRQ(IMIB_IRQ),
 		.ITU_OVI_IRQ(OVI_IRQ),
 		
-		.IBUS_A(DBUS_A),
-		.IBUS_DI(DBUS_DO),
+		.IBUS_A(IBUS_A),
+		.IBUS_DI(IBUS_DO),
 		.IBUS_DO(INTC_DO),
-		.IBUS_BA(DBUS_BA),
-		.IBUS_WE(DBUS_WE),
-		.IBUS_REQ(DBUS_REQ),
+		.IBUS_BA(IBUS_BA),
+		.IBUS_WE(IBUS_WE),
+		.IBUS_REQ(IBUS_REQ),
 		.IBUS_BUSY(INTC_BUSY),
 		.IBUS_ACT(INTC_ACT),
 		
@@ -590,7 +594,7 @@ module SH7034
 		.CE_R(CE_R),
 		.CE_F(CE_F),
 		
-		.RES_N(RES_N),
+		.RES_N(RES_SYNC_N),
 		
 		.RXD(SCI_RXD0),
 		.TXD(SCI_TXD0),
@@ -623,7 +627,7 @@ module SH7034
 		.CE_R(CE_R),
 		.CE_F(CE_F),
 		
-		.RES_N(RES_N),
+		.RES_N(RES_SYNC_N),
 		
 		.RXD(SCI_RXD1),
 		.TXD(SCI_TXD1),
@@ -656,7 +660,7 @@ module SH7034
 		.CE_R(CE_R),
 		.CE_F(CE_F),
 		
-		.RES_N(RES_N),
+		.RES_N(RES_SYNC_N),
 		
 		.TCLKA(TCLKA),
 		.TCLKB(TCLKB),
@@ -694,7 +698,7 @@ module SH7034
 		.CE_R(CE_R),
 		.CE_F(CE_F),
 		
-		.RES_N(RES_N),
+		.RES_N(RES_SYNC_N),
 		
 		.WDTOVF_N(WDTOVF_N),
 		
@@ -728,7 +732,7 @@ module SH7034
 		.CE_R(CE_R),
 		.CE_F(CE_F),
 		
-		.RES_N(RES_N),
+		.RES_N(RES_SYNC_N),
 		
 		.PA0I_TIOCA0(PA0I_TIOCA0),
 		.PA1I(PA1I),

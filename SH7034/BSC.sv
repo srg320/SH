@@ -227,7 +227,7 @@ module SH7034_BSC
 					end
 					if (STATE_T2_END && BUSY && CE_R) begin
 						case (AREA_SZ)
-							1'b0: begin 
+							/*1'b0: begin 
 								ADDR[1:0] <= ADDR[1:0] + 2'd1; 
 								case (ADDR[1:0] + 2'd1)
 									2'b01: begin 
@@ -254,7 +254,7 @@ module SH7034_BSC
 										NEXT_BA <= 4'b0000;
 									end
 								endcase
-							end
+							end*/
 							1'b1: begin 
 								ADDR[1:0] <= ADDR[1:0] + 2'd2; 
 								DO <= IBUS_DI_SAVE[15: 0];
@@ -272,7 +272,7 @@ module SH7034_BSC
 						BUSY <= 1;
 						
 						case (GetAreaSZ(IBUS_A,BCR,A0_SZ))
-							1'b0: begin 
+							/*1'b0: begin 
 								case (IBUS_A[1:0])
 									2'b00: begin 
 										DO <= {8'h00,IBUS_DI[31:24]}; 
@@ -299,7 +299,7 @@ module SH7034_BSC
 										NEXT_BA <= 4'b0000;
 									end
 								endcase
-							end
+							end*/
 							1'b1: begin 
 								case (IBUS_A[1])
 									1'b0: begin 

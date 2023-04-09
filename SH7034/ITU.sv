@@ -55,12 +55,12 @@ module SH7034_ITU (
 	wire REG_SEL = (IBUS_A >= 28'h5FFFF00 && IBUS_A <= 28'h5FFFF3F);
 	
 	//Clock selector	
-	bit         TCNT_CE[5];
+//	bit         TCNT_CE[5];
+	bit         TCLKA_OLD;
+	bit         TCLKB_OLD;
+	bit         TCLKC_OLD;
+	bit         TCLKD_OLD;
 	always @(posedge CLK or negedge RST_N) begin
-		bit         TCLKA_OLD;
-		bit         TCLKB_OLD;
-		bit         TCLKC_OLD;
-		bit         TCLKD_OLD;
 		
 		if (!RST_N) begin
 			// synopsys translate_off
@@ -76,21 +76,36 @@ module SH7034_ITU (
 			TCLKB_OLD <= TCLKB;
 			TCLKC_OLD <= TCLKC;
 			TCLKD_OLD <= TCLKD;
-			for (int i=0; i<5; i++) begin
-				case (TCR[i].TPSC)
-					3'b000: TCNT_CE[i] <= 1;
-					3'b001: TCNT_CE[i] <= CLK2_CE;
-					3'b010: TCNT_CE[i] <= CLK4_CE;
-					3'b011: TCNT_CE[i] <= CLK8_CE;
-					3'b100: TCNT_CE[i] <= (TCLKA ^ TCLKA_OLD) & ((TCLKA ^ TCR[i].CKEG[0]) | TCR[i].CKEG[1]);
-					3'b101: TCNT_CE[i] <= (TCLKB ^ TCLKB_OLD) & ((TCLKB ^ TCR[i].CKEG[0]) | TCR[i].CKEG[1]);
-					3'b110: TCNT_CE[i] <= (TCLKC ^ TCLKC_OLD) & ((TCLKC ^ TCR[i].CKEG[0]) | TCR[i].CKEG[1]);
-					3'b111: TCNT_CE[i] <= (TCLKD ^ TCLKD_OLD) & ((TCLKD ^ TCR[i].CKEG[0]) | TCR[i].CKEG[1]);
-				endcase
-			end
+//			for (int i=0; i<5; i++) begin
+//				case (TCR[i].TPSC)
+//					3'b000: TCNT_CE[i] <= 1;
+//					3'b001: TCNT_CE[i] <= CLK2_CE;
+//					3'b010: TCNT_CE[i] <= CLK4_CE;
+//					3'b011: TCNT_CE[i] <= CLK8_CE;
+//					3'b100: TCNT_CE[i] <= (TCLKA ^ TCLKA_OLD) & ((TCLKA ^ TCR[i].CKEG[0]) | TCR[i].CKEG[1]);
+//					3'b101: TCNT_CE[i] <= (TCLKB ^ TCLKB_OLD) & ((TCLKB ^ TCR[i].CKEG[0]) | TCR[i].CKEG[1]);
+//					3'b110: TCNT_CE[i] <= (TCLKC ^ TCLKC_OLD) & ((TCLKC ^ TCR[i].CKEG[0]) | TCR[i].CKEG[1]);
+//					3'b111: TCNT_CE[i] <= (TCLKD ^ TCLKD_OLD) & ((TCLKD ^ TCR[i].CKEG[0]) | TCR[i].CKEG[1]);
+//				endcase
+//			end
 		end
 	end
 	
+	bit         TCNT_CE[5];
+	always_comb begin
+		for (int i=0; i<5; i++) begin
+			case (TCR[i].TPSC)
+				3'b000: TCNT_CE[i] <= 1;
+				3'b001: TCNT_CE[i] <= CLK2_CE;
+				3'b010: TCNT_CE[i] <= CLK4_CE;
+				3'b011: TCNT_CE[i] <= CLK8_CE;
+				3'b100: TCNT_CE[i] <= (TCLKA ^ TCLKA_OLD) & ((TCLKA ^ TCR[i].CKEG[0]) | TCR[i].CKEG[1]);
+				3'b101: TCNT_CE[i] <= (TCLKB ^ TCLKB_OLD) & ((TCLKB ^ TCR[i].CKEG[0]) | TCR[i].CKEG[1]);
+				3'b110: TCNT_CE[i] <= (TCLKC ^ TCLKC_OLD) & ((TCLKC ^ TCR[i].CKEG[0]) | TCR[i].CKEG[1]);
+				3'b111: TCNT_CE[i] <= (TCLKD ^ TCLKD_OLD) & ((TCLKD ^ TCR[i].CKEG[0]) | TCR[i].CKEG[1]);
+			endcase
+		end
+	end
 	
 	bit   [4:0] TIOCAI_OLD;
 	bit   [4:0] TIOCBI_OLD;
@@ -120,25 +135,25 @@ module SH7034_ITU (
 		TCNT_EN = {TSTR.STR4,TSTR.STR3,TSTR.STR2,TSTR.STR1,TSTR.STR0};
 		
 		for (int i=0; i<5; i++) begin
-			TIOCAI_EDGE[i] = (TIOCAI[i] ^ TIOCAI_OLD[i]) & ((TIOCAI[i] ^ TIOR[i].IOA[0]) | TIOR[i].IOA[1]);
-			TIOCBI_EDGE[i] = (TIOCBI[i] ^ TIOCBI_OLD[i]) & ((TIOCBI[i] ^ TIOR[i].IOB[0]) | TIOR[i].IOB[1]);
+			TIOCAI_EDGE[i] <= (TIOCAI[i] ^ TIOCAI_OLD[i]) & ((TIOCAI[i] ^ TIOR[i].IOA[0]) | TIOR[i].IOA[1]);
+			TIOCBI_EDGE[i] <= (TIOCBI[i] ^ TIOCBI_OLD[i]) & ((TIOCBI[i] ^ TIOR[i].IOB[0]) | TIOR[i].IOB[1]);
 			
-			TCNT_COMPA[i] = (TCNT[i] == GRA[i]);
-			TCNT_COMPB[i] = (TCNT[i] == GRB[i]);
+			TCNT_COMPA[i] <= (TCNT[i] == GRA[i]);
+			TCNT_COMPB[i] <= (TCNT[i] == GRB[i]);
 			
-			TCNT_INC[i] = 0;
-			//TCNT_DEC[i] = 0;
-			TCNT_CLR[i] = 0;
-			if (TCNT_CE[i]) begin
-				TCNT_INC[i] = TCNT_EN[i];
+			TCNT_INC[i] <= 0;
+			//TCNT_DEC[i] <= 0;
+			TCNT_CLR[i] <= 0;
+//			if (TCNT_CE[i]) begin
+				TCNT_INC[i] <= TCNT_EN[i];
 			
 				case (TCR[i].CCLR)
 					2'b00:;
-					2'b01: if ((TCNT_COMPA[i] && !TIOR[i].IOA[2]) || (TIOCAI_EDGE[i] && TIOR[i].IOA[2])) TCNT_CLR[i] = 1;
-					2'b10: if ((TCNT_COMPB[i] && !TIOR[i].IOB[2]) || (TIOCBI_EDGE[i] && TIOR[i].IOB[2])) TCNT_CLR[i] = 1;
+					2'b01: if ((TCNT_COMPA[i] && !TIOR[i].IOA[2]) || (TIOCAI_EDGE[i] && TIOR[i].IOA[2])) TCNT_CLR[i] <= 1;
+					2'b10: if ((TCNT_COMPB[i] && !TIOR[i].IOB[2]) || (TIOCBI_EDGE[i] && TIOR[i].IOB[2])) TCNT_CLR[i] <= 1;
 					2'b11: ;
 				endcase
-			end
+//			end
 		end
 	end
 	
@@ -173,15 +188,15 @@ module SH7034_ITU (
 						default:;
 					endcase
 					
-					if (TCNT[i] == 16'hFFFF) begin
+					if (TCNT_INC[i] && TCNT[i] == 16'hFFFF) begin
 						TSR[i].OVF <= 1;
 					end
 				end
 				
 				if (TSR_WRITE[i]) begin
-					if (!IBUS_DI[0] && TSR[i].IMFA && TSR_READED.IMFA) TSR[i].IMFA <= 0;
-					if (!IBUS_DI[1] && TSR[i].IMFB && TSR_READED.IMFB) TSR[i].IMFB <= 0;
-					if (!IBUS_DI[2] && TSR[i].OVF && TSR_READED.OVF)  TSR[i].OVF <= 0;
+					if (!IBUS_DI[0] /*&& TSR[i].IMFA*/ && TSR_READED.IMFA) TSR[i].IMFA <= 0;
+					if (!IBUS_DI[1] /*&& TSR[i].IMFB*/ && TSR_READED.IMFB) TSR[i].IMFB <= 0;
+					if (!IBUS_DI[2] /*&& TSR[i].OVF*/ && TSR_READED.OVF)  TSR[i].OVF <= 0;
 				end
 			end
 		end
@@ -230,7 +245,7 @@ module SH7034_ITU (
 		end
 		else begin
 			for (int i=0; i<5; i++) begin
-				if (TCNT_INC[i] && CE_R) begin
+				if (TCNT_INC[i] && TCNT_CE[i] && CE_R) begin
 					TCNT[i] <= TCNT[i] + 16'd1;
 				end
 				
@@ -347,7 +362,7 @@ module SH7034_ITU (
 			end
 			
 			for (int i=0; i<5; i++) begin
-				if (TCNT_CLR[i] && CE_R) begin
+				if (TCNT_CLR[i] && TCNT_CE[i] && CE_R) begin
 					TCNT[i] <= '0;
 				end
 			end

@@ -20,7 +20,9 @@ module SH7034_RAM
 	output     [7:0] DBG_CD_STATUS,
 	output     [7:0] DBG_CDD_RX_STAT,
 	output     [7:0] DBG_CDD_COMM0,
-	output     [7:0] DBG_CDD_COMM11
+	output     [7:0] DBG_CDD_COMM1,
+	output     [7:0] DBG_CDD_COMM11,
+	output     [7:0] DBG_7B0
 );
 	
 	wire RAM_SEL = (IBUS_A[27:24] == 4'hF);
@@ -59,12 +61,16 @@ module SH7034_RAM
 					end
 					12'h2C4: begin
 						if (IBUS_BA[3]) DBG_CDD_COMM0 <= IBUS_DI[31:24];
+						if (IBUS_BA[2]) DBG_CDD_COMM1 <= IBUS_DI[23:16];
 					end
 					12'h2CC: begin
 						if (IBUS_BA[0]) DBG_CDD_COMM11 <= IBUS_DI[7:0];
 					end
 					12'h2D0: begin
 						if (IBUS_BA[3]) DBG_CDD_RX_STAT <= IBUS_DI[31:24];
+					end
+					12'h7b0: begin
+						if (IBUS_BA[3]) DBG_7B0 <= IBUS_DI[31:24];
 					end
 					default;
 				endcase

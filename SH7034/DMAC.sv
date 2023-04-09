@@ -310,6 +310,7 @@ module SH7034_DMAC (
 	bit         DMA_RD;
 	bit         DMA_LOCK;
 	bit   [1:0] SA_BA;
+	bit         DACK_EN;
 	always @(posedge CLK or negedge RST_N) begin
 		bit  [31:0] AR_INC;
 		bit  [15:0] TCR_NEXT;
@@ -352,6 +353,8 @@ module SH7034_DMAC (
 						DMA_RD <= 0;
 						DMA_WR <= 1;
 						DMA_LOCK <= 0;
+						DACK_EN <= (CHCR[DMA_CH].AM | CHCR[DMA_CH].RS[3:1] == 3'b001);
+
 						CH_REQ_CLR[DMA_CH] <= 1;
 					end
 					else if (SAM && !CHCR[DMA_CH].RS[0]) begin
@@ -377,6 +380,7 @@ module SH7034_DMAC (
 					if (!SAM) begin
 						DMA_WR <= 0;
 						DMA_RD <= 1;
+						DACK_EN <= (~CHCR[DMA_CH].AM | CHCR[DMA_CH].RS[3:1] == 3'b001);
 						
 						if (!CHCR[DMA_CH].TM || !CH_REQ[DMA_CH]) DMA_RD <= 0;
 					end 
@@ -402,11 +406,13 @@ module SH7034_DMAC (
 					DMA_WR <= 0;
 					if (!SAM_NEXT || (SAM_NEXT && !CHCR[DMA_CH_NEXT].RS[0])) begin
 						DMA_RD <= 1;
+						DACK_EN <= (~CHCR[DMA_CH_NEXT].AM | CHCR[DMA_CH_NEXT].RS[3:1] == 3'b001);
 						CH_REQ_CLR[DMA_CH_NEXT] <= SAM_NEXT & ~CHCR[DMA_CH_NEXT].AM;
 						DMA_LOCK <= ~SAM_NEXT;
 					end
 					else begin
 						DMA_WR <= 1;
+						DACK_EN <= (CHCR[DMA_CH_NEXT].AM | CHCR[DMA_CH_NEXT].RS[3:1] == 3'b001);
 						CH_REQ_CLR[DMA_CH_NEXT] <= 1;
 						DMA_LOCK <= 0;
 					end
@@ -415,7 +421,7 @@ module SH7034_DMAC (
 			end
 			
 			if (CE_R) begin
-				if (REG_SEL && IBUS_WE && IBUS_REQ) begin
+				if (REG_SEL && !(DMA_RD | DMA_WR) && IBUS_WE && IBUS_REQ) begin
 					case ({IBUS_A[5:2],2'b00})
 						6'h00: begin
 							if (IBUS_BA[3:2]) SAR[0][31:16] <= IBUS_DI[31:16] & SARx_WMASK[31:16];
@@ -427,13 +433,16 @@ module SH7034_DMAC (
 						end
 						6'h08: begin
 							if (IBUS_BA[3]) DMAOR[15:8] <= IBUS_DI[31:24] & DMAOR_WMASK[15:8];
-							if (IBUS_BA[2]) DMAOR[ 7:0] <= IBUS_DI[23:16] & {DMAOR_WMASK[7:3],DMAOR[2:1],DMAOR_WMASK[0]};
+							if (IBUS_BA[2]) DMAOR[ 7:3] <= IBUS_DI[23:19] & DMAOR_WMASK[7:3];
+							if (IBUS_BA[2] && !IBUS_DI[18]) DMAOR[2] <= 0;
+							if (IBUS_BA[2] && !IBUS_DI[17]) DMAOR[1] <= 0;
+							if (IBUS_BA[2]) DMAOR[ 0:0] <= IBUS_DI[16:16] & DMAOR_WMASK[0];
 							if (IBUS_BA[1:0]) TCR[0][15: 0] <= IBUS_DI[15: 0] & TCRx_WMASK[15: 0];
 						end
 						6'h0C: begin
 							if (IBUS_BA[1]) CHCR[0][15: 8] <= IBUS_DI[15: 8] & CHCRx_WMASK[15: 8];
 							if (IBUS_BA[0]) CHCR[0][ 7: 2] <= IBUS_DI[ 7: 2] & CHCRx_WMASK[ 7: 2];
-							if (IBUS_BA[0] && !IBUS_DI[1] && REG_DO[1]) CHCR[0][1] <= 0;
+							if (IBUS_BA[0] && !IBUS_DI[1] && CHCR_READ[1]) CHCR[0][1] <= 0;
 							if (IBUS_BA[0]) CHCR[0][ 0: 0] <= IBUS_DI[ 0: 0] & CHCRx_WMASK[ 0: 0];
 						end
 						6'h10: begin
@@ -450,7 +459,7 @@ module SH7034_DMAC (
 						6'h1C: begin
 							if (IBUS_BA[1]) CHCR[1][15: 8] <= IBUS_DI[15: 8] & CHCRx_WMASK[15: 8];
 							if (IBUS_BA[0]) CHCR[1][ 7: 2] <= IBUS_DI[ 7: 2] & CHCRx_WMASK[ 7: 2];
-							if (IBUS_BA[0] && !IBUS_DI[1] && REG_DO[1]) CHCR[1][1] <= 0;
+							if (IBUS_BA[0] && !IBUS_DI[1] && CHCR_READ[1]) CHCR[1][1] <= 0;
 							if (IBUS_BA[0]) CHCR[1][ 0: 0] <= IBUS_DI[ 0: 0] & CHCRx_WMASK[ 0: 0];
 						end
 						6'h20: begin
@@ -467,7 +476,7 @@ module SH7034_DMAC (
 						6'h2C: begin
 							if (IBUS_BA[1]) CHCR[2][15: 8] <= IBUS_DI[15: 8] & CHCRx_WMASK[15: 8];
 							if (IBUS_BA[0]) CHCR[2][ 7: 2] <= IBUS_DI[ 7: 2] & CHCRx_WMASK[ 7: 2];
-							if (IBUS_BA[0] && !IBUS_DI[1] && REG_DO[1]) CHCR[2][1] <= 0;
+							if (IBUS_BA[0] && !IBUS_DI[1] && CHCR_READ[1]) CHCR[2][1] <= 0;
 							if (IBUS_BA[0]) CHCR[2][ 0: 0] <= IBUS_DI[ 0: 0] & CHCRx_WMASK[ 0: 0];
 						end
 						6'h30: begin
@@ -484,7 +493,7 @@ module SH7034_DMAC (
 						6'h3C: begin
 							if (IBUS_BA[1]) CHCR[3][15: 8] <= IBUS_DI[15: 8] & CHCRx_WMASK[15: 8];
 							if (IBUS_BA[0]) CHCR[3][ 7: 2] <= IBUS_DI[ 7: 2] & CHCRx_WMASK[ 7: 2];
-							if (IBUS_BA[0] && !IBUS_DI[1] && REG_DO[1]) CHCR[3][1] <= 0;
+							if (IBUS_BA[0] && !IBUS_DI[1] && CHCR_READ[1]) CHCR[3][1] <= 0;
 							if (IBUS_BA[0]) CHCR[3][ 0: 0] <= IBUS_DI[ 0: 0] & CHCRx_WMASK[ 0: 0];
 						end
 						default:;
@@ -528,10 +537,12 @@ module SH7034_DMAC (
 	                 DMA_WR ? 1'b1 : 
 	                 IBUS_WE;
 	assign DBUS_REQ = DMA_RD | DMA_WR | IBUS_REQ;
-	assign DBUS_LOCK = ((DMA_RD | DMA_WR) & DMA_LOCK) | IBUS_LOCK;
+	assign DBUS_LOCK = ((DMA_RD | DMA_WR) & DMA_LOCK) | (~(DMA_RD | DMA_WR) &IBUS_LOCK);
 	
-	assign DACK0 = (BSC_ACK & DACK0_EN) ^ CHCR[0].AL;
-	assign DACK1 = (BSC_ACK & DACK1_EN) ^ CHCR[1].AL;
+//	assign DACK0 = (BSC_ACK & DACK0_EN) ^ CHCR[0].AL;
+//	assign DACK1 = (BSC_ACK & DACK1_EN) ^ CHCR[1].AL;
+	assign DACK0 = ~(DMA_CH == 2'd0 & (DMA_RD | DMA_WR) & BSC_ACK & DACK_EN);
+	assign DACK1 = ~(DMA_CH == 2'd1 & (DMA_RD | DMA_WR) & BSC_ACK & DACK_EN);
 	
 	assign DMAC0_IRQ = CHCR[0].TE & CHCR[0].IE;
 	assign DMAC1_IRQ = CHCR[1].TE & CHCR[1].IE;
@@ -541,29 +552,30 @@ module SH7034_DMAC (
 	
 	//Registers
 	bit [31:0] REG_DO;
+	CHCRx_t    CHCR_READ;
 	always @(posedge CLK or negedge RST_N) begin
 		if (!RST_N) begin
 			REG_DO <= '0;
 		end
 		else if (CE_F) begin
-			if (REG_SEL && !IBUS_WE && IBUS_REQ) begin
+			if (REG_SEL && !(DMA_RD | DMA_WR) && !IBUS_WE && IBUS_REQ) begin
 				case ({IBUS_A[5:2],2'b00})
 					6'h00: REG_DO <= SAR[0];
 					6'h04: REG_DO <= DAR[0];
 					6'h08: REG_DO <= {DMAOR,TCR[0]};
-					6'h0C: REG_DO <= {16'h0000,CHCR[0] & CHCRx_RMASK};
+					6'h0C: begin REG_DO <= {16'h0000,CHCR[0] & CHCRx_RMASK}; CHCR_READ <= CHCR[0]; end
 					6'h10: REG_DO <= SAR[1];
 					6'h14: REG_DO <= DAR[1];
 					6'h18: REG_DO <= {16'h0000,TCR[1]};
-					6'h1C: REG_DO <= {16'h0000,CHCR[1] & CHCRx_RMASK};
+					6'h1C: begin REG_DO <= {16'h0000,CHCR[1] & CHCRx_RMASK}; CHCR_READ <= CHCR[1]; end
 					6'h20: REG_DO <= SAR[2];
 					6'h24: REG_DO <= DAR[2];
 					6'h28: REG_DO <= {DMAOR,TCR[2]};
-					6'h2C: REG_DO <= {16'h0000,CHCR[2] & CHCRx_RMASK};
+					6'h2C: begin REG_DO <= {16'h0000,CHCR[2] & CHCRx_RMASK}; CHCR_READ <= CHCR[2]; end
 					6'h30: REG_DO <= SAR[3];
 					6'h34: REG_DO <= DAR[3];
 					6'h38: REG_DO <= {16'h0000,TCR[3]};
-					6'h3C: REG_DO <= {16'h0000,CHCR[3] & CHCRx_RMASK};
+					6'h3C: begin REG_DO <= {16'h0000,CHCR[3] & CHCRx_RMASK}; CHCR_READ <= CHCR[3]; end
 					default:REG_DO <= '0;
 				endcase
 			end
